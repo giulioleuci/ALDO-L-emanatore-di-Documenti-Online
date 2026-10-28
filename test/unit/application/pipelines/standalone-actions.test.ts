@@ -69,9 +69,9 @@ test('INSERISCI_TIMESTAMP does not overwrite an already-stamped row (first send 
     logger
   });
   expect(n).toBe(0);
-  const hit = db.tables['CARENZE']!
-    .getAllRows()
-    .find((r) => r['STUDENTE'] === 'a1@school.it' && r['DATA'] === '2026-02-15')!;
+  const hit = db.tables['CARENZE']!.getAllRows().find(
+    (r) => r['STUDENTE'] === 'a1@school.it' && r['DATA'] === '2026-02-15'
+  )!;
   expect(hit['NOTIFICATO']).toBe('2026-01-01T00:00:00.000Z');
 });
 
@@ -128,14 +128,16 @@ test('no matching rows ⇒ 0 updates and no phantom insert', () => {
       criteri: { STUDENTE: 'nessuno@x.it' }
     }
   ]);
-  expect(eseguiAzioni({
-    azioni: actions,
-    cdu: cdu(),
-    db,
-    templates: new FakeTemplateEngine(),
-    now: NOW,
-    logger
-  })).toBe(0);
+  expect(
+    eseguiAzioni({
+      azioni: actions,
+      cdu: cdu(),
+      db,
+      templates: new FakeTemplateEngine(),
+      now: NOW,
+      logger
+    })
+  ).toBe(0);
   expect(db.tables['CARENZE']!.getAllRows()).toHaveLength(before);
 });
 
@@ -208,14 +210,16 @@ test('unknown action type is skipped with a warning, others still run', () => {
       criteri: { STUDENTE: 'a2@school.it' }
     }
   ]);
-  expect(eseguiAzioni({
-    azioni: actions,
-    cdu: cdu(),
-    db,
-    templates: new FakeTemplateEngine(),
-    now: NOW,
-    logger
-  })).toBe(1);
+  expect(
+    eseguiAzioni({
+      azioni: actions,
+      cdu: cdu(),
+      db,
+      templates: new FakeTemplateEngine(),
+      now: NOW,
+      logger
+    })
+  ).toBe(1);
 });
 
 test('AGGIORNA_PERMESSI_STORICI resolves criteri and delegates to the document handler', () => {
@@ -342,14 +346,16 @@ describe('standaloneActions — CSV containment matching', () => {
       }
     };
 
-    expect(eseguiAzioni({
-      azioni: actions,
-      cdu: parentCdu,
-      db,
-      templates: new FakeTemplateEngine(),
-      now: NOW,
-      logger
-    })).toBe(2);
+    expect(
+      eseguiAzioni({
+        azioni: actions,
+        cdu: parentCdu,
+        db,
+        templates: new FakeTemplateEngine(),
+        now: NOW,
+        logger
+      })
+    ).toBe(2);
     const rowsFor = (...classi: string[]) =>
       db.tables['LOG_DOCS']!.getAllRows().filter((row) => classi.includes(String(row['CLASSI'])));
     expect(rowsFor('3C', '3C-LC').every((row) => row['STATO'] === 'VERBALIZZATO')).toBe(true);
@@ -379,15 +385,19 @@ describe('standaloneActions — CSV containment matching', () => {
       }
     };
 
-    expect(eseguiAzioni({
-      azioni: actions,
-      cdu: normalClassCdu,
-      db,
-      templates: new FakeTemplateEngine(),
-      now: NOW,
-      logger
-    })).toBe(0);
-    expect(db.tables['LOG_DOCS']!.getAllRows().every((row) => row['STATO'] === 'GENERATO')).toBe(true);
+    expect(
+      eseguiAzioni({
+        azioni: actions,
+        cdu: normalClassCdu,
+        db,
+        templates: new FakeTemplateEngine(),
+        now: NOW,
+        logger
+      })
+    ).toBe(0);
+    expect(db.tables['LOG_DOCS']!.getAllRows().every((row) => row['STATO'] === 'GENERATO')).toBe(
+      true
+    );
   });
 
   test('a multi-valued criterion bypasses the single-column indexed fast path (it cannot answer a containment query)', () => {
@@ -536,7 +546,10 @@ describe('standaloneActions — updateMatching guard and findMatchingRows fallba
 });
 
 describe('standaloneActions — TRASFORMA_CAMPO', () => {
-  function run(operazione: string, criteri?: Record<string, string>): { db: FakeDatabase; n: number } {
+  function run(
+    operazione: string,
+    criteri?: Record<string, string>
+  ): { db: FakeDatabase; n: number } {
     const tables = fixtureTables();
     tables['DOCENTI'] = [
       { EMAIL: 'd1@school.it', COGNOME: '  rossi  ', NOME: 'mario', ITP: false },
@@ -545,7 +558,13 @@ describe('standaloneActions — TRASFORMA_CAMPO', () => {
     const db = new FakeDatabase(tables);
     const n = eseguiAzioni({
       azioni: JSON.stringify([
-        { tipo: 'TRASFORMA_CAMPO', tab: 'DOCENTI', col: 'COGNOME', operazione, ...(criteri === undefined ? {} : { criteri }) }
+        {
+          tipo: 'TRASFORMA_CAMPO',
+          tab: 'DOCENTI',
+          col: 'COGNOME',
+          operazione,
+          ...(criteri === undefined ? {} : { criteri })
+        }
       ]),
       cdu: cdu(),
       db,

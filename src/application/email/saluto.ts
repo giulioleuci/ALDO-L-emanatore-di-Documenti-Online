@@ -7,7 +7,14 @@ import type { Alunno } from '../../domain/entities/Alunno';
  * the candidate addresses before supplente resolution (11 §7).
  */
 export interface EmailTarget {
-  tipo: 'docente' | 'cdc' | 'alunno' | 'genitori' | 'genitori_alunno' | 'capo_dipartimento' | 'dipartimento';
+  tipo:
+    | 'docente'
+    | 'cdc'
+    | 'alunno'
+    | 'genitori'
+    | 'genitori_alunno'
+    | 'capo_dipartimento'
+    | 'dipartimento';
   tipoTarget: 'classe' | 'alunno' | 'dipartimento';
   /** ClasseId value or alunno email — the CDU build entry point. */
   target: string;

@@ -126,7 +126,9 @@ async function main() {
       `OnlineTests.js: ALDO online GAS test suite, separate file, unminified structure, comments stripped`
     );
     info(`EntryPointOnlineTests.gs: readable GAS launchers, kept separate from OnlineTests.js`);
-    info(`gas-source-map.json: Line-level map from all online output files back to original src/**/*.ts`);
+    info(
+      `gas-source-map.json: Line-level map from all online output files back to original src/**/*.ts`
+    );
     info(`Offline tests: Will run after build (unit + integration), as a pre-push sanity gate`);
   } else if (mode === 'testoffline') {
     info(`Code.js:      Vendor + ALDO core + ALDO entry points, merged, readable`);
@@ -353,10 +355,7 @@ async function main() {
       }
       // Launcher leggibili con commenti conservati; keep its map temporarily so
       // gas-source-map.json can index it in step 9, then delete both .js/.map.
-      fs.copyFileSync(
-        onlineEntrypointsBundle,
-        path.join(distDir, 'EntryPointOnlineTests.gs')
-      );
+      fs.copyFileSync(onlineEntrypointsBundle, path.join(distDir, 'EntryPointOnlineTests.gs'));
       fs.rmSync(onlineEntrypointsBundle, { force: true });
       ok('Wrote dist/EntryPointOnlineTests.gs (readable launchers, kept separate)');
     } else {
@@ -635,9 +634,7 @@ async function main() {
     const onlineEntrypointsBundle = path.join(distDir, 'EntryPointOnlineTests.gs');
     if (onlineEntrypointsPatchCount > 0) {
       fs.writeFileSync(onlineEntrypointsBundle, onlineEntrypointsPatchedCode, 'utf8');
-      ok(
-        `Wrote patched EntryPointOnlineTests.gs (${onlineEntrypointsPatchCount} fix(es) applied)`
-      );
+      ok(`Wrote patched EntryPointOnlineTests.gs (${onlineEntrypointsPatchCount} fix(es) applied)`);
     } else {
       ok('No patches needed — EntryPointOnlineTests.gs unchanged');
     }

@@ -32,8 +32,17 @@ export class SchoolProvider implements ContextProvider {
     });
     cdu.istituto = {
       annoScolastico: config.annoScolasticoRaw,
-      dirigente: buildPersonaVm({ nome: config.dirigente, cognome: null, email: null, genere: null, isEsterno: true }),
-      staff: { ...elencoVm(elenco), perId: Object.fromEntries(elenco.map((ruolo) => [ruolo.ruoloId, ruolo])) }
+      dirigente: buildPersonaVm({
+        nome: config.dirigente,
+        cognome: null,
+        email: null,
+        genere: null,
+        isEsterno: true
+      }),
+      staff: {
+        ...elencoVm(elenco),
+        perId: Object.fromEntries(elenco.map((ruolo) => [ruolo.ruoloId, ruolo]))
+      }
     };
   }
 
@@ -42,6 +51,12 @@ export class SchoolProvider implements ContextProvider {
     const docente = this.docenti.findById(email);
     return docente === null
       ? null
-      : buildPersonaVm({ nome: docente.nome, cognome: docente.cognome, email: docente.id, genere: docente.genere, isEsterno: false });
+      : buildPersonaVm({
+          nome: docente.nome,
+          cognome: docente.cognome,
+          email: docente.id,
+          genere: docente.genere,
+          isEsterno: false
+        });
   }
 }

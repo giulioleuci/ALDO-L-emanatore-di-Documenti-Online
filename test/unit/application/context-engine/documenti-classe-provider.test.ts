@@ -55,7 +55,11 @@ function tablesWithClasseDocs(): Record<string, Row[]> {
   return t;
 }
 
-function build(classiCompetenza?: string[], databases: StoricoDatabaseProvider = { anniStorici: () => [] }, options = makeOptions()) {
+function build(
+  classiCompetenza?: string[],
+  databases: StoricoDatabaseProvider = { anniStorici: () => [] },
+  options = makeOptions()
+) {
   const db = new FakeDatabase(tablesWithClasseDocs());
   const classi = new ClasseRepository(db);
   const alunni = new AlunnoRepository(db);

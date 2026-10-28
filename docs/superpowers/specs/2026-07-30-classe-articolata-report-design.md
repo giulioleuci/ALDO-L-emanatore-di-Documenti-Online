@@ -13,7 +13,7 @@ Two deliverables:
    - all students, major (indirizzo) attended in brackets
    - teachers common to the whole class, their subject(s) in brackets
    - teachers per major, subjects + major in the form `subject1, subject2
-     (Major)`
+(Major)`
    - parent representatives, student representatives, and coordinators,
      each with the major (indirizzo) of the group they belong to /
      coordinate, in brackets
@@ -50,9 +50,9 @@ Two deliverables:
 - `consiglioDiClasse` (`DocenteCdcVM`, built by
   `TeachingCouncilProjection.councilVmStrategy`) already spans the whole
   articulated group and tags each teacher `tipoArticolazione:
-  'COMUNE'|'SEPARATO_PRIMO'|'SEPARATO_SECONDO'|null`, with each teacher's
+'COMUNE'|'SEPARATO_PRIMO'|'SEPARATO_SECONDO'|null`, with each teacher's
   full subject list in `materie[]`. It does not carry a joined-subjects
-  display string, nor the actual major *name* for SEPARATO_PRIMO/SECONDO
+  display string, nor the actual major _name_ for SEPARATO_PRIMO/SECONDO
   (only the symbolic tag).
 - Coordinators are tracked distinctly per partner class already (commits
   `f01e3e6`/`b771f6d`, "route articulated coordinators by partner",
@@ -63,7 +63,7 @@ Two deliverables:
 
 - `RappresentantiProvider.ts:14-28` calls `classi.getStudenti(classe)`
   directly, with no articulated-parent expansion. For the 3C parent this
-  returns **empty** student/parent-rep lists today, for *any* document
+  returns **empty** student/parent-rep lists today, for _any_ document
   targeting the parent class, not just the new one.
 - `ClasseProvider.ts:53` builds `coordinatori` the same
   non-group-expanded way — misses each partner's distinct coordinator
@@ -124,15 +124,15 @@ use.
 ## New CONF_DOC + template
 
 - `TIPO: 'DOCUMENTO_COMPLESSO_CLASSE_ARTICOLATA'`, `GENERATORE:
-  'DOCUMENTO_GENERICO'`. Seeded in `E2eSampleDatabaseBuilder.seedConfDoc`
+'DOCUMENTO_GENERICO'`. Seeded in `E2eSampleDatabaseBuilder.seedConfDoc`
   targeting the 3C parent (`ClasseId('3C')`), recipe `CLASSE_COMPLETA`.
 - New Drive template registered in `E2eTemplateProvisioner.ts` (new
   `NAME_...` constant + paragraph list, following the existing
   `DOC_COMPLESSO_PARAGRAPHS` pattern), four flat `bullet_list` blocks, no
   nesting, no filter/where/map/join pipes:
   1. Students — `{{#bullet_list:focus.classe.studenti.listaCompleta |
-     sortBy:'anagrafica.nomeCompleto'}}{{anagrafica.nomeCompleto}}
-     ({{indirizzo.nome}}){{/bullet_list}}`
+sortBy:'anagrafica.nomeCompleto'}}{{anagrafica.nomeCompleto}}
+({{indirizzo.nome}}){{/bullet_list}}`
   2. Common teachers — over `focus.classe.consiglioDiClasseComune`:
      `{{anagrafica.nome}} {{anagrafica.cognome}} ({{materieDescrizione}})`
   3. Per-major teachers — over `focus.classe.consiglioDiClasseSeparato`:
@@ -185,7 +185,7 @@ top-level project docs. Sections:
    (`studentiDellaClasse`, and the two provider fixes from this work as
    a before/after case study), `tipoArticolazione` tagging via GLF's
    `CattedraResolver` partner-routing, `ClasseRepository
-   .getMaterieArticolazione` condivise/separate split logic.
+.getMaterieArticolazione` condivise/separate split logic.
 3. **Email sending** — `RisolutoreRuoliService.genitoriClasse`,
    `EmailNotificationService.targetsPerCoordinatore`/`classiCompetenza`
    partner-routing (the "route articulated coordinators by partner" fix),

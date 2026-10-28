@@ -20,10 +20,12 @@
 ### Task 1: Update `CheckDuplicatesStep` identity match + regression test
 
 **Files:**
+
 - Modify: `src/application/pipelines/documentSteps.ts:162-213` (`CheckDuplicatesStep._executeLogic` and `_getLogDetails`)
 - Modify: `test/unit/application/pipelines/document-steps.test.ts` (three existing tests + one new regression test — exact locations below)
 
 **Interfaces:**
+
 - Consumes: existing `CheckDuplicatesStep` constructor `(logger: LoggerService, db: IDatabase, templates: ITemplateEngine)` — unchanged signature.
 - Produces: `ctx.get('shouldGenerate')` (boolean) and `ctx.get('skipReason')` (string | null) — same keys, same types, as today. No other task depends on this one; this is the whole change.
 
@@ -32,32 +34,32 @@
 Add this test to `test/unit/application/pipelines/document-steps.test.ts`, inside the existing `describe('CheckDuplicatesStep — DUPLICAZIONE policy', ...)` block (found near the end of the file, alongside the `'PERMESSA bypasses...'` and `'NEGATA allows a document when only its generated name differs'` tests):
 
 ```ts
-  test('NEGATA recognizes a duplicate even when {{progressivo}} makes the rendered name differ from the stored NOME', () => {
-    const tables = fixtureTables();
-    tables.LOG_DOCS = [
-      {
-        ID: 'old',
-        ID_GEN: 'CD1',
-        TIPO: 'VERBALE',
-        SOTTOTIPO: '',
-        PATH: 'Verbali/5',
-        NOME: 'Verbale_1', // stored with a progressivo baked in from a prior run
-        CLASSI: '5A',
-        STATO: 'GENERATO'
-      }
-    ];
-    const db = new FakeDatabase(tables);
-    const ctx = baseCtx(db);
-    ctx.set('config', {
-      ...fixtureTables().CONF_DOC[0]!,
-      FILE_NAME: 'Verbale_{{progressivo}}', // today's render would produce e.g. "Verbale_2" (unresolved/different number)
-      DUPLICAZIONE: DuplicazioneDocumento.NEGATA
-    });
-
-    new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
-
-    expect(ctx.get('shouldGenerate')).toBe(false);
+test('NEGATA recognizes a duplicate even when {{progressivo}} makes the rendered name differ from the stored NOME', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'old',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: '',
+      PATH: 'Verbali/5',
+      NOME: 'Verbale_1', // stored with a progressivo baked in from a prior run
+      CLASSI: '5A',
+      STATO: 'GENERATO'
+    }
+  ];
+  const db = new FakeDatabase(tables);
+  const ctx = baseCtx(db);
+  ctx.set('config', {
+    ...fixtureTables().CONF_DOC[0]!,
+    FILE_NAME: 'Verbale_{{progressivo}}', // today's render would produce e.g. "Verbale_2" (unresolved/different number)
+    DUPLICAZIONE: DuplicazioneDocumento.NEGATA
   });
+
+  new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+
+  expect(ctx.get('shouldGenerate')).toBe(false);
+});
 ```
 
 - [ ] **Step 2: Run the new test to verify it fails**
@@ -70,88 +72,88 @@ Expected: FAIL — `shouldGenerate` is `true` (today's code still compares the r
 In the same file, find this test (in the top-level `describe('CheckDuplicatesStep — DUPLICAZIONE policy', ...)` block):
 
 ```ts
-  test('NEGATA allows a document when only its generated name differs', () => {
-    const tables = fixtureTables();
-    tables.LOG_DOCS = [
-      {
-        ID: 'old',
-        ID_GEN: 'CD1',
-        TIPO: 'VERBALE',
-        SOTTOTIPO: '',
-        PATH: 'Verbali/5',
-        NOME: 'Altro_verbale',
-        CLASSI: '5A',
-        STATO: 'GENERATO'
-      }
-    ];
-    const db = new FakeDatabase(tables);
-    const ctx = baseCtx(db);
-    ctx.set('config', {
-      ...fixtureTables().CONF_DOC[0]!,
-      DUPLICAZIONE: DuplicazioneDocumento.NEGATA
-    });
-    new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
-    expect(ctx.get('shouldGenerate')).toBe(true);
+test('NEGATA allows a document when only its generated name differs', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'old',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: '',
+      PATH: 'Verbali/5',
+      NOME: 'Altro_verbale',
+      CLASSI: '5A',
+      STATO: 'GENERATO'
+    }
+  ];
+  const db = new FakeDatabase(tables);
+  const ctx = baseCtx(db);
+  ctx.set('config', {
+    ...fixtureTables().CONF_DOC[0]!,
+    DUPLICAZIONE: DuplicazioneDocumento.NEGATA
   });
+  new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+  expect(ctx.get('shouldGenerate')).toBe(true);
+});
 ```
 
 Replace it with (rename + invert expectation — this is the documented behavior change):
 
 ```ts
-  test('NEGATA blocks a document whose NOME differs but TIPO/SOTTOTIPO/ID_GEN/PATH match (identity excludes NOME)', () => {
-    const tables = fixtureTables();
-    tables.LOG_DOCS = [
-      {
-        ID: 'old',
-        ID_GEN: 'CD1',
-        TIPO: 'VERBALE',
-        SOTTOTIPO: '',
-        PATH: 'Verbali/5',
-        NOME: 'Altro_verbale',
-        CLASSI: '5A',
-        STATO: 'GENERATO'
-      }
-    ];
-    const db = new FakeDatabase(tables);
-    const ctx = baseCtx(db);
-    ctx.set('config', {
-      ...fixtureTables().CONF_DOC[0]!,
-      DUPLICAZIONE: DuplicazioneDocumento.NEGATA
-    });
-    new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
-    expect(ctx.get('shouldGenerate')).toBe(false);
+test('NEGATA blocks a document whose NOME differs but TIPO/SOTTOTIPO/ID_GEN/PATH match (identity excludes NOME)', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'old',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: '',
+      PATH: 'Verbali/5',
+      NOME: 'Altro_verbale',
+      CLASSI: '5A',
+      STATO: 'GENERATO'
+    }
+  ];
+  const db = new FakeDatabase(tables);
+  const ctx = baseCtx(db);
+  ctx.set('config', {
+    ...fixtureTables().CONF_DOC[0]!,
+    DUPLICAZIONE: DuplicazioneDocumento.NEGATA
   });
+  new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+  expect(ctx.get('shouldGenerate')).toBe(false);
+});
 ```
 
 Then find this test (in the `describe('document pipeline operational log details', ...)` block near the top of the file):
 
 ```ts
-  test('publishes the duplicate identity when generation is stopped', () => {
-    const tables = fixtureTables();
-    tables.LOG_DOCS = [
-      {
-        ID: 'old',
-        ID_GEN: 'CD1',
-        TIPO: 'VERBALE',
-        SOTTOTIPO: '',
-        PATH: 'Verbali/5',
-        NOME: 'Verbale_5A_01/07/2026',
-        CLASSI: '5A',
-        STATO: 'GENERATO'
-      }
-    ];
-    const db = new FakeDatabase(tables);
-    const ctx = baseCtx(db);
+test('publishes the duplicate identity when generation is stopped', () => {
+  const tables = fixtureTables();
+  tables.LOG_DOCS = [
+    {
+      ID: 'old',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: '',
+      PATH: 'Verbali/5',
+      NOME: 'Verbale_5A_01/07/2026',
+      CLASSI: '5A',
+      STATO: 'GENERATO'
+    }
+  ];
+  const db = new FakeDatabase(tables);
+  const ctx = baseCtx(db);
 
-    const result = new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
+  const result = new CheckDuplicatesStep(logger, db, new FakeTemplateEngine()).execute(ctx);
 
-    expect(logDetails(result)).toBe(
-      'Duplicato: TIPO=VERBALE, SOTTOTIPO=, ID_GEN=CD1, PATH=Verbali/5, NOME=Verbale_5A_01/07/2026'
-    );
-  });
+  expect(logDetails(result)).toBe(
+    'Duplicato: TIPO=VERBALE, SOTTOTIPO=, ID_GEN=CD1, PATH=Verbali/5, NOME=Verbale_5A_01/07/2026'
+  );
+});
 ```
 
-Leave this test's assertion text as-is for now (Step 5 below explains why it keeps passing unmodified once the implementation uses the *matched row's* `NOME` for the message — this fixture's stored `NOME` happens to equal what a fresh render would have produced, so the message text is unaffected by the change).
+Leave this test's assertion text as-is for now (Step 5 below explains why it keeps passing unmodified once the implementation uses the _matched row's_ `NOME` for the message — this fixture's stored `NOME` happens to equal what a fresh render would have produced, so the message text is unaffected by the change).
 
 - [ ] **Step 4: Run all three tests again to confirm the expected failures**
 
@@ -210,7 +212,7 @@ In `src/application/pipelines/documentSteps.ts`, replace the body of `CheckDupli
   }
 ```
 
-Note what changed from the current implementation: the `nome`/`FILE_NAME` render is gone entirely (no more `this.templates.processString(String(cfg(ctx)[COL_CONF_DOC.FILE_NAME] ?? ''), cduRecord(ctx))` call in this method); the `existing` query predicate drops its `NOME` clause; the `skipReason` message now reads `NOME` from the *matched row* (`existing[COL_LOG_DOCS.NOME]`) purely for informative logging, not for matching.
+Note what changed from the current implementation: the `nome`/`FILE_NAME` render is gone entirely (no more `this.templates.processString(String(cfg(ctx)[COL_CONF_DOC.FILE_NAME] ?? ''), cduRecord(ctx))` call in this method); the `existing` query predicate drops its `NOME` clause; the `skipReason` message now reads `NOME` from the _matched row_ (`existing[COL_LOG_DOCS.NOME]`) purely for informative logging, not for matching.
 
 `_getLogDetails` (lines 207-213) is unchanged — it only reads `ctx.get('shouldGenerate')`/`ctx.get('skipReason')`, both still set the same way.
 

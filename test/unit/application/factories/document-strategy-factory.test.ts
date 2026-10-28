@@ -38,7 +38,9 @@ describe('DocumentStrategyFactory', () => {
       sheetPermessi
     );
     expect(
-      factory.resolve(config({ [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }) }))
+      factory.resolve(
+        config({ [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }) })
+      )
     ).toBe(docTabelle);
   });
 
@@ -109,7 +111,9 @@ describe('DocumentStrategyFactory', () => {
   it('throws when the required optional strategy was never wired (off-GAS)', () => {
     const factory = new DocumentStrategyFactory(docGenerico, foglioGenerico, docPersonalizzato);
     expect(() =>
-      factory.resolve(config({ [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }) }))
+      factory.resolve(
+        config({ [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }) })
+      )
     ).toThrow('DOCUMENTO_CON_TABELLE_IMPORTATE');
     expect(() => factory.resolve(config({ [COL_CONF_DOC.FORMATO]: 'GSHEET' }))).not.toThrow();
     expect(() =>

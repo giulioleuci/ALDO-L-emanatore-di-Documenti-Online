@@ -79,7 +79,11 @@ describe('LogCartella.toData / fromData', () => {
   });
 
   test('fromData is equivalent to the constructor', () => {
-    const raw = { [COL_LOG_FOLD.ID]: 'folder-2', [COL_LOG_FOLD.TIPO]: 'X', [COL_LOG_FOLD.NOME]: 'Y' };
+    const raw = {
+      [COL_LOG_FOLD.ID]: 'folder-2',
+      [COL_LOG_FOLD.TIPO]: 'X',
+      [COL_LOG_FOLD.NOME]: 'Y'
+    };
     const log = LogCartella.fromData(raw);
     expect(log).toBeInstanceOf(LogCartella);
     expect(log.id).toBe('folder-2');

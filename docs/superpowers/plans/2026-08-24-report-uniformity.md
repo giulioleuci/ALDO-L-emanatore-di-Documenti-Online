@@ -24,6 +24,7 @@
 ### Task 1: Spec-only text corrections (§1.4, §3.1)
 
 **Files:**
+
 - Modify: `SPECS_ALDO/02_CDU_STRUTTURA.md:36` (Principio 6)
 - Modify: `SPECS_ALDO/03_VALUE_OBJECTS_ED_ENUM.md:426-437` (`ClassiScope`/`MaterieScope` section)
 
@@ -41,7 +42,7 @@ Read the actual line 36 first to get its exact current wording (this plan doesn'
 
 - [ ] **Step 2: Update the `ClassiScope`/`MaterieScope` section to describe `CsvScope`**
 
-In `SPECS_ALDO/03_VALUE_OBJECTS_ED_ENUM.md`, replace the heading and body at lines 426-437 (currently `### \`ClassiScope\` e \`MaterieScope\`` with a shared method table) with a single `CsvScope` description that states it backs both `SUPPLENZE.CLASSI`/`MATERIE` and `VARIAZIONI_CATTEDRA.CLASSI`/`MATERIE` scope checks. Model it on the existing table shape but retitle:
+In `SPECS_ALDO/03_VALUE_OBJECTS_ED_ENUM.md`, replace the heading and body at lines 426-437 (currently `### \`ClassiScope\` e \`MaterieScope\``with a shared method table) with a single`CsvScope`description that states it backs both`SUPPLENZE.CLASSI`/`MATERIE`and`VARIAZIONI_CATTEDRA.CLASSI`/`MATERIE` scope checks. Model it on the existing table shape but retitle:
 
 ```markdown
 ### `CsvScope`
@@ -49,9 +50,9 @@ In `SPECS_ALDO/03_VALUE_OBJECTS_ED_ENUM.md`, replace the heading and body at lin
 - **Proprietà:** `value: string` — CSV di ID oppure `"*"` (tutte)
 - Unico VO generico che copre sia lo scope-classi sia lo scope-materie (usato in `SUPPLENZE.CLASSI`/`SUPPLENZE.MATERIE` e in `VARIAZIONI_CATTEDRA.CLASSI`/`VARIAZIONI_CATTEDRA.MATERIE`); in precedenza descritto come due VO gemelli (`ClassiScope`, `MaterieScope`), unificati in `src/domain/value-objects/CsvScope.ts`.
 
-| Metodo                                 | Comportamento                                        |
-| --------------------------------------- | ----------------------------------------------------- |
-| `overlaps(other: CsvScope): boolean`    | `true` se i due scope si intersecano (o uno dei due è totale) |
+| Metodo                               | Comportamento                                                 |
+| ------------------------------------ | ------------------------------------------------------------- |
+| `overlaps(other: CsvScope): boolean` | `true` se i due scope si intersecano (o uno dei due è totale) |
 ```
 
 Verify the real method table against `src/domain/value-objects/CsvScope.ts` before finalizing — read the file, don't guess the method list from this plan.
@@ -68,12 +69,14 @@ git commit -m "docs(specs): fix Principio 6 self-contradiction and CsvScope drif
 ### Task 2: Rename `isPresenteLista` → `hasElenco`
 
 **Files:**
+
 - Modify: `src/application/context-engine/Cdu.ts:272`
 - Modify: `src/application/context-engine/providers/PianiPersClasseProvider.ts:57`
 - Modify: `SPECS_ALDO/02_CDU_STRUTTURA.md:342,1000,1520`
 - Test: `test/unit/application/context-engine/piani-pers-classe-provider.test.ts`
 
 **Interfaces:**
+
 - Produces: `CduClasse.didattica.pianiPersonalizzati.nonVerbalizzati.hasElenco: boolean` (was `isPresenteLista`), sibling of `elenco: Array<...>`.
 
 - [ ] **Step 1: Update the failing test first**
@@ -85,15 +88,19 @@ Open `test/unit/application/context-engine/piani-pers-classe-provider.test.ts`, 
 ```bash
 npx jest --config jest.config.cjs test/unit/application/context-engine/piani-pers-classe-provider.test.ts
 ```
+
 Expected: FAIL (`hasElenco` is `undefined`, `isPresenteLista` no longer read).
 
 - [ ] **Step 3: Rename in `Cdu.ts`**
 
 At `src/application/context-engine/Cdu.ts:272`, change:
+
 ```ts
 isPresenteLista: boolean;
 ```
+
 to:
+
 ```ts
 hasElenco: boolean;
 ```
@@ -101,10 +108,13 @@ hasElenco: boolean;
 - [ ] **Step 4: Rename in the provider**
 
 At `src/application/context-engine/providers/PianiPersClasseProvider.ts:57`, change:
+
 ```ts
 isPresenteLista: items.some((item) => item.stato !== StatoDocumento.VERBALIZZATO),
 ```
+
 to:
+
 ```ts
 hasElenco: items.some((item) => item.stato !== StatoDocumento.VERBALIZZATO),
 ```
@@ -114,11 +124,13 @@ hasElenco: items.some((item) => item.stato !== StatoDocumento.VERBALIZZATO),
 ```bash
 npx jest --config jest.config.cjs test/unit/application/context-engine/piani-pers-classe-provider.test.ts
 ```
+
 Expected: PASS
 
 - [ ] **Step 6: Update the spec**
 
 In `SPECS_ALDO/02_CDU_STRUTTURA.md`:
+
 - Line 342: `isPresenteLista: boolean         # true sse elenco non vuoto (per {{#isPresenteLista}}/{{^}})` → `hasElenco: boolean               # true sse elenco non vuoto (per {{#hasElenco}}/{{^}})`
 - Line 1000: replace both `{{#focus.classe.didattica.pianiPersonalizzati.nonVerbalizzati.isPresenteLista}}` and the closing `{{/...isPresenteLista}}` with `...hasElenco}}` / `{{/...hasElenco}}`.
 - Line 1520: `"nonVerbalizzati": { "isPresenteLista": false, "elenco": [] }` → `"nonVerbalizzati": { "hasElenco": false, "elenco": [] }`
@@ -144,12 +156,14 @@ git commit -m "refactor(cdu): rename isPresenteLista to hasElenco for hasXxx com
 ### Task 3: `EsameConfig` — `prima_prova`/`seconda_prova` → camelCase
 
 **Files:**
+
 - Modify: `src/domain/value-objects/EsameConfig.ts`
 - Modify: `SPECS_ALDO/03_VALUE_OBJECTS_ED_ENUM.md:408-417`
 - Modify fixtures: `test/fixtures/tables.ts:94`, `src/onlinetests/data/SharedTestDatabaseBuilder.ts:97-98`
 - Test: `test/unit/domain/esame-config.test.ts`
 
 **Interfaces:**
+
 - Produces: `EsameConfig.fromJson` now reads `{ primaProva?: string[]; secondaProva?: string[] }` from the `MATERIE.ESAME_CFG` JSON cell. `isPrimaProvaPerIndirizzo`/`isSecondaProvaPerIndirizzo` signatures unchanged.
 
 - [ ] **Step 1: Update `test/unit/domain/esame-config.test.ts` fixtures/assertions first**
@@ -161,6 +175,7 @@ Read the file; every JSON literal built as `{"prima_prova": [...]}` / `{"seconda
 ```bash
 npx jest --config jest.config.cjs test/unit/domain/esame-config.test.ts
 ```
+
 Expected: FAIL
 
 - [ ] **Step 3: Update `EsameConfig.ts`**
@@ -171,10 +186,13 @@ interface EsameConfigJson {
   secondaProva?: string[];
 }
 ```
+
 and in `fromJson`:
+
 ```ts
 return new EsameConfig(parsed.primaProva ?? [], parsed.secondaProva ?? []);
 ```
+
 (the internal field names `primaProva`/`secondaProva` on the class itself are already camelCase and unchanged — only the parsed JSON key names move.)
 
 - [ ] **Step 4: Run it, confirm it passes**
@@ -182,12 +200,14 @@ return new EsameConfig(parsed.primaProva ?? [], parsed.secondaProva ?? []);
 ```bash
 npx jest --config jest.config.cjs test/unit/domain/esame-config.test.ts
 ```
+
 Expected: PASS
 
 - [ ] **Step 5: Update remaining fixtures**
 
 - `test/fixtures/tables.ts:94`: `ESAME_CFG: '{"prima_prova":["SCIENTIFICO"],"seconda_prova":["LSSA"]}'` → `ESAME_CFG: '{"primaProva":["SCIENTIFICO"],"secondaProva":["LSSA"]}'`
 - `src/onlinetests/data/SharedTestDatabaseBuilder.ts:97-98`:
+
 ```ts
 ITA: JSON.stringify({ primaProva: [INDIRIZZO_E2E, INDIRIZZO_E2E_CLASSICO] }),
 MAT: JSON.stringify({ secondaProva: [INDIRIZZO_E2E, INDIRIZZO_E2E_CLASSICO] })
@@ -200,17 +220,20 @@ npx jest --config jest.config.cjs test/unit/application/risolutore-ruoli-service
 npx jest --config jest.config.cjs test/unit/application/context-engine/mappers/subject-vm-mapper.test.ts
 npx jest --config jest.config.cjs test/unit/infrastructure/materia-repository.test.ts
 ```
+
 These consume `EsameConfig` behaviorally, not the raw JSON keys directly — expect them to pass unchanged, but run to be sure none embeds a raw `prima_prova`/`seconda_prova` literal too (grep first: `grep -rn "prima_prova\|seconda_prova" test/ src/` should return nothing after this task).
 
 - [ ] **Step 7: Update the spec**
 
 `SPECS_ALDO/03_VALUE_OBJECTS_ED_ENUM.md:408-417`, change the JSON block:
+
 ```json
 {
   "primaProva": ["IndirizzoId", ...],
   "secondaProva": ["IndirizzoId", ...]
 }
 ```
+
 and the method table's prose (`prima_prova` → `primaProva`, `seconda_prova` → `secondaProva`).
 
 - [ ] **Step 8: Typecheck**
@@ -233,6 +256,7 @@ git commit -m "refactor(esame-config): camelCase prima_prova/seconda_prova JSON 
 ### Task 4: `articolazione.parent.id` → `articolazione.parent.nome`
 
 **Files:**
+
 - Modify: `src/application/context-engine/providers/ClasseProvider.ts:132-141`
 - Modify: `src/application/context-engine/Cdu.ts:180-184`
 - Modify: `SPECS_ALDO/02_CDU_STRUTTURA.md:183`
@@ -248,18 +272,23 @@ sed -n '125,145p' "src/application/context-engine/providers/ClasseProvider.ts"
 - [ ] **Step 2: Rename the field in `buildParent`**
 
 Change:
+
 ```ts
 return { id: parentId, anno: parentClasse.anno.value, indirizzi };
 ```
+
 to:
+
 ```ts
 return { nome: parentId, anno: parentClasse.anno.value, indirizzi };
 ```
+
 (`parentId` is `ClasseId`-as-string, which is the class's `nome` — same value, renamed key, matching `focus.classe.anagrafica.nome`'s convention.)
 
 - [ ] **Step 3: Update the `Cdu.ts` type**
 
 At `src/application/context-engine/Cdu.ts:180-184`:
+
 ```ts
 parent: {
   nome: string;
@@ -273,6 +302,7 @@ parent: {
 ```bash
 npm run typecheck
 ```
+
 Expected: no errors (confirms no other `.id` read on this specific `parent` object slipped through).
 
 - [ ] **Step 5: Run the classe-provider and articolazione-related unit tests**
@@ -299,6 +329,7 @@ git commit -m "refactor(cdu): rename articolazione.parent.id to .nome, matching 
 **Deviates from the report as agreed:** `id` stays on all three shapes (it feeds `boxes.ts` attachment resolution); this task documents it as internal/attachment-only rather than removing it, and closes the actual gap (missing `sottotipo`/`notificato`, and the false "stessa forma" claim).
 
 **Files:**
+
 - Modify: `src/application/context-engine/Cdu.ts:280-290` (`CduClasse.didattica.documenti`), `:327-341` (`CduAlunno.didattica.documenti`), `:364-382` (`CduDipartimentoFocus`)
 - Modify: `src/application/context-engine/providers/DocumentiClasseProvider.ts`
 - Modify: `src/application/context-engine/providers/DocumentiProvider.ts`
@@ -308,6 +339,7 @@ git commit -m "refactor(cdu): rename articolazione.parent.id to .nome, matching 
 - Test: whichever unit tests cover these three providers (locate with `grep -rl "DocumentiClasseProvider\|DocumentiProvider\|DipartimentoProvider" test/unit`)
 
 **Interfaces:**
+
 - Produces (new canonical shape, all three focuses): `{ id?: string; idGen: string; tipo: string; sottotipo: string; nome: string; stato: string; notificato: boolean; link: string; dataCreazione: string }`. `id` is present at runtime everywhere (Drive file ID) but is documented as **not for template use** — it exists for `boxes.ts`'s internal attachment-ID plumbing, which reads the exact same array via `aggregaDati()`.
 
 - [ ] **Step 1: Locate and open the provider tests**
@@ -315,11 +347,13 @@ git commit -m "refactor(cdu): rename articolazione.parent.id to .nome, matching 
 ```bash
 grep -rl "DocumentiClasseProvider\|DipartimentoProvider" test/unit
 ```
+
 Read each matched file's assertions on `.items` shape before editing — they'll need `sottotipo`/`notificato` expectations added.
 
 - [ ] **Step 2: Update `LogDocumento`-to-item mapping in all three providers to add `sottotipo`/`notificato`**
 
 In `src/application/context-engine/providers/DocumentiClasseProvider.ts` (inside the `.map` at lines ~30-38):
+
 ```ts
 return this.logDocs.findByClasse(classe).map((l) => ({
   id: l.id ?? undefined,
@@ -335,6 +369,7 @@ return this.logDocs.findByClasse(classe).map((l) => ({
 ```
 
 Apply the identical two added lines (`sottotipo: l.getSottotipo(), notificato: l.isNotificato(),`) to:
+
 - `src/application/context-engine/providers/DocumentiProvider.ts` (its `.map`, currently at lines 17-25)
 - `src/application/context-engine/providers/DipartimentoProvider.ts` (its `.map`, currently at lines 39-47 — variable is `l` there too)
 
@@ -343,6 +378,7 @@ Apply the identical two added lines (`sottotipo: l.getSottotipo(), notificato: l
 - [ ] **Step 3: Update the three `Cdu.ts` interfaces**
 
 `CduClasse.didattica.documenti.items` (currently lines 281-288):
+
 ```ts
 items: Array<{
   id?: string | undefined;
@@ -356,11 +392,13 @@ items: Array<{
   dataCreazione: string;
 }>;
 ```
+
 Apply the identical shape to `CduAlunno.didattica.documenti.items` (currently lines 328-335) and to `CduDipartimentoFocus.didattica.documenti.items` (currently lines 371-379 — already has `id?`, just add `sottotipo`/`notificato`).
 
 - [ ] **Step 4: Update `boxes.ts`'s `DocumentoItem` interface to match**
 
 At `src/application/email/boxes.ts:32-40`:
+
 ```ts
 export interface DocumentoItem {
   id?: string | undefined;
@@ -374,6 +412,7 @@ export interface DocumentoItem {
   dataCreazione: string;
 }
 ```
+
 Check `documentoItem()` (line ~563) and `cartellaItem()` (line ~577, if it maps a different entity — read it) build objects matching this shape; add `sottotipo`/`notificato` there too if those functions independently construct the item (they map from `LogDocumento`/`LogCartella` directly, not from the CDU array, so verify field availability on `LogCartella` too before assuming parity — read `src/domain/entities/LogCartella.ts` if `cartellaItem` needs it. If `LogCartella` has no sottotipo/notificato equivalent, keep `DocumentoItem` a union-compatible superset and default those two fields to `''`/`false` in `cartellaItem`).
 
 - [ ] **Step 5: Run typecheck to find every place the widened interface breaks a literal object without the new required fields**
@@ -381,6 +420,7 @@ Check `documentoItem()` (line ~563) and `cartellaItem()` (line ~577, if it maps 
 ```bash
 npm run typecheck
 ```
+
 Fix every reported call site by adding `sottotipo`/`notificato` (test fixtures, `SharedTestDatabaseBuilder.ts`, `SampleDatabaseBuilder.ts`, `Seeders.ts` wherever they construct a `DocumentoItem`-shaped literal directly rather than through `LogDocumento`).
 
 - [ ] **Step 6: Update/extend the provider unit tests found in Step 1** to assert `sottotipo`/`notificato` on returned items.
@@ -391,11 +431,13 @@ Fix every reported call site by adding `sottotipo`/`notificato` (test fixtures, 
 npx jest --config jest.config.cjs test/unit/application/context-engine
 npx jest --config jest.config.cjs test/unit/application/email-boxes.test.ts
 ```
+
 Expected: PASS
 
 - [ ] **Step 8: Fix the stale "stessa forma" claim and update the spec tables**
 
 In `SPECS_ALDO/02_CDU_STRUTTURA.md`:
+
 - §4.1 (~349-354) and §4.2 (~414-419): add `sottotipo`, `notificato` rows to the `items[]` field table; note `id` is present but internal-only (attachment resolution), not documented for template authors.
 - §4.6 (~493-501): same table update; the comment at line 493 currently claims "Stessa forma di `DocumentiClasseProvider`" — after this task it becomes literally true (modulo the internal `id` field, present in all three now, not just dipartimento) — reword the comment to state the canonical 9-field shape explicitly (8 template-facing fields + internal `id`).
 
@@ -418,12 +460,14 @@ git commit -m "refactor(cdu): align documenti.items[] shape across classe/alunno
 ### Task 6: `ArticolazioneConfig.partners` — CSV string → JSON array
 
 **Files:**
+
 - Modify: `src/domain/value-objects/ArticolazioneConfig.ts`
 - Modify: `SPECS_ALDO/03_VALUE_OBJECTS_ED_ENUM.md:373-390`
 - Modify fixtures: `test/fixtures/tables.ts:36`, `src/onlinetests/data/SharedTestDatabaseBuilder.ts:619,622,626`
 - Test: wherever `ArticolazioneConfig` is unit-tested (`grep -rl "ArticolazioneConfig" test/unit`)
 
 **Interfaces:**
+
 - Consumes: nothing new. `ArticolazioneConfig.partners: ClasseId[]` (public field) is unchanged in shape/type — only the raw-JSON parsing source format changes.
 - Produces: `ArticolazioneConfig.fromJson` now expects `{ partners?: string[] | null }` instead of `{ partners?: string | null }`.
 
@@ -432,6 +476,7 @@ git commit -m "refactor(cdu): align documenti.items[] shape across classe/alunno
 ```bash
 grep -rl "ArticolazioneConfig" test/unit
 ```
+
 Update every `fromJson('{"partners":"A,B",...}')`-style literal to `fromJson('{"partners":["A","B"],...}')`.
 
 - [ ] **Step 2: Run it, confirm it fails**
@@ -449,7 +494,9 @@ interface ArticolazioneJson {
   partners?: string[] | null;
 }
 ```
+
 and the parsing block (replace the CSV split):
+
 ```ts
 const partners = Array.isArray(obj.partners)
   ? obj.partners
@@ -457,7 +504,9 @@ const partners = Array.isArray(obj.partners)
       .map((s) => ClasseId.of(s.trim()))
   : [];
 ```
+
 Update the doc comment at the top of the file (lines 10-14) to show the new example:
+
 ```
 * - parent class:   parent=null, partner=null, partners=["1F-LSO","1F-LSS"]
 * - partner class:  parent="1F", partner="1F-LSS", partners=null
@@ -482,14 +531,17 @@ npx jest --config jest.config.cjs <path-found-in-step-1>
 npx jest --config jest.config.cjs test/unit/domain
 npx jest --config jest.config.cjs test/unit/infrastructure/classe-repository.test.ts
 ```
+
 (confirm the exact classe-repository test filename first with `ls test/unit/infrastructure | grep -i classe`)
 
 - [ ] **Step 7: Update the spec**
 
 `SPECS_ALDO/03_VALUE_OBJECTS_ED_ENUM.md:373-390`: change the JSON block's `partners` line to:
+
 ```json
 "partners": ["ClasseId", "ClasseId"] | null  // esattamente due elementi quando presente, mai più o meno; l'ordine determina PRIMO/SECONDO gruppo
 ```
+
 Update the surrounding prose ("L'ordine del CSV in `partners`..." → "L'ordine dell'array in `partners`...").
 
 - [ ] **Step 8: Typecheck**
@@ -512,23 +564,29 @@ git commit -m "refactor(articolazione-config): partners CSV string to native JSO
 ### Task 7: `CattedraVM` — drop `classeId`, keep only `classeNome`
 
 **Files:**
+
 - Modify: `src/application/context-engine/Cdu.ts:402-409`
 - Modify: `src/application/pipelines/emailSteps.ts:336-341`
 - Test: `test/unit/application/pipelines/email-steps.test.ts:617,618,643,823` (and any other `.classeId` reads on `cattedre`)
 
 **Interfaces:**
+
 - Produces: `CattedraVM { classeNome: string; anno: number; sezione: string; materie: SubjectVM[] }` — `classeId` field removed entirely.
 
 - [ ] **Step 1: Update the test first**
 
 In `test/unit/application/pipelines/email-steps.test.ts`, every:
+
 ```ts
 expect(contesto.cattedre.map((c) => c.classeId)).toEqual([...]);
 ```
+
 becomes:
+
 ```ts
 expect(contesto.cattedre.map((c) => c.classeNome)).toEqual([...]);
 ```
+
 (lines 617, 643, 823 per the current file — re-check with `grep -n "c.classeId" test/unit/application/pipelines/email-steps.test.ts` since line numbers shift as you edit). Do **not** touch lines 1895/1947 (`classeId: ClasseId.of('5A')`) — those are a different, unrelated fixture object (a `BuildParams`-shaped input, not `CattedraVM`); confirm by reading their surrounding context before deciding.
 
 - [ ] **Step 2: Run it, confirm it fails**
@@ -540,6 +598,7 @@ npx jest --config jest.config.cjs test/unit/application/pipelines/email-steps.te
 - [ ] **Step 3: Remove `classeId` from the `CattedraVM` interface**
 
 At `src/application/context-engine/Cdu.ts:402-409`:
+
 ```ts
 export interface CattedraVM {
   classeNome: string;
@@ -548,11 +607,13 @@ export interface CattedraVM {
   materie: SubjectVM[];
 }
 ```
+
 (drop the `classeId: string;` line and its doc comment about "always identical to classeId" — no longer applicable once there's only one field.)
 
 - [ ] **Step 4: Remove the field from `buildCattedre`'s construction**
 
 At `src/application/pipelines/emailSteps.ts:336-341`:
+
 ```ts
 const cattedre: CattedraVM[] = [...gruppi.values()].map(({ classe, materie }) => ({
   classeNome: classe.nome,
@@ -574,6 +635,7 @@ npm run typecheck
 npx jest --config jest.config.cjs test/unit/application/pipelines/email-steps.test.ts
 npx jest --config jest.config.cjs test/unit/application/email-boxes.test.ts
 ```
+
 (`boxes.ts`'s `renderCattedreBox` already only reads `c.classeNome`/`c.materie` — confirmed by reading the source; this run is a regression check, not expected to need edits.)
 
 - [ ] **Step 7: Commit**
@@ -590,29 +652,36 @@ git commit -m "refactor(cdu): drop redundant CattedraVM.classeId, keep classeNom
 ### Task 8: `CONF_MAIL.ALLEGATI` → `CONF_MAIL.ALLEGATI_STATICI`
 
 **Files:**
+
 - Modify: `src/config/schema.ts:46`
 - Modify: `src/domain/entities/ConfigurazioneEmail.ts:70,149`
 - Modify: `SPECS_ALDO/01_SCHEMA_DATABASE.md:393`
 - Modify every test/fixture referencing `COL_CONF_MAIL.ALLEGATI` (mechanical rename, see Step 3 for the full file list)
 
 **Interfaces:**
+
 - Produces: `COL_CONF_MAIL.ALLEGATI_STATICI: 'ALLEGATI_STATICI'` (was `COL_CONF_MAIL.ALLEGATI: 'ALLEGATI'`). `ConfigurazioneEmail.getAllegati()`'s public method name and behavior are unchanged — only the underlying column constant/property it reads moves.
 
 - [ ] **Step 1: Rename the schema constant**
 
 At `src/config/schema.ts:46`, inside `COL_CONF_MAIL`:
+
 ```ts
 ALLEGATI_STATICI: 'ALLEGATI_STATICI',
 ```
+
 (replacing `ALLEGATI: 'ALLEGATI',`)
 
 - [ ] **Step 2: Update `ConfigurazioneEmail.ts`**
 
 At line 70:
+
 ```ts
 this.allegatiRaw = data[COL_CONF_MAIL.ALLEGATI_STATICI] ?? null;
 ```
+
 At line 149 (inside `toData()`):
+
 ```ts
 [COL_CONF_MAIL.ALLEGATI_STATICI]: this.allegatiRaw
 ```
@@ -622,7 +691,9 @@ At line 149 (inside `toData()`):
 ```bash
 npm run typecheck
 ```
+
 Fix each reported file by changing `COL_CONF_MAIL.ALLEGATI` → `COL_CONF_MAIL.ALLEGATI_STATICI`. Based on current grep, expect to touch:
+
 - `test/fixtures/tables.ts`
 - `test/unit/onlinetests/sample-database-builder.test.ts`
 - `test/unit/onlinetests/reset-e2e-history-tables.test.ts`
@@ -646,6 +717,7 @@ This is a pure find/replace of the identifier `COL_CONF_MAIL.ALLEGATI` → `COL_
 ```bash
 npm test
 ```
+
 Expected: PASS, zero remaining references.
 
 - [ ] **Step 5: Update the spec**
@@ -672,11 +744,13 @@ git commit -m "refactor(schema): rename CONF_MAIL.ALLEGATI to ALLEGATI_STATICI, 
 ### Task 9: `BoxConfig` — camelCase outlier keys → `UPPER_SNAKE_CASE`
 
 **Files:**
+
 - Modify: `src/application/email/boxes.ts:192-199,238-244`
 - Modify: `SPECS_ALDO/03_VALUE_OBJECTS_ED_ENUM.md:568-589`
 - Modify fixtures: `test/unit/application/email-boxes.test.ts`, `test/unit/application/pipelines/email-steps.test.ts`, `test/unit/onlinetests/e2e-sample-database-builder.test.ts` (every literal `BOX_CFG`/`confMail([...])` object using `displayMode`/`arricchisciConStorico`/`configArricchimento`/`templateRiga` as object keys)
 
 **Interfaces:**
+
 - Consumes: `BoxConfig` (the per-block object inside `CONF_MAIL.BOX_CFG`'s JSON array) now uses `DISPLAY_MODE`, `ARRICCHISCI_CON_STORICO`, `CONFIG_ARRICCHIMENTO` (with nested `TEMPLATE_RIGA`) instead of the camelCase originals — joining the other 10 already-`UPPER_SNAKE_CASE` keys (`TIPO_BOX`, `ORDINE`, `ALLEGA`, `PREREQUISITI`, `MOSTRA_SE_VUOTO`, `TESTO_VUOTO`, `COLORE`, `CONTENUTO`, `DATI_SORGENTE`, `TITOLO`).
 
 - [ ] **Step 1: Update `test/unit/application/email-boxes.test.ts` fixtures/assertions first**
@@ -692,11 +766,11 @@ npx jest --config jest.config.cjs test/unit/application/email-boxes.test.ts
 - [ ] **Step 3: Update `boxes.ts`'s two reader functions**
 
 `renderDocumentiBox` (currently lines 192-199):
+
 ```ts
 const arricchisci = options.config['ARRICCHISCI_CON_STORICO'] === true;
 const configArricchimento = options.config['CONFIG_ARRICCHIMENTO'] as
-  | Record<string, unknown>
-  | undefined;
+  Record<string, unknown> | undefined;
 const templateRiga = arricchisci ? str(configArricchimento?.['TEMPLATE_RIGA']) : '';
 
 if (templateRiga === '' || storicoRef === undefined)
@@ -704,11 +778,11 @@ if (templateRiga === '' || storicoRef === undefined)
 ```
 
 `renderPianiPersBox` (currently lines 238-244):
+
 ```ts
 const arricchisci = options.config['ARRICCHISCI_CON_STORICO'];
 const configArricchimento = options.config['CONFIG_ARRICCHIMENTO'] as
-  | Record<string, unknown>
-  | undefined;
+  Record<string, unknown> | undefined;
 const explicitTemplate = str(configArricchimento?.['TEMPLATE_RIGA']);
 ```
 
@@ -723,6 +797,7 @@ npx jest --config jest.config.cjs test/unit/application/email-boxes.test.ts
 ```bash
 grep -rln "arricchisciConStorico\|configArricchimento\|displayMode" test/ src/onlinetests
 ```
+
 Apply the same key renames to every match (`test/unit/application/pipelines/email-steps.test.ts`, `test/unit/onlinetests/e2e-sample-database-builder.test.ts`, and any `src/onlinetests/**` seed data using these keys — re-run the grep after editing to confirm zero remaining matches).
 
 - [ ] **Step 6: Run the affected suites**
@@ -735,11 +810,13 @@ npx jest --config jest.config.cjs test/unit/onlinetests/e2e-sample-database-buil
 - [ ] **Step 7: Update the spec**
 
 `SPECS_ALDO/03_VALUE_OBJECTS_ED_ENUM.md:568-589`, in the `BoxConfig` JSON block, change:
+
 ```json
   "DISPLAY_MODE": "nome | link | nome+link | sololink",
   "ARRICCHISCI_CON_STORICO": true,
   "CONFIG_ARRICCHIMENTO": { "TEMPLATE_RIGA": "string Mustache, contesto { corrente, storico }" },
 ```
+
 (replacing the three camelCase lines, keeping their position in the block and every other key untouched).
 
 - [ ] **Step 8: Full unit run + typecheck**

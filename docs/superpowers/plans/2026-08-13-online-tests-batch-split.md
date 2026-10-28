@@ -18,7 +18,7 @@
 - **GasLibraryFactory-first**: this plan adds no new logic, only re-composition of existing registration functions. Do not introduce helpers that duplicate library behaviour.
 - `runFullOnlineTests` / `executeFullOnlineTests` must keep **identical observable behaviour**: same group order, same arguments, same report. Not deprecated, not removed.
 - Batch execution order for the operator is **1 → 2 → 3 → 4**; batch 2 requires batch 1 to have run against the same persisted fixture. No runtime precondition guard is added (decision in spec, "Gestione errori").
-- New launchers are developer-only: invoked from the Apps Script *Esegui* dropdown. **No changes to `src/presentation/Menu.ts` or any Sheets UI.**
+- New launchers are developer-only: invoked from the Apps Script _Esegui_ dropdown. **No changes to `src/presentation/Menu.ts` or any Sheets UI.**
 - Batch group assignment (spec, "Raggruppamento batch"), verbatim:
   - Batch 1: `documenti`, `jobRunner`
   - Batch 2: `email`, `articolazione`
@@ -30,24 +30,26 @@
 
 ## File Structure
 
-| File | Responsibility | Change |
-|---|---|---|
-| `src/onlinetests/index.ts` | Composition root of the online suite: registration table, group helper, launchers | Modify: add `ALL_ONLINE_TEST_GROUPS`, `executeOnlineTestsBatch`, 4 `executeOnlineTestsBatchN`, 4 `runOnlineTestsBatchN`; rewrite `executeFullOnlineTests` body |
-| `test/unit/onlinetests/fullOnlineTests.test.ts` | Offline proof of runner composition | Modify: add batch-composition and batch-reporting cases |
-| `src/onlinetests/OnlineTestsEntry.ts` | Captures implementations into the GAS bridge object `__ALDO_ONLINE_TESTS_LAUNCHERS__` | Modify: import + register the 4 new launchers |
-| `src/onlinetests/entrypoints/EntryPointOnlineTests.ts` | Human-readable zero-arg GAS wrappers forwarding to the bridge | Modify: add 4 interface members + 4 wrapper functions |
-| `test/build/online-mode.smoke.test.ts` | Asserts every deployed launcher exists as a zero-arg global and routes through the bridge | Modify: add the 4 names to `scenarioLauncherNames` |
-| `docs/superpowers/specs/2026-08-13-online-tests-batch-split-design.md` | Design record | Modify: flip Status to implemented |
+| File                                                                   | Responsibility                                                                            | Change                                                                                                                                                         |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/onlinetests/index.ts`                                             | Composition root of the online suite: registration table, group helper, launchers         | Modify: add `ALL_ONLINE_TEST_GROUPS`, `executeOnlineTestsBatch`, 4 `executeOnlineTestsBatchN`, 4 `runOnlineTestsBatchN`; rewrite `executeFullOnlineTests` body |
+| `test/unit/onlinetests/fullOnlineTests.test.ts`                        | Offline proof of runner composition                                                       | Modify: add batch-composition and batch-reporting cases                                                                                                        |
+| `src/onlinetests/OnlineTestsEntry.ts`                                  | Captures implementations into the GAS bridge object `__ALDO_ONLINE_TESTS_LAUNCHERS__`     | Modify: import + register the 4 new launchers                                                                                                                  |
+| `src/onlinetests/entrypoints/EntryPointOnlineTests.ts`                 | Human-readable zero-arg GAS wrappers forwarding to the bridge                             | Modify: add 4 interface members + 4 wrapper functions                                                                                                          |
+| `test/build/online-mode.smoke.test.ts`                                 | Asserts every deployed launcher exists as a zero-arg global and routes through the bridge | Modify: add the 4 names to `scenarioLauncherNames`                                                                                                             |
+| `docs/superpowers/specs/2026-08-13-online-tests-batch-split-design.md` | Design record                                                                             | Modify: flip Status to implemented                                                                                                                             |
 
 ---
 
 ### Task 1: Batch helper + batch 1 launcher
 
 **Files:**
+
 - Modify: `src/onlinetests/index.ts:314-350` (`executeFullOnlineTests`), plus new code appended after `runFullOnlineTests` (`src/onlinetests/index.ts:385-390`)
 - Test: `test/unit/onlinetests/fullOnlineTests.test.ts`
 
 **Interfaces:**
+
 - Consumes: existing `FullOnlineTestRegistrations` (`src/onlinetests/index.ts:107-119`), `FullOnlineTestDeps` (`:122-125`), `futureScenarioRegistrations` (`:163-175`), `readPersistedFullOnlineTestSample` (`:287`), `cacheIsolationDeps(properties, overrides)` (`:560-579`), `runReportedSuite(jobName, jobType, execute, logger)` (`:352`), `EMAIL_TEST_SAFE`.
 - Produces:
   - `const ALL_ONLINE_TEST_GROUPS: ReadonlyArray<keyof FullOnlineTestRegistrations>` (module-private)
@@ -285,10 +287,12 @@ git commit -m "refactor(onlinetests): extract batch helper and add batch 1 launc
 ### Task 2: Batch 2, 3 and 4 launchers
 
 **Files:**
+
 - Modify: `src/onlinetests/index.ts` (append after `runOnlineTestsBatch1` from Task 1)
 - Test: `test/unit/onlinetests/fullOnlineTests.test.ts`
 
 **Interfaces:**
+
 - Consumes: `executeOnlineTestsBatch`, `runReportedSuite`, `FullOnlineTestDeps`, `LoggerService`, `ServiceFactory` (all from Task 1 / existing module).
 - Produces:
   - `export function executeOnlineTestsBatch2(overrides?: Partial<FullOnlineTestDeps>): OnlineTestReport`
@@ -303,64 +307,64 @@ Extend the import list in `test/unit/onlinetests/fullOnlineTests.test.ts` with `
 Add these cases inside the `describe('online test batches', …)` block created in Task 1:
 
 ```ts
-  it('registers only email and articolazione in batch 2, without the cache fixture', () => {
-    expect(recordBatchGroups(executeOnlineTestsBatch2, propertiesWithoutCacheFixture())).toEqual([
-      'email',
-      'articolazione'
-    ]);
-  });
+it('registers only email and articolazione in batch 2, without the cache fixture', () => {
+  expect(recordBatchGroups(executeOnlineTestsBatch2, propertiesWithoutCacheFixture())).toEqual([
+    'email',
+    'articolazione'
+  ]);
+});
 
-  it('registers only import, storico, itpDotted and aclReali in batch 3', () => {
-    expect(recordBatchGroups(executeOnlineTestsBatch3, propertiesWithoutCacheFixture())).toEqual([
-      'import',
-      'storico',
-      'itpDotted',
-      'aclReali'
-    ]);
-  });
+it('registers only import, storico, itpDotted and aclReali in batch 3', () => {
+  expect(recordBatchGroups(executeOnlineTestsBatch3, propertiesWithoutCacheFixture())).toEqual([
+    'import',
+    'storico',
+    'itpDotted',
+    'aclReali'
+  ]);
+});
 
-  it('registers only supplenzeRuoli, cacheIsolamento and permessi in batch 4', () => {
-    expect(recordBatchGroups(executeOnlineTestsBatch4, properties())).toEqual([
-      'supplenzeRuoli',
-      'cacheIsolamento',
-      'permessi'
-    ]);
-  });
+it('registers only supplenzeRuoli, cacheIsolamento and permessi in batch 4', () => {
+  expect(recordBatchGroups(executeOnlineTestsBatch4, properties())).toEqual([
+    'supplenzeRuoli',
+    'cacheIsolamento',
+    'permessi'
+  ]);
+});
 
-  it('covers every aggregate group exactly once across the four batches', () => {
-    const covered = [
-      ...recordBatchGroups(executeOnlineTestsBatch1, propertiesWithoutCacheFixture()),
-      ...recordBatchGroups(executeOnlineTestsBatch2, propertiesWithoutCacheFixture()),
-      ...recordBatchGroups(executeOnlineTestsBatch3, propertiesWithoutCacheFixture()),
-      ...recordBatchGroups(executeOnlineTestsBatch4, properties())
-    ];
-    expect(covered.slice().sort()).toEqual(ONLINE_TEST_GROUP_NAMES.slice().sort());
-  });
+it('covers every aggregate group exactly once across the four batches', () => {
+  const covered = [
+    ...recordBatchGroups(executeOnlineTestsBatch1, propertiesWithoutCacheFixture()),
+    ...recordBatchGroups(executeOnlineTestsBatch2, propertiesWithoutCacheFixture()),
+    ...recordBatchGroups(executeOnlineTestsBatch3, propertiesWithoutCacheFixture()),
+    ...recordBatchGroups(executeOnlineTestsBatch4, properties())
+  ];
+  expect(covered.slice().sort()).toEqual(ONLINE_TEST_GROUP_NAMES.slice().sort());
+});
 
-  it.each([
-    ['batch 2', runOnlineTestsBatch2, 'online_tests_batch2'],
-    ['batch 3', runOnlineTestsBatch3, 'online_tests_batch3'],
-    ['batch 4', runOnlineTestsBatch4, 'online_tests_batch4']
-  ])('reports %s through the shared job logger', (_label, launcher, jobName) => {
-    const report = {
-      suite: 'aldo-online-tests' as const,
-      startedAt: '2026-08-11T09:00:00.000Z',
-      finishedAt: '2026-08-11T09:00:01.000Z',
-      passed: 1,
-      failed: 0,
-      results: []
-    };
-    const execute = jest.fn(() => report);
-    const logJobStart = jest.fn();
-    const logger = {
-      logJobStart,
-      logSummary: jest.fn(),
-      logJobEnd: jest.fn()
-    } as unknown as LoggerService;
+it.each([
+  ['batch 2', runOnlineTestsBatch2, 'online_tests_batch2'],
+  ['batch 3', runOnlineTestsBatch3, 'online_tests_batch3'],
+  ['batch 4', runOnlineTestsBatch4, 'online_tests_batch4']
+])('reports %s through the shared job logger', (_label, launcher, jobName) => {
+  const report = {
+    suite: 'aldo-online-tests' as const,
+    startedAt: '2026-08-11T09:00:00.000Z',
+    finishedAt: '2026-08-11T09:00:01.000Z',
+    passed: 1,
+    failed: 0,
+    results: []
+  };
+  const execute = jest.fn(() => report);
+  const logJobStart = jest.fn();
+  const logger = {
+    logJobStart,
+    logSummary: jest.fn(),
+    logJobEnd: jest.fn()
+  } as unknown as LoggerService;
 
-    expect(launcher(execute, logger)).toBe(report);
-    expect(logJobStart).toHaveBeenCalledWith(jobName, 'ONLINE_TEST_SUITE_BATCH');
-  });
+  expect(launcher(execute, logger)).toBe(report);
+  expect(logJobStart).toHaveBeenCalledWith(jobName, 'ONLINE_TEST_SUITE_BATCH');
+});
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -438,11 +442,13 @@ git commit -m "feat(onlinetests): add batch 2-4 launchers for the split online s
 ### Task 3: GAS wiring of the four batch launchers
 
 **Files:**
+
 - Modify: `src/onlinetests/OnlineTestsEntry.ts` (import list `:1-27`, `aldoOnlineTestsLaunchers` `:33-59`, `gasGlobal` type `:62-89`, assignments `:91-116`)
 - Modify: `src/onlinetests/entrypoints/EntryPointOnlineTests.ts` (interface `:2-28`, wrapper functions after `:132`)
 - Test: `test/build/online-mode.smoke.test.ts` (`scenarioLauncherNames`, `:6-32`)
 
 **Interfaces:**
+
 - Consumes: `runOnlineTestsBatch1..4` exported from `src/onlinetests/index.ts` (Tasks 1-2).
 - Produces: four zero-arg GAS globals `runOnlineTestsBatch1`, `runOnlineTestsBatch2`, `runOnlineTestsBatch3`, `runOnlineTestsBatch4`, each routed through `__ALDO_ONLINE_TESTS_LAUNCHERS__`.
 
@@ -494,10 +500,10 @@ Add them to the `aldoOnlineTestsLaunchers` object, after `runFullOnlineTests` (`
 Add them to the `gasGlobal` type literal, after `runFullOnlineTests: typeof runFullOnlineTests;` (`:87`):
 
 ```ts
-  runOnlineTestsBatch1: typeof runOnlineTestsBatch1;
-  runOnlineTestsBatch2: typeof runOnlineTestsBatch2;
-  runOnlineTestsBatch3: typeof runOnlineTestsBatch3;
-  runOnlineTestsBatch4: typeof runOnlineTestsBatch4;
+runOnlineTestsBatch1: typeof runOnlineTestsBatch1;
+runOnlineTestsBatch2: typeof runOnlineTestsBatch2;
+runOnlineTestsBatch3: typeof runOnlineTestsBatch3;
+runOnlineTestsBatch4: typeof runOnlineTestsBatch4;
 ```
 
 Add the assignments after `gasGlobal.runFullOnlineTests = runFullOnlineTests;` (`:115`):
@@ -514,10 +520,10 @@ gasGlobal.runOnlineTestsBatch4 = runOnlineTestsBatch4;
 In `src/onlinetests/entrypoints/EntryPointOnlineTests.ts`, add to the `AldoOnlineTestsLaunchers` interface, after `runFullOnlineTests: () => unknown;` (`:26`):
 
 ```ts
-  runOnlineTestsBatch1: () => unknown;
-  runOnlineTestsBatch2: () => unknown;
-  runOnlineTestsBatch3: () => unknown;
-  runOnlineTestsBatch4: () => unknown;
+runOnlineTestsBatch1: () => unknown;
+runOnlineTestsBatch2: () => unknown;
+runOnlineTestsBatch3: () => unknown;
+runOnlineTestsBatch4: () => unknown;
 ```
 
 And add the wrappers after `runFullOnlineTests()` (`:130-132`), before `dumpOnlineCoverage`:
@@ -563,9 +569,11 @@ git commit -m "feat(onlinetests): expose batch launchers to the GAS Run dropdown
 ### Task 4: Full verification and design-record update
 
 **Files:**
+
 - Modify: `docs/superpowers/specs/2026-08-13-online-tests-batch-split-design.md:4` (Status line)
 
 **Interfaces:**
+
 - Consumes: everything from Tasks 1-3. Produces no code symbols.
 
 - [ ] **Step 1: Run the whole offline suite**
@@ -611,6 +619,6 @@ git commit -m "docs: mark online-tests batch split as implemented"
 
 - [ ] **Step 7: Manual GAS run (operator, not automated)**
 
-After `npm run push:online`, from the Apps Script *Esegui* dropdown run, in order and one at a time:
+After `npm run push:online`, from the Apps Script _Esegui_ dropdown run, in order and one at a time:
 `creaDatiMockDrive` (only if the fixture is missing or stale) → `runOnlineTestsBatch1` → `runOnlineTestsBatch2` → `runOnlineTestsBatch3` → `runOnlineTestsBatch4`.
 Expected: each execution finishes inside the 30-minute limit and logs `🧪 Online test report`; the union of the four reports equals the coverage previously produced by `runFullOnlineTests`. If batch 2 is launched before batch 1 on a fresh fixture, it fails with the existing descriptive `ValidationError`s (e.g. "LOG_DOCS privo di fileId") — by design, no precondition guard was added.

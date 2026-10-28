@@ -21,8 +21,12 @@ export class EsameProvider implements ContextProvider {
   provide(cdu: Cdu): void {
     const focus = cdu.focus.classe;
     if (focus?.materie === undefined) return;
-    const prima = focus.materie.elenco.filter((materia) => materia.isMateriaPrimaProva).map((materia) => prova(materia, 'PRIMA_PROVA'));
-    const seconda = focus.materie.elenco.filter((materia) => materia.isMateriaSecondaProva).map((materia) => prova(materia, 'SECONDA_PROVA'));
+    const prima = focus.materie.elenco
+      .filter((materia) => materia.isMateriaPrimaProva)
+      .map((materia) => prova(materia, 'PRIMA_PROVA'));
+    const seconda = focus.materie.elenco
+      .filter((materia) => materia.isMateriaSecondaProva)
+      .map((materia) => prova(materia, 'SECONDA_PROVA'));
     const docentiPrima = this.docenti(prima, 'PRIMA_PROVA');
     const docentiSeconda = this.docenti(seconda, 'SECONDA_PROVA');
     const materie = [...prima, ...seconda];

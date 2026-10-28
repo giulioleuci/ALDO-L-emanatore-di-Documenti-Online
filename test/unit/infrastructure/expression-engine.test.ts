@@ -40,7 +40,14 @@ test('resolveTemplateId: simple form + conditional array first-match (10 Step 6)
 
 test('resolveTemplateId throws when no template applies', () => {
   const db = new FakeDatabase({
-    CONF_DOC: [{ ID: 'X', GENERATORE: 'CLASSE', FORMATO: 'GDOC', MODELLI: '[{"condizione":"false","templateId":"t"}]' }]
+    CONF_DOC: [
+      {
+        ID: 'X',
+        GENERATORE: 'CLASSE',
+        FORMATO: 'GDOC',
+        MODELLI: '[{"condizione":"false","templateId":"t"}]'
+      }
+    ]
   });
   const r = new ConfigurazioneDocumentoRepository(db);
   expect(() => r.resolveTemplateId(r.findById('X')!, {}, engine)).toThrow(PipelineError);

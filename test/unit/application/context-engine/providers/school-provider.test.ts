@@ -33,7 +33,9 @@ describe('SchoolProvider', () => {
     provider.provide(cdu);
     expect(cdu.istituto?.annoScolastico).toBe('2025-2026');
     expect(cdu.istituto?.dirigente).toMatchObject({ nomeCompleto: 'Prof.ssa Maria Bianchi' });
-    expect(cdu.istituto?.staff.perId.REF_BES?.persona?.appellativoCompleto).toBe('Prof. Rossi Mario');
+    expect(cdu.istituto?.staff.perId.REF_BES?.persona?.appellativoCompleto).toBe(
+      'Prof. Rossi Mario'
+    );
     expect(cdu.istituto?.staff.perId.AN_DIG?.persona).toBeNull();
   });
 
@@ -58,7 +60,9 @@ describe('SchoolProvider', () => {
     const provider = new SchoolProvider(master as never, ruoli as never, docenti as never);
     const cdu = makeCdu();
     provider.provide(cdu);
-    expect(cdu.istituto?.staff.perId.REF_BES?.persona?.appellativoCompleto).toBe('Prof. Rossi Mario');
+    expect(cdu.istituto?.staff.perId.REF_BES?.persona?.appellativoCompleto).toBe(
+      'Prof. Rossi Mario'
+    );
     expect(cdu.istituto?.staff.perId.AN_DIG?.persona).toBeNull();
     expect(cdu.istituto?.staff.perId.RSPP?.persona?.appellativoCompleto).toBe('Prof. Rossi Mario');
   });
@@ -73,7 +77,10 @@ describe('SchoolProvider', () => {
         [
           {
             id: 'REF_BES',
-            getEmails: () => [{ value: 'mario.rossi@scuola.edu.it' }, { value: 'lucia.verdi@scuola.edu.it' }]
+            getEmails: () => [
+              { value: 'mario.rossi@scuola.edu.it' },
+              { value: 'lucia.verdi@scuola.edu.it' }
+            ]
           },
           { id: 'AN_DIG', getEmails: () => [] }
         ] as never

@@ -58,22 +58,12 @@ function menu_avvioRetryEmail(): void {
 
 /** Starts batch document generation for a CONF_DOC id. Use a zero-argument User wrapper for triggers. */
 function menu_avvioGenerazioneChunked(configId: string): void {
-  avviaGenerazioneDataDriven(
-    initAldo(),
-    configId,
-    creaJobRunner(),
-    MAX_JOB_EXECUTION_TIME_MS
-  );
+  avviaGenerazioneDataDriven(initAldo(), configId, creaJobRunner(), MAX_JOB_EXECUTION_TIME_MS);
 }
 
 /** Starts mass email send for a CONF_MAIL pattern. Use a zero-argument User wrapper for triggers. */
 function menu_avvioComunicazioniChunked(patternId: string): void {
-  avviaInvioNotificheDataDriven(
-    initAldo(),
-    patternId,
-    creaJobRunner(),
-    MAX_JOB_EXECUTION_TIME_MS
-  );
+  avviaInvioNotificheDataDriven(initAldo(), patternId, creaJobRunner(), MAX_JOB_EXECUTION_TIME_MS);
 }
 
 /** Starts a configured resumable import. Use a zero-argument User wrapper for triggers. */

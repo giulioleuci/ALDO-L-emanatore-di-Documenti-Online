@@ -341,7 +341,11 @@ describe('slot-level targeting (.itp / .SPECIFICA MATERIE entries)', () => {
     const { resolver, classi } = resolverFor(tables);
     const classe = classi.findById(ClasseId.of('5A'))!;
 
-    const assignments = resolver.resolveMateria(classe, MateriaId.of('LAB'), new Date('2026-02-01'));
+    const assignments = resolver.resolveMateria(
+      classe,
+      MateriaId.of('LAB'),
+      new Date('2026-02-01')
+    );
     const groupA = assignments.find((a) => a.slot.specifica === 'GRUPPO_A')!;
     const groupB = assignments.find((a) => a.slot.specifica === 'GRUPPO_B')!;
 

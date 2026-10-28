@@ -61,7 +61,9 @@ class SheetTableAdapter implements IReadableTable {
     this.composite = COMPOSITE_PK[tableName];
     if (this.composite !== undefined) {
       const parts = this.composite;
-      this.table?.defineVirtualColumn(VIRTUAL_PK, (row) => parts.map((c) => cell(row[c])).join(SEP));
+      this.table?.defineVirtualColumn(VIRTUAL_PK, (row) =>
+        parts.map((c) => cell(row[c])).join(SEP)
+      );
       this.table?.setPrimaryKey(VIRTUAL_PK);
     } else {
       this.singlePk = SINGLE_PK[tableName];

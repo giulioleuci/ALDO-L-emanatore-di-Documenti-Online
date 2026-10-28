@@ -25,7 +25,12 @@ test('Docente: appellativo, nome completo, ITP, dipartimento (04 §2)', () => {
   expect(f.getNomeCompletoConAppellativo()).toBe('Prof.ssa BIANCHI GIULIA');
   expect(f.isITP()).toBe(true);
   expect(f.dipartimentoId.value).toBe('LETTERE');
-  const m = new Docente({ EMAIL: f.email.value, COGNOME: 'ROSSI', NOME: 'MARIO', GENERE: Genere.M });
+  const m = new Docente({
+    EMAIL: f.email.value,
+    COGNOME: 'ROSSI',
+    NOME: 'MARIO',
+    GENERE: Genere.M
+  });
   expect(m.getAppellativo()).toBe('Prof.');
   expect(m.isITP()).toBe(false);
 });

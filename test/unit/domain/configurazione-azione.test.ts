@@ -21,22 +21,34 @@ test('reads every CONF_AZIONI column', () => {
 });
 
 test('accepts the reserved SINGOLA axis', () => {
-  expect(ConfigurazioneAzione.fromData({ ID: 'SANIFICA_TRIM', ASSE: 'SINGOLA' }).asse).toBe('SINGOLA');
+  expect(ConfigurazioneAzione.fromData({ ID: 'SANIFICA_TRIM', ASSE: 'SINGOLA' }).asse).toBe(
+    'SINGOLA'
+  );
 });
 
 test('rejects an unknown ASSE with a ConfigurationError', () => {
-  expect(() => ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'GALASSIA' })).toThrow(ConfigurationError);
+  expect(() => ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'GALASSIA' })).toThrow(
+    ConfigurationError
+  );
   expect(() => ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'GALASSIA' })).toThrow(/GALASSIA/);
 });
 
 test('ATTIVO defaults to true when the cell is blank and is false only when explicitly disabled', () => {
   expect(ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA' }).isAttivo()).toBe(true);
-  expect(ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA', ATTIVO: '' }).isAttivo()).toBe(true);
-  expect(ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA', ATTIVO: false }).isAttivo()).toBe(false);
-  expect(ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA', ATTIVO: 'FALSE' }).isAttivo()).toBe(false);
+  expect(ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA', ATTIVO: '' }).isAttivo()).toBe(
+    true
+  );
+  expect(
+    ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA', ATTIVO: false }).isAttivo()
+  ).toBe(false);
+  expect(
+    ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA', ATTIVO: 'FALSE' }).isAttivo()
+  ).toBe(false);
 });
 
 test('an unset AZIONI cell reads as null (nothing to execute), including the Sheets empty-string round-trip', () => {
   expect(ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA' }).getAzioniRaw()).toBeNull();
-  expect(ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA', AZIONI: '  ' }).getAzioniRaw()).toBeNull();
+  expect(
+    ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA', AZIONI: '  ' }).getAzioniRaw()
+  ).toBeNull();
 });

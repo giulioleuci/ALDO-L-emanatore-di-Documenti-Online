@@ -108,12 +108,12 @@ Nessun comportamento del sistema è hard-coded. Tipo di documento, template Driv
 
 ## 6. Indice della documentazione
 
-| File                                  | Contenuto                                                                                                                                               |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `01_SCHEMA_DATABASE.md`               | Schema fisico completo di tutte le tabelle                                                                                                              |
-| `02_CDU_STRUTTURA.md`                 | Struttura canonica del Contesto Dati Unificato                                                                                                          |
-| `03_VALUE_OBJECTS_ED_ENUM.md`         | Tutti i Value Object e gli Enum del dominio                                                                                                             |
-| `GUIDA_USO_PLACEHOLDER.md`            | Sintassi placeholder/loop del `WorkspaceTemplateEngine` e regole d'uso nei template                                                                     |
-| `MAT_NON_STANDARD.md`                 | Specifica del placeholder `{{focus.classe.elencoMaterieConPermessi}}` per l'espansione orizzontale delle materie con permessi granulari (Google Sheets) |
+| File                          | Contenuto                                                                                                                                               |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `01_SCHEMA_DATABASE.md`       | Schema fisico completo di tutte le tabelle                                                                                                              |
+| `02_CDU_STRUTTURA.md`         | Struttura canonica del Contesto Dati Unificato                                                                                                          |
+| `03_VALUE_OBJECTS_ED_ENUM.md` | Tutti i Value Object e gli Enum del dominio                                                                                                             |
+| `GUIDA_USO_PLACEHOLDER.md`    | Sintassi placeholder/loop del `WorkspaceTemplateEngine` e regole d'uso nei template                                                                     |
+| `MAT_NON_STANDARD.md`         | Specifica del placeholder `{{focus.classe.elencoMaterieConPermessi}}` per l'espansione orizzontale delle materie con permessi granulari (Google Sheets) |
 
 I documenti `04`–`15` (entità di dominio, aggregati, repository, specification, architettura a layer, context engine, pipeline documenti/email, servizi applicativi/storici/utility, UI/Job Runner) non esistono più come file separati: il loro contenuto rilevante è stato consolidato nei tre documenti sopra o vive direttamente nel codice sorgente (`src/domain/`, `src/application/`, `src/infrastructure/`) — usare la Knowledge Graph (`codebase-memory-mcp`) o una ricerca nel codice per quel livello di dettaglio.

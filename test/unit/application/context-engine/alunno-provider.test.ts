@@ -17,7 +17,10 @@ import { MateriaRepository } from '../../../../src/infrastructure/repositories/M
 import { OreASLRepository } from '../../../../src/infrastructure/repositories/OreASLRepository';
 import { MovimentoAlunnoRepository } from '../../../../src/infrastructure/repositories/MovimentoAlunnoRepository';
 import { AldoTeachingAssignmentResolver } from '../../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
-import type { AnnoStorico, StoricoDatabaseProvider } from '../../../../src/application/storico/StoricoDatabaseProvider';
+import type {
+  AnnoStorico,
+  StoricoDatabaseProvider
+} from '../../../../src/application/storico/StoricoDatabaseProvider';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
 import { fixtureTables } from '../../../fixtures/tables';
 import type { Row } from '../../../../src/infrastructure/db/Database';
@@ -58,7 +61,10 @@ function build(
       new AldoTeachingAssignmentResolver(db)
     )
   );
-  b.registerProvider('movimenti', new MovimentiProvider(new MovimentoAlunnoRepository(db), alunni, classi));
+  b.registerProvider(
+    'movimenti',
+    new MovimentiProvider(new MovimentoAlunnoRepository(db), alunni, classi)
+  );
   b.registerProvider('carenze', new CarenzeProvider(alunni, materie));
   b.registerProvider('piani', new PianiProvider(alunni));
   const params: BuildParams = {
@@ -90,7 +96,10 @@ test('AlunnoProvider: flat identity/religione/curriculum/classe + ASL hours (02 
       materiaId: 'INTERP',
       materiaSigla: 'INTERP',
       materiaNome: 'INTERP',
-      specifiche: [{ nome: 'CHITARRA', nomeCapitalizzato: 'CHITARRA' }, { nome: 'PIANO', nomeCapitalizzato: 'PIANO' }]
+      specifiche: [
+        { nome: 'CHITARRA', nomeCapitalizzato: 'CHITARRA' },
+        { nome: 'PIANO', nomeCapitalizzato: 'PIANO' }
+      ]
     })
   ]);
   expect(a.classe).toEqual({
@@ -145,7 +154,15 @@ test('a non-BES student (PFP): isBes stays false, class resolved for alunno targ
   expect(a.isBes).toBe(false);
   expect(a).toMatchObject({ isPei: false, isPfp: true, isAltroBes: false });
   expect(a.piani.elenco).toEqual([
-    { tipo: 'PFP', tipoLabel: 'PFP', isBes: false, link: null, hasLink: false, parametriGenerazione: {}, hasParametriGenerazione: true }
+    {
+      tipo: 'PFP',
+      tipoLabel: 'PFP',
+      isBes: false,
+      link: null,
+      hasLink: false,
+      parametriGenerazione: {},
+      hasParametriGenerazione: true
+    }
   ]);
   expect(a.classe.nome).toBe('5A');
 });
@@ -168,18 +185,12 @@ test('AlunnoProvider: presenza.annoPrecedente.isPresente is true when a previous
   const priorDb = new FakeDatabase(priorTables);
   const storicoDb: StoricoDatabaseProvider = {
     anniStorici: (profondita: number): AnnoStorico[] =>
-      profondita > 0
-        ? [{ anno: '2025-2026', db: priorDb, logDocs: {} as never }]
-        : []
+      profondita > 0 ? [{ anno: '2025-2026', db: priorDb, logDocs: {} as never }] : []
   };
   // presenza.annoPrecedente is gated behind includiStorico (matches every other
   // historical-data provider in the recipe) — must opt in for this fake to be consulted.
-  const a = build(
-    'a1@school.it',
-    fixtureTables(),
-    storicoDb,
-    makeOptions({ includiStorico: true })
-  ).focus.alunno!;
+  const a = build('a1@school.it', fixtureTables(), storicoDb, makeOptions({ includiStorico: true }))
+    .focus.alunno!;
   expect(a.presenza.annoPrecedente).toEqual({ isCalcolato: true, isPresente: true }); // a1@school.it exists in fixtureTables() ALUNNI both times
 });
 

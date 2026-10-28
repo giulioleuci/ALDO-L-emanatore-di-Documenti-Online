@@ -36,25 +36,25 @@ The contract accepts scalars and short scalar arrays only. Undefined values and 
 
 ALDO document and email steps will explicitly select their operational outputs. Expected summaries include:
 
-| Pipeline step | Basic result data |
-| --- | --- |
-| `AnalyzeContext` / `BuildCDU` | target type and recipe/context outcome summary |
-| `CheckDuplicates` | duplicate found/not found and reused document ID when applicable |
-| `PrepareInfrastructure` | destination folder name, path, and ID |
-| `GenerateName` | generated filename |
-| `SelectTemplate` | selected template ID |
-| `CloneTemplate` | new file ID |
-| `RenderTemplate` | rendered/replaced element count when the underlying strategy exposes it |
-| `ApplyPermissions` | editor and viewer email addresses, plus permission counts |
-| `RegisterDocument` | only status |
-| `PostProcess` | executed action count and action names |
-| `ValutaCondizioniInvio` | send/skip decision and reason |
-| `RenderBoxes` | number of boxes generated and their identifiers when available |
-| `ComposeEmail` | subject and body/attachment summary, not full body contents |
-| `ResolveRecipients` | To, CC, and BCC addresses |
-| `SendEmail` | delivery result and message/thread identifier when available |
-| `LogEmail` | only status |
-| `PostProcessEmail` | executed action count and action names |
+| Pipeline step                 | Basic result data                                                       |
+| ----------------------------- | ----------------------------------------------------------------------- |
+| `AnalyzeContext` / `BuildCDU` | target type and recipe/context outcome summary                          |
+| `CheckDuplicates`             | duplicate found/not found and reused document ID when applicable        |
+| `PrepareInfrastructure`       | destination folder name, path, and ID                                   |
+| `GenerateName`                | generated filename                                                      |
+| `SelectTemplate`              | selected template ID                                                    |
+| `CloneTemplate`               | new file ID                                                             |
+| `RenderTemplate`              | rendered/replaced element count when the underlying strategy exposes it |
+| `ApplyPermissions`            | editor and viewer email addresses, plus permission counts               |
+| `RegisterDocument`            | only status                                                             |
+| `PostProcess`                 | executed action count and action names                                  |
+| `ValutaCondizioniInvio`       | send/skip decision and reason                                           |
+| `RenderBoxes`                 | number of boxes generated and their identifiers when available          |
+| `ComposeEmail`                | subject and body/attachment summary, not full body contents             |
+| `ResolveRecipients`           | To, CC, and BCC addresses                                               |
+| `SendEmail`                   | delivery result and message/thread identifier when available            |
+| `LogEmail`                    | only status                                                             |
+| `PostProcessEmail`            | executed action count and action names                                  |
 
 If an underlying library does not currently expose a useful count or identifier, the step reports the closest truthful value already available. It must not fabricate a value or perform a second API call solely for logging.
 

@@ -22,6 +22,7 @@
 ### Task 1: CDU `progressivo` placeholder
 
 **Files:**
+
 - Modify: `src/infrastructure/facades/DriveServiceFacade.ts` (add `countFilesInFolder` to `IDriveFacade` + `DriveServiceFacade`)
 - Modify: `src/application/context-engine/Cdu.ts` (add `progressivo?: number` to `CduMeta` and to root `Cdu`)
 - Modify: `src/application/pipelines/documentSteps.ts:213-236` (`PrepareInfrastructureStep._executeLogic`)
@@ -30,6 +31,7 @@
 - Test: `test/unit/application/pipelines/document-steps.test.ts`
 
 **Interfaces:**
+
 - Produces: `IDriveFacade.countFilesInFolder(folderId: string): number`; `Cdu.meta.progressivo?: number`; `Cdu.progressivo?: number`.
 
 - [ ] **Step 1: Write the failing test for `countFilesInFolder`**
@@ -39,7 +41,9 @@ In `test/unit/infrastructure/drive-facade.test.ts`, add:
 ```typescript
 describe('countFilesInFolder', () => {
   it('counts non-trashed, non-folder files via searchFiles', () => {
-    const drive = { searchFiles: jest.fn().mockReturnValue([{ id: 'a' }, { id: 'b' }, { id: 'c' }]) };
+    const drive = {
+      searchFiles: jest.fn().mockReturnValue([{ id: 'a' }, { id: 'b' }, { id: 'c' }])
+    };
     const facade = new DriveServiceFacade(drive as any, {} as any, 'root');
 
     const count = facade.countFilesInFolder('folder123');
@@ -116,10 +120,10 @@ In `Cdu.ts`, add `progressivo?: number` to `CduMeta` (after `idEsecuzione`) and 
 In `documentSteps.ts`, at the end of `PrepareInfrastructureStep._executeLogic` (after `this.setResult(ctx, 'destFolderPath', path);`):
 
 ```typescript
-    const progressivo = this.drive.countFilesInFolder(folderId) + 1;
-    const cduObj = cdu(ctx);
-    cduObj.meta.progressivo = progressivo;
-    cduObj.progressivo = progressivo;
+const progressivo = this.drive.countFilesInFolder(folderId) + 1;
+const cduObj = cdu(ctx);
+cduObj.meta.progressivo = progressivo;
+cduObj.progressivo = progressivo;
 ```
 
 - [ ] **Step 8: Run test, verify it passes**
@@ -148,11 +152,13 @@ git commit -m "feat: add CDU progressivo placeholder (Drive folder file count + 
 ### Task 2: CDU rappresentanti genitori con nome figlio
 
 **Files:**
+
 - Modify: `src/application/context-engine/Cdu.ts` (type of `rappresentanti.genitori` items)
 - Modify: `src/application/context-engine/providers/RappresentantiProvider.ts:123-134`
 - Test: `test/unit/application/context-engine/providers/rappresentanti-provider.test.ts` (or the existing test file for this provider — search for `RappresentantiProvider` under `test/unit/` and use whatever file already covers it)
 
 **Interfaces:**
+
 - Produces: each `focus.classe.rappresentanti.genitori[]` item gains `studente: { nomeCompleto: string }`.
 
 - [ ] **Step 1: Write the failing test**
@@ -162,7 +168,10 @@ In the existing `RappresentantiProvider` test file, add a case for the non-artic
 ```typescript
 it('attaches studente.nomeCompleto to each genitore for ordinary classes', () => {
   const alunno = makeAlunno({ cognomeNome: 'Marco Neri', rappresentanteGenitore: 'Giuseppe Neri' });
-  const classi = fakeClasseRepository({ getStudenti: () => [alunno], getArticolazione: () => null });
+  const classi = fakeClasseRepository({
+    getStudenti: () => [alunno],
+    getArticolazione: () => null
+  });
   const provider = new RappresentantiProvider(classi);
   const cdu = emptyCduWithClasse();
 
@@ -188,18 +197,18 @@ In `Cdu.ts`, the `genitori` array element type gains `studente: { nomeCompleto: 
 In `RappresentantiProvider.ts`, replace the ordinary/partner branch's genitori mapping:
 
 ```typescript
-    const studenti = this.classi.getStudenti(classe);
-    focusClasse.rappresentanti = {
-      studenti: studenti
-        .filter((a) => a.isRappresentante())
-        .map((a) => ({ nomeCompleto: a.cognomeNome, email: a.email.value })),
-      genitori: studenti
-        .filter((a) => a.getRappresentanteGenitore().trim().length > 0)
-        .map((a) => ({
-          nomeCompleto: a.getRappresentanteGenitore().trim(),
-          studente: { nomeCompleto: a.cognomeNome }
-        }))
-    };
+const studenti = this.classi.getStudenti(classe);
+focusClasse.rappresentanti = {
+  studenti: studenti
+    .filter((a) => a.isRappresentante())
+    .map((a) => ({ nomeCompleto: a.cognomeNome, email: a.email.value })),
+  genitori: studenti
+    .filter((a) => a.getRappresentanteGenitore().trim().length > 0)
+    .map((a) => ({
+      nomeCompleto: a.getRappresentanteGenitore().trim(),
+      studente: { nomeCompleto: a.cognomeNome }
+    }))
+};
 ```
 
 (This restructures the existing two-step `.map().filter()` into `.filter().map()` so `a.cognomeNome` stays available inside the map — same behavior, no name collision.)
@@ -231,6 +240,7 @@ git commit -m "feat: expose studente.nomeCompleto on CDU rappresentanti.genitori
 ### Task 3: `DOCUMENTO_DOCENTE_MATERIA` generator
 
 **Files:**
+
 - Create: `src/application/context-engine/providers/DocenteMateriaFocusProvider.ts`
 - Create: `test/unit/application/context-engine/providers/docente-materia-focus-provider.test.ts`
 - Modify: `src/application/context-engine/Cdu.ts` (`focus.docente`, `focus.materia`)
@@ -244,6 +254,7 @@ git commit -m "feat: expose studente.nomeCompleto on CDU rappresentanti.genitori
 - Test: `test/unit/application/pipelines/document-steps.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Cdu.focus.classe.consiglioDiClasse: DocenteCdcVM[]` (each `{ anagrafica: PersonVM, materie: SubjectVM[], ... }`, already populated by the `'consiglio'` provider); `IClasseRepository.getConsiglioDiClasse(id: ClasseId): ConsiglioDiClasse` (`{ cattedre: Array<{ materia: MateriaId, docente: Docente }> }`); `buildPersonVmFromDocente(docente, materia?): PersonVM`.
 - Produces: `Cdu.focus.docente?: PersonVM`; `Cdu.focus.materia?: SubjectVM`; `BuildParams.docenteCorrente?: string | null`; `DocumentGenerationService.generateForClasseDocenteMateria(classeId: ClasseId, docenteEmail: string, materiaId: string, confDocId: string, jobId?: string): DocumentGenerationResult`; `DocumentBatchService`'s new `'DOCUMENTO_DOCENTE_MATERIA'` `CONF_DOC.TIPO` branch; `sottotipo(ctx: PipelineContext): string` (replaces `sottotipoPiano`, same two call sites).
 
@@ -519,7 +530,7 @@ In `test/unit/application/pipelines/document-steps.test.ts`, find the existing `
 
 ```typescript
 it('sottotipo returns materiaId::docenteEmail for DOCUMENTO_DOCENTE_MATERIA', () => {
-  const ctx = buildCduAt({ /* reuse this file's existing context-building helper */ });
+  const ctx = buildCduAt({/* reuse this file's existing context-building helper */});
   // arrange ctx's CONF_DOC row TIPO = 'DOCUMENTO_DOCENTE_MATERIA' and
   // cdu.focus.materia = { id/sigla: 'MAT', ... }, cdu.focus.docente = { email: 'rossi@scuola.it', ... }
   // via whatever this file's existing helpers already use to build such a context.
@@ -581,14 +592,29 @@ it('generateDocentiMateria enumerates one target per cattedra across active clas
       ]
     })
   });
-  const documenti = { generateForClasseDocenteMateria: jest.fn().mockReturnValue({ status: 'GENERATO', durationMs: 1 }) };
-  const service = new DocumentBatchService(classi as any, {} as any, fakeConfigs('DOCUMENTO_DOCENTE_MATERIA'), documenti as any);
+  const documenti = {
+    generateForClasseDocenteMateria: jest
+      .fn()
+      .mockReturnValue({ status: 'GENERATO', durationMs: 1 })
+  };
+  const service = new DocumentBatchService(
+    classi as any,
+    {} as any,
+    fakeConfigs('DOCUMENTO_DOCENTE_MATERIA'),
+    documenti as any
+  );
 
-  const result = drain(service.batchGenerateHandler({ confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' }));
+  const result = drain(
+    service.batchGenerateHandler({ confDocId: 'PROGRAMMA_SVOLTO', jobId: 'job1' })
+  );
 
   expect(documenti.generateForClasseDocenteMateria).toHaveBeenCalledTimes(2);
   expect(documenti.generateForClasseDocenteMateria).toHaveBeenCalledWith(
-    classe.classeId, 'rossi@scuola.it', 'MAT', 'PROGRAMMA_SVOLTO', 'job1'
+    classe.classeId,
+    'rossi@scuola.it',
+    'MAT',
+    'PROGRAMMA_SVOLTO',
+    'job1'
   );
   expect(result.totale).toBe(2);
 });
@@ -715,14 +741,14 @@ Add the new generator (mirrors `generateClassi`/`generatePiani`):
 In `batchGenerateHandler`, add the new branch before the `PIANO_PERS` check falls through to `generateClassi`:
 
 ```typescript
-    if (config.tipo === 'PIANO_PERS') {
-      return yield* this.generatePiani(config, confDocId, jobId, resume, processed, errori);
-    }
-    if (config.tipo === 'DOCUMENTO_DOCENTE_MATERIA') {
-      return yield* this.generateDocentiMateria(config, confDocId, jobId, resume, processed, errori);
-    }
+if (config.tipo === 'PIANO_PERS') {
+  return yield * this.generatePiani(config, confDocId, jobId, resume, processed, errori);
+}
+if (config.tipo === 'DOCUMENTO_DOCENTE_MATERIA') {
+  return yield * this.generateDocentiMateria(config, confDocId, jobId, resume, processed, errori);
+}
 
-    return yield* this.generateClassi(config, confDocId, jobId, resume, processed, errori);
+return yield * this.generateClassi(config, confDocId, jobId, resume, processed, errori);
 ```
 
 Import `ClasseId` in `DocumentBatchService.ts` if not already imported (check the top of the file first).
@@ -751,11 +777,13 @@ git commit -m "feat: add DOCUMENTO_DOCENTE_MATERIA generator (batch axis per cat
 This task is in the **`GasLibraryFactory` repository** (its own git repo, build, and test suite — see `GasLibraryFactory/CLAUDE.md`), not in ALDO's `src/`.
 
 **Files (in `GasLibraryFactory/`):**
+
 - Modify: `WorkspaceTemplateEngine/src/internal/processors-managers/DocumentProcessorTagScanner.js`
 - Modify: `WorkspaceTemplateEngine/src/processors/DocumentProcessor.js`
 - Test: `WorkspaceTemplateEngine/test/` (new test file for the conditional-section directive — follow this library's existing test layout for the other 4 structural directives, e.g. its `bullet_list`/`tablerow_loop` tests)
 
 **Interfaces:**
+
 - Produces: `MyPlaceholderService.processDocument(documentId, context)` now also structurally deletes/keeps paragraphs for `{{#expr}}...{{/expr}}` / `{{^expr}}...{{/expr}}` blocks where `expr` is not one of `tablerow_loop`/`tablecol_loop`/`bullet_list`/`number_list`, evaluating `expr` against `context` with standard Mustache truthiness (falsy/`null`/empty array → section false).
 
 - [ ] **Step 1: Read the existing structural-directive test pattern**
@@ -800,7 +828,7 @@ it('handles negated {{^expr}}...{{/expr}} blocks', () => {
 });
 ```
 
-Use whatever `buildMockDocBody`/`paragraphTexts`/`processDocument` entry points that suite's existing tests already expose — these are illustrative of the *behavior*, not literal API names; match the real harness found in Step 1.
+Use whatever `buildMockDocBody`/`paragraphTexts`/`processDocument` entry points that suite's existing tests already expose — these are illustrative of the _behavior_, not literal API names; match the real harness found in Step 1.
 
 - [ ] **Step 3: Run the test, verify it fails**
 
@@ -812,6 +840,7 @@ Expected: FAIL — conditional blocks are left as literal text or only text-subs
 In `DocumentProcessorTagScanner.js`, add a 5th scan pattern (alongside the existing `tablerow_loop`/`tablecol_loop`/`bullet_list`/`number_list` regexes found in Step 1) that matches `{{#([^}]+)}}...{{/\1}}` and `{{\^([^}]+)}}...{{/\1}}` where the captured name is **not** one of the 4 reserved keywords. Emit a scan result shaped consistently with how the other 4 directives report their block (start/end paragraph indices, negated flag, expression string) so `DocumentProcessor.js` can consume it the same way it consumes the existing 4.
 
 In `DocumentProcessor.js`, add handling for this new scan-result kind: resolve the expression against the render `context` (same value-resolution the existing placeholder substitution already uses for plain `{{expr}}`, via `DocumentProcessorValueResolver`), apply Mustache truthiness (falsy / `null` / empty array = false), and:
+
 - if the block is false (or negated-true), delete every paragraph between (and including) the opening/closing marker paragraphs;
 - if the block is true (or negated-false), delete only the two marker paragraphs, keeping the content paragraphs in place — reuse the same paragraph-splice primitive the existing 4 directives already use for structural removal (found in Step 1), don't write a second one.
 
@@ -865,6 +894,7 @@ git commit -m "chore: refresh vendored GasLibraryFactory bundle (conditional Doc
 ### Task 5: Dipartimento CDU + document batch generation
 
 **Files:**
+
 - Modify: `src/domain/repositories/IDipartimentoRepository.ts` (`findAll`)
 - Modify: `src/infrastructure/repositories/DipartimentoRepository.ts` (`findAll`)
 - Create: `src/application/context-engine/providers/DipartimentoProvider.ts`
@@ -881,6 +911,7 @@ git commit -m "chore: refresh vendored GasLibraryFactory bundle (conditional Doc
 - Test: `test/unit/application/document-batch-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Dipartimento.getCapoEmail(): Email | null`; `Dipartimento.getMaterieIds(): MateriaId[]`; `DocenteRepository.findByDipartimento(dipartId: DipartimentoId): Docente[]`; `buildPersonVmFromDocente`; `ILogDocumentoRepository.findAll(): LogDocumento[]`.
 - Produces (additional): `LogDocumento.containsMateria(materiaId: string): boolean` (mirrors `containsClasse`) — this is the one interface Task 6 consumes back from this task.
 - Produces: `IDipartimentoRepository.findAll(): Dipartimento[]`; `Cdu.focus.dipartimento?: CduDipartimentoFocus` (including `documenti: { items: DocumentoItem[] }`, mirroring `DocumentiClasseProvider`'s shape); `DocumentGenerationService.generateForDipartimento(dipartimentoId: string, confDocId: string, jobId?: string): DocumentGenerationResult`; `DocumentBatchService`'s `'DIPARTIMENTO'` `CONF_DOC.TIPO` branch.
@@ -948,20 +979,34 @@ function emptyCdu(target: string): Cdu {
 
 describe('DipartimentoProvider', () => {
   it('populates focus.dipartimento with anagrafica, capo, materie and docenti', () => {
-    const dipartimento = fakeDipartimento({ id: 'LETTERE', nome: 'Lettere', capoEmail: 'rossi@scuola.it', materieIds: ['ITA', 'STO'] });
+    const dipartimento = fakeDipartimento({
+      id: 'LETTERE',
+      nome: 'Lettere',
+      capoEmail: 'rossi@scuola.it',
+      materieIds: ['ITA', 'STO']
+    });
     const dipartimenti = { findAll: () => [dipartimento], findByMateria: () => dipartimento };
     const docenti = {
-      findByDipartimento: jest.fn().mockReturnValue([fakeDocente('rossi@scuola.it'), fakeDocente('bianchi@scuola.it')]),
+      findByDipartimento: jest
+        .fn()
+        .mockReturnValue([fakeDocente('rossi@scuola.it'), fakeDocente('bianchi@scuola.it')]),
       findById: (email: string) => fakeDocente(email)
     };
-    const logDocs = { findAll: () => [fakeLogDocumento({ MATERIE: 'ITA,STO' }), fakeLogDocumento({ MATERIE: 'MAT' })] };
+    const logDocs = {
+      findAll: () => [
+        fakeLogDocumento({ MATERIE: 'ITA,STO' }),
+        fakeLogDocumento({ MATERIE: 'MAT' })
+      ]
+    };
     const provider = new DipartimentoProvider(dipartimenti as any, docenti as any, logDocs as any);
     const cdu = emptyCdu('LETTERE');
 
     provider.provide(cdu, { target: 'LETTERE' } as any);
 
     expect(cdu.focus.dipartimento!.anagrafica).toEqual({ id: 'LETTERE', nome: 'Lettere' });
-    expect(cdu.focus.dipartimento!.capo).toEqual(expect.objectContaining({ email: 'rossi@scuola.it' }));
+    expect(cdu.focus.dipartimento!.capo).toEqual(
+      expect.objectContaining({ email: 'rossi@scuola.it' })
+    );
     expect(cdu.focus.dipartimento!.materie).toEqual([{ sigla: 'ITA' }, { sigla: 'STO' }]);
     expect(cdu.focus.dipartimento!.docenti).toHaveLength(2);
     expect(cdu.focus.dipartimento!.didattica.documenti.items).toHaveLength(1);
@@ -1014,9 +1059,7 @@ export class DipartimentoProvider implements ContextProvider {
   ) {}
 
   provide(cdu: Cdu, params: BuildParams): void {
-    const dipartimento = this.dipartimenti
-      .findAll()
-      .find((d) => d.id === params.target);
+    const dipartimento = this.dipartimenti.findAll().find((d) => d.id === params.target);
     if (dipartimento === undefined) {
       throw new PipelineError(`Dipartimento ${params.target} non trovato`);
     }
@@ -1079,6 +1122,7 @@ In `Recipe.ts`, add to `RECIPES`:
 ```
 
 In `ContextEngineFactory.ts`:
+
 - Add `dipartimenti: IDipartimentoRepository` to `ContextEngineDependencies` (import the interface).
 - Destructure `dipartimenti` in `create({...})`'s parameter list.
 - Add `.registerProvider('dipartimentoFocus', new DipartimentoProvider(dipartimenti, docenti, logDocs))` to the chain (`docenti` and `logDocs` are already destructured — `logDocs` is used by the existing `'documenti'`/`'documentiClasse'` registrations in the same chain).
@@ -1171,11 +1215,25 @@ In `document-batch-service.test.ts`:
 
 ```typescript
 it('generateDipartimenti enumerates one target per DIPART row (no gestioneArticolazione)', () => {
-  const dipartimenti = { findAll: () => [fakeDipartimento('LETTERE'), fakeDipartimento('SCIENZE')] };
-  const documenti = { generateForDipartimento: jest.fn().mockReturnValue({ status: 'GENERATO', durationMs: 1 }) };
-  const service = new DocumentBatchService({} as any, {} as any, fakeConfigs('DIPARTIMENTO'), documenti as any, undefined, undefined, dipartimenti as any);
+  const dipartimenti = {
+    findAll: () => [fakeDipartimento('LETTERE'), fakeDipartimento('SCIENZE')]
+  };
+  const documenti = {
+    generateForDipartimento: jest.fn().mockReturnValue({ status: 'GENERATO', durationMs: 1 })
+  };
+  const service = new DocumentBatchService(
+    {} as any,
+    {} as any,
+    fakeConfigs('DIPARTIMENTO'),
+    documenti as any,
+    undefined,
+    undefined,
+    dipartimenti as any
+  );
 
-  const result = drain(service.batchGenerateHandler({ confDocId: 'VERBALE_DIPARTIMENTO', jobId: 'job1' }));
+  const result = drain(
+    service.batchGenerateHandler({ confDocId: 'VERBALE_DIPARTIMENTO', jobId: 'job1' })
+  );
 
   expect(documenti.generateForDipartimento).toHaveBeenCalledTimes(2);
   expect(result.totale).toBe(2);
@@ -1263,9 +1321,9 @@ Add the generator (no `gestioneArticolazione` — mirrors `generateClassi`'s sha
 Add the branch in `batchGenerateHandler`, alongside `DOCUMENTO_DOCENTE_MATERIA`:
 
 ```typescript
-    if (config.tipo === 'DIPARTIMENTO') {
-      return yield* this.generateDipartimenti(confDocId, jobId, resume, processed, errori);
-    }
+if (config.tipo === 'DIPARTIMENTO') {
+  return yield * this.generateDipartimenti(confDocId, jobId, resume, processed, errori);
+}
 ```
 
 - [ ] **Step 19: Run test, verify it passes; fix every other `new DocumentBatchService(...)` call site**
@@ -1291,6 +1349,7 @@ git commit -m "feat: add dipartimento CDU focus and document batch generation ax
 ### Task 6: Dipartimento email processes + box
 
 **Files:**
+
 - Modify: `src/domain/value-objects/enums.ts` (`ProcessoInvio`)
 - Modify: `src/application/email/saluto.ts` (`EmailTarget` union widening)
 - Modify: `src/application/services/EmailNotificationService.ts` (`targetsPerCapoDipartimento`, `targetsPerDipartimento`, `enumerateTargets` switch)
@@ -1300,6 +1359,7 @@ git commit -m "feat: add dipartimento CDU focus and document batch generation ax
 - Test: `test/unit/application/email-boxes.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Dipartimento.getCapoEmail()`, `DocenteRepository.findByDipartimento`, `IDipartimentoRepository.findAll` (Task 5); `Cdu.focus.dipartimento.didattica.documenti.items: DocumentoItem[]` (Task 5's `DipartimentoProvider`, already populated — this task only wires it into the box-rendering `aggregaDati` read path, mirroring how `focus.classe.didattica.documenti` already feeds the `documenti` box).
 - Produces: `ProcessoInvio.PER_CAPO_DIPARTIMENTO`, `ProcessoInvio.PER_DIPARTIMENTO`; a `documenti_dipartimento` `TIPO_BOX`.
 
@@ -1311,25 +1371,47 @@ In `test/unit/application/email-notification-service.test.ts`, add (mirroring th
 
 ```typescript
 it('PER_CAPO_DIPARTIMENTO targets one email per dipartimento with a capo', () => {
-  const dipartimenti = { findAll: () => [fakeDipartimento({ id: 'LETTERE', capoEmail: 'rossi@scuola.it' }), fakeDipartimento({ id: 'SCIENZE', capoEmail: null })] };
+  const dipartimenti = {
+    findAll: () => [
+      fakeDipartimento({ id: 'LETTERE', capoEmail: 'rossi@scuola.it' }),
+      fakeDipartimento({ id: 'SCIENZE', capoEmail: null })
+    ]
+  };
   const service = buildService({ dipartimenti }); // extend this file's existing service-building helper
 
-  const targets = service.enumerateTargets(fakeConfMail({ processo: ProcessoInvio.PER_CAPO_DIPARTIMENTO }));
+  const targets = service.enumerateTargets(
+    fakeConfMail({ processo: ProcessoInvio.PER_CAPO_DIPARTIMENTO })
+  );
 
   expect(targets).toEqual([
-    expect.objectContaining({ tipoTarget: 'dipartimento', target: 'LETTERE', emails: ['rossi@scuola.it'] })
+    expect.objectContaining({
+      tipoTarget: 'dipartimento',
+      target: 'LETTERE',
+      emails: ['rossi@scuola.it']
+    })
   ]);
 });
 
 it('PER_DIPARTIMENTO targets one email per dipartimento with all its docenti', () => {
   const dipartimenti = { findAll: () => [fakeDipartimento({ id: 'LETTERE' })] };
-  const docenti = { findByDipartimento: () => [fakeDocenteEntity('rossi@scuola.it'), fakeDocenteEntity('bianchi@scuola.it')] };
+  const docenti = {
+    findByDipartimento: () => [
+      fakeDocenteEntity('rossi@scuola.it'),
+      fakeDocenteEntity('bianchi@scuola.it')
+    ]
+  };
   const service = buildService({ dipartimenti, docenti });
 
-  const targets = service.enumerateTargets(fakeConfMail({ processo: ProcessoInvio.PER_DIPARTIMENTO }));
+  const targets = service.enumerateTargets(
+    fakeConfMail({ processo: ProcessoInvio.PER_DIPARTIMENTO })
+  );
 
   expect(targets).toEqual([
-    expect.objectContaining({ tipoTarget: 'dipartimento', target: 'LETTERE', emails: ['rossi@scuola.it', 'bianchi@scuola.it'] })
+    expect.objectContaining({
+      tipoTarget: 'dipartimento',
+      target: 'LETTERE',
+      emails: ['rossi@scuola.it', 'bianchi@scuola.it']
+    })
   ]);
 });
 ```
@@ -1364,7 +1446,14 @@ In `saluto.ts`, widen `EmailTarget`:
 
 ```typescript
 export interface EmailTarget {
-  tipo: 'docente' | 'cdc' | 'alunno' | 'genitori' | 'genitori_alunno' | 'capo_dipartimento' | 'dipartimento';
+  tipo:
+    | 'docente'
+    | 'cdc'
+    | 'alunno'
+    | 'genitori'
+    | 'genitori_alunno'
+    | 'capo_dipartimento'
+    | 'dipartimento';
   tipoTarget: 'classe' | 'alunno' | 'dipartimento';
   // ... rest unchanged ...
 }
@@ -1450,7 +1539,21 @@ it('documenti_dipartimento box shows items from focus.dipartimento.didattica.doc
   const cdu = {
     focus: {
       dipartimento: {
-        didattica: { documenti: { items: [{ id: 'd1', nome: 'Verbale', link: 'https://...', tipo: 'VERBALE_DIPARTIMENTO', idGen: 'VD', stato: 'GENERATO', dataCreazione: '01/01/2026' }] } }
+        didattica: {
+          documenti: {
+            items: [
+              {
+                id: 'd1',
+                nome: 'Verbale',
+                link: 'https://...',
+                tipo: 'VERBALE_DIPARTIMENTO',
+                idGen: 'VD',
+                stato: 'GENERATO',
+                dataCreazione: '01/01/2026'
+              }
+            ]
+          }
+        }
       }
     }
   };
@@ -1475,22 +1578,22 @@ This step is a checkpoint, not new code: Task 5 already added `LogDocumento.cont
 In `boxes.ts`, in `aggregaDati` (lines 414-495), extend the `focus` type annotation and the `documenti`/`items` resolution to also consider the department focus:
 
 ```typescript
-  const focus = cdu['focus'] as
-    | {
-        alunno?: { didattica?: { /* ...unchanged... */ } };
-        classe?: { didattica?: { /* ...unchanged... */ } };
-        dipartimento?: {
-          didattica?: {
-            documenti?: { items?: DocumentoItem[]; storico?: LazyRef<DocumentoStoricoConTipo[]> };
-          };
+const focus = cdu['focus'] as
+  | {
+      alunno?: { didattica?: { /* ...unchanged... */ } };
+      classe?: { didattica?: { /* ...unchanged... */ } };
+      dipartimento?: {
+        didattica?: {
+          documenti?: { items?: DocumentoItem[]; storico?: LazyRef<DocumentoStoricoConTipo[]> };
         };
-      }
-    | undefined;
-  // ...
-  const documenti =
-    focus?.classe?.didattica?.documenti ??
-    focus?.alunno?.didattica?.documenti ??
-    focus?.dipartimento?.didattica?.documenti;
+      };
+    }
+  | undefined;
+// ...
+const documenti =
+  focus?.classe?.didattica?.documenti ??
+  focus?.alunno?.didattica?.documenti ??
+  focus?.dipartimento?.didattica?.documenti;
 ```
 
 Add a `documentiDipartimento` key to the object `aggregaDati` returns, sourced independently from the general `documenti`/`documentiFiltrati` variable above (that one is already scoped/filtered for the classe/alunno `documenti` `TIPO_BOX`'s own `FILTRO_TIPO`/`FILTRO_STATO` — the department box is a separate `TIPO_BOX` with its own visibility, not a re-filter of the same list):
@@ -1504,12 +1607,12 @@ Add a `documentiDipartimento` key to the object `aggregaDati` returns, sourced i
 In `createBoxComposer` (same file), add right after the existing `documenti`/`cartelle` `simple(...)` calls:
 
 ```typescript
-  simple(
-    'documenti_dipartimento',
-    'Documenti di Dipartimento',
-    (ctx) => ctx.get('boxdata.documentiDipartimento', { items: [] }),
-    (d) => (d as { items: unknown[] }).items.length === 0
-  );
+simple(
+  'documenti_dipartimento',
+  'Documenti di Dipartimento',
+  (ctx) => ctx.get('boxdata.documentiDipartimento', { items: [] }),
+  (d) => (d as { items: unknown[] }).items.length === 0
+);
 ```
 
 And register its HTML template in the same `renderers.register(new HtmlRenderer({ templates: { ... } }))` block (near `documenti`/`cartelle`):

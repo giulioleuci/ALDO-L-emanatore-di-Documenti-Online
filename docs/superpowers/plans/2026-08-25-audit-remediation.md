@@ -18,7 +18,7 @@
 - **Never edit `dist/*`** — generated.
 - **GasLibraryFactory-first:** no logic is reimplemented in `src/` that a library provides. Check `GasLibraryFactory/DOCS_LIBS` before writing.
 - **A library change is not done until ALDO is green against the rebuilt vendor bundle**: `npm run refresh:vendor && npm run verify:vendor`, then ALDO's full offline suite.
-- **ALDO verification command** (referred to below as *the ALDO gate*):
+- **ALDO verification command** (referred to below as _the ALDO gate_):
   ```bash
   npm run typecheck && npm run lint && npm test && npm run test:integration && npm run test:build
   ```
@@ -34,12 +34,14 @@
 Runs first so the refactors in tasks 2–4 land against tests that can actually fail.
 
 **Files:**
+
 - Modify: `test/unit/onlinetests/*Checks.test.ts` and `*-checks.test.ts` (32 sites: 17 `not.toThrow` + 15 other loose)
 - Modify: `test/unit/application/email-notification-service.test.ts` (10 sites)
 - Modify: `test/unit/application/pipelines/email-steps.test.ts` (7 sites)
 - Modify: `test/unit/application/sheet-materie-generator.test.ts` (9 sites)
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: nothing importable. Later tasks rely on these tests being able to fail.
 
@@ -58,7 +60,7 @@ Expected: ~58 lines. Work the file list top to bottom, one file per commit.
 
 - [ ] **Step 2: Apply rule A — `not.toThrow()` on an assert-helper gets a negative twin**
 
-The 17 `not.toThrow()` sites in `test/unit/onlinetests/` all wrap an `assert*` helper. A bare `not.toThrow()` passes when the helper asserts *nothing*. Every positive case gains a negative case on mutated input, in the same test:
+The 17 `not.toThrow()` sites in `test/unit/onlinetests/` all wrap an `assert*` helper. A bare `not.toThrow()` passes when the helper asserts _nothing_. Every positive case gains a negative case on mutated input, in the same test:
 
 ```ts
 // before — test/unit/onlinetests/storico-checks.test.ts:80
@@ -147,12 +149,14 @@ Expected: all green.
 Pure deletion. Nothing here changes behaviour.
 
 **Files:**
+
 - Modify: `src/onlinetests/data/fixtures.ts`, `src/onlinetests/data/SharedTestDatabaseBuilder.ts` (20 dead constants)
 - Modify: ~30 files carrying the ~50 internal-only `export`s and the three `*_LABELS` maps
 - Modify: `src/domain/entities/Docente.ts:65-74` (two deprecated aliases)
 - Modify: `src/onlinetests/checks/contextEngineChecks.ts:158`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `Docente.cognomeNome()` and `Docente.nomeConAppellativo()` no longer exist. Callers use `getNomeCompleto()` / `getNomeCompletoConAppellativo()`.
 
@@ -224,12 +228,14 @@ git commit -m "refactor(ally): via costanti morte, export interni e unique O(n^2
 ### Task 3: Entity `*Data` typing and the `_` column convention
 
 **Files:**
+
 - Modify: all 21 files in `src/domain/entities/` except `AldoEntity.ts`
 - Modify: `src/application/import/ImportRecipeMapper.ts:146-155`
 - Modify: `SPECS_ALDO/01_SCHEMA_DATABASE.md`
 - Test: `test/unit/domain/entities-row-typing.test.ts` (create), `test/unit/application/import-recipe-mapper.test.ts` (modify)
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `ClasseData`, `CarenzaData`, `MateriaData` stay open (`Record<string, unknown>`-compatible with documented fixed columns). The other 18 `*Data` become closed `type` aliases. Every entity keeps `static fromData(data: Record<string, unknown>): Entity` as its public signature — callers are unaffected.
 
@@ -372,6 +378,7 @@ git commit -m "refactor(ally): entity *Data type-safe salvo tabelle dinamiche + 
 ### Task 4: `stringId` factory, `ProcessMonitorFacade`, focus guard
 
 **Files:**
+
 - Create: `src/domain/value-objects/stringId.ts`
 - Modify: `src/domain/value-objects/ClasseId.ts`, `IndirizzoId.ts`, `DipartimentoId.ts`, `MateriaId.ts`, `MateriaSpecificaId.ts`
 - Delete: the `ProcessMonitorFacade` class in `src/infrastructure/facades/ProcessMonitorFacade.ts` (the `IProcessMonitor` interface in the same file **stays**)
@@ -381,6 +388,7 @@ git commit -m "refactor(ally): entity *Data type-safe salvo tabelle dinamiche + 
 - Test: `test/unit/domain/value-objects.test.ts`, `test/unit/application/context-engine/*`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces:
   - `stringId(name: string, pattern?: RegExp)` → a class with `static of(raw: string)`, `readonly value: string`, `equals(other: { value: string }): boolean`.
@@ -546,6 +554,7 @@ git commit -m "refactor(ally): fattoria stringId, via ProcessMonitorFacade, guar
 No ALDO code changes here, so its vendor verification rides on task 6.
 
 **Files (all under `GasLibraryFactory/`):**
+
 - Delete: `RoleResolutionLib/src/internal/DateParsing.js`
 - Modify: `GoogleApiWrapper/src/services/UtilitiesService.js:160` (rename)
 - Modify: `CoreUtilsLib/src/utils/StringUtils.js:25`, `ComposableContentLib/src/core/ContentBlock.js:80,254` (delete `isEmpty` copies)
@@ -555,6 +564,7 @@ No ALDO code changes here, so its vendor verification rides on task 6.
 - Rewrite: `CoreUtilsLib/src/utils/SystemQuotaManager.js` → `CoreUtilsLib/src/utils/collections.js`; modify `CoreUtilsLib/src/utils/SystemUtils.js:82-90`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `SystemUtils`'s 50 public method names **unchanged**. `CoreUtilsLib.DateUtils.parseDate` becomes RoleResolutionLib's only date parser. `UtilitiesService.formatDateNative` replaces `formatDate`. `DatabaseService` / `PlaceholderService` are the primary names, `MyDatabaseService` / `MyPlaceholderService` remain as aliases for one release.
 
@@ -575,7 +585,7 @@ In `GoogleApiWrapper/src/services/UtilitiesService.js:160`. It is a thin `Utilit
 
 Keep `CoreUtilsLib/src/facades/LodashFacade.js:91` (the complete one: handles Map, Set, object). Delete `StringUtils.isEmpty` and **both** `ContentBlock.isEmpty(data)` copies (`:80` and `:254` — two copies in one file), re-pointing callers.
 
-**Leave the four zero-argument domain predicates alone:** `PostProcessorChain.isEmpty()`, `BlockDataContext.isEmpty()`, `DelegationChain.isEmpty()`, `RoutingResult.isEmpty()` are unrelated — they ask "is *this* empty", not "is this value empty".
+**Leave the four zero-argument domain predicates alone:** `PostProcessorChain.isEmpty()`, `BlockDataContext.isEmpty()`, `DelegationChain.isEmpty()`, `RoutingResult.isEmpty()` are unrelated — they ask "is _this_ empty", not "is this value empty".
 
 - [ ] **Step 4: Delete the dead exports and mocks**
 
@@ -588,13 +598,15 @@ for n in validateInterfaceShape getColumnTypes RendererRegistryMock CacheUtilsMo
 done
 ```
 
-Expected: `1` each (the definition). These are test *doubles* nobody instantiates, not tests — removing them costs no coverage.
+Expected: `1` each (the definition). These are test _doubles_ nobody instantiates, not tests — removing them costs no coverage.
 
 - [ ] **Step 5: Drop the `My` prefix**
 
 ```js
 // SheetDBLib/src/DatabaseService.js
-export class DatabaseService { /* … */ }
+export class DatabaseService {
+  /* … */
+}
 /** @deprecated nome storico, rimosso alla prossima release. */
 export { DatabaseService as MyDatabaseService };
 ```
@@ -608,7 +620,15 @@ Create `CoreUtilsLib/src/utils/collections.js`, replacing `SystemQuotaManager.js
 ```js
 // CoreUtilsLib/src/utils/collections.js
 import {
-  groupBy, keyBy, orderBy, uniqBy, differenceBy, maxBy, minBy, sumBy, meanBy
+  groupBy,
+  keyBy,
+  orderBy,
+  uniqBy,
+  differenceBy,
+  maxBy,
+  minBy,
+  sumBy,
+  meanBy
 } from 'es-toolkit/compat';
 
 export const unique = (a) => (Array.isArray(a) ? [...new Set(a)] : []);
@@ -660,6 +680,7 @@ git commit -m "refactor(glf): un solo parseDate/isEmpty, via export morti e pref
 ### Task 6: Specification contract — options 1 and 5, plus ALDO's base
 
 **Files:**
+
 - Modify: `GasLibraryFactory/DomainRepositoryLib/src/specifications/Specification.js`
 - Modify: `GasLibraryFactory/DomainRepositoryLib/src/specifications/FieldSpecification.js`
 - Modify: `GasLibraryFactory/DomainRepositoryLib/src/internal/query/QueryTranslator.js`
@@ -668,6 +689,7 @@ git commit -m "refactor(glf): un solo parseDate/isEmpty, via export morti e pref
 - Modify: `src/application/context-engine/FiltriSorgente.ts` (drop `PredicateSpecification`)
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces:
   - `Specification.prototype.toQueryObject(): Record<string, unknown> | null` — default `null`.
@@ -686,12 +708,18 @@ git commit -m "refactor(glf): un solo parseDate/isEmpty, via export morti e pref
 import { Specification } from '../specifications/Specification.js';
 
 class InMemoryOnly extends Specification {
-  isSatisfiedBy(e) { return e.x > 3; }
+  isSatisfiedBy(e) {
+    return e.x > 3;
+  }
 }
 
 class Pushdown extends Specification {
-  isSatisfiedBy(e) { return e.ATTIVA === true; }
-  toQueryObject() { return { ATTIVA: true }; }
+  isSatisfiedBy(e) {
+    return e.ATTIVA === true;
+  }
+  toQueryObject() {
+    return { ATTIVA: true };
+  }
 }
 
 test('la base restituisce null di default', () => {
@@ -772,7 +800,12 @@ The existing GLF specs (`FieldSpecification`, `CompositeSpecification`, `Express
 test('le spec toQuery-based restano sul percorso toQuery', () => {
   const spec = new FieldSpecification('ANNO', '>', 3);
   const calls = [];
-  const builder = { where: (...a) => { calls.push(a); return builder; } };
+  const builder = {
+    where: (...a) => {
+      calls.push(a);
+      return builder;
+    }
+  };
   spec.toQuery(builder);
   expect(calls).toEqual([['ANNO', '>', 3]]);
   expect(spec.canBeTranslatedToQuery()).toBe(true);
@@ -789,9 +822,15 @@ Expected: PASS.
 ```ts
 // src/application/context-engine/FiltriSorgente.ts — delete this
 class PredicateSpecification<T> extends Specification<T> {
-  constructor(private readonly predicate: (candidate: T) => boolean) { super(); }
-  isSatisfiedBy(candidate: T): boolean { return this.predicate(candidate); }
-  toQueryObject(): null { return null; }
+  constructor(private readonly predicate: (candidate: T) => boolean) {
+    super();
+  }
+  isSatisfiedBy(candidate: T): boolean {
+    return this.predicate(candidate);
+  }
+  toQueryObject(): null {
+    return null;
+  }
 }
 ```
 
@@ -823,6 +862,7 @@ git add -A && git commit -m "feat(glf): toQueryObject sulla base Specification, 
 Option 3 before option 2: the invariant guard is what makes migrating 16 specs verifiable instead of a reading exercise.
 
 **Files:**
+
 - Create: `GasLibraryFactory/DomainRepositoryLib/src/testing/specificationContract.js`
 - Create: `GasLibraryFactory/DomainRepositoryLib/src/specifications/EqualityFieldSpec.js`
 - Modify: `GasLibraryFactory/DomainRepositoryLib/src/index.js` (exports), `types/gaslibs/index.d.ts`
@@ -831,6 +871,7 @@ Option 3 before option 2: the invariant guard is what makes migrating 16 specs v
 - Modify: `src/infrastructure/repositories/RuoloRepository.ts` (see step 4)
 
 **Interfaces:**
+
 - Consumes: `Specification.toQueryObject()` from task 6.
 - Produces:
   - `assertSpecificationContract(spec, rows, hydrate) → { ok: boolean, divergenti: Array<object> }`
@@ -887,12 +928,24 @@ Expected: PASS.
 
 ```ts
 // test/unit/domain/specification-contract.test.ts
-const SPEC_PUSHDOWN: Array<[string, Specification<never>, Array<Record<string, unknown>>, (r: Record<string, unknown>) => unknown]> = [
-  ['ClassiAttiveSpec', new ClassiAttiveSpec(), [
-    { ID: '3A', ATTIVA: true },       // positiva
-    { ID: '3B', ATTIVA: false },      // NEGATIVA — obbligatoria
-    { ID: '3C' }                      // colonna assente — caso limite
-  ], (r) => Classe.fromData(r)],
+const SPEC_PUSHDOWN: Array<
+  [
+    string,
+    Specification<never>,
+    Array<Record<string, unknown>>,
+    (r: Record<string, unknown>) => unknown
+  ]
+> = [
+  [
+    'ClassiAttiveSpec',
+    new ClassiAttiveSpec(),
+    [
+      { ID: '3A', ATTIVA: true }, // positiva
+      { ID: '3B', ATTIVA: false }, // NEGATIVA — obbligatoria
+      { ID: '3C' } // colonna assente — caso limite
+    ],
+    (r) => Classe.fromData(r)
+  ]
   // … una riga per ogni spec pushdown …
 ];
 
@@ -933,9 +986,15 @@ export class EqualityFieldSpec extends Specification {
     this._read = read;
     this._expected = expected;
   }
-  isSatisfiedBy(entity) { return this._read(entity) === this._expected; }
-  toQueryObject() { return { [this._column]: this._expected }; }
-  toString() { return `${this._column} = ${String(this._expected)}`; }
+  isSatisfiedBy(entity) {
+    return this._read(entity) === this._expected;
+  }
+  toQueryObject() {
+    return { [this._column]: this._expected };
+  }
+  toString() {
+    return `${this._column} = ${String(this._expected)}`;
+  }
 }
 ```
 
@@ -953,8 +1012,12 @@ abstract class EqualityFieldSpec<T> extends Specification<T> {
 ```ts
 // before — 11 lines
 export class ProgettiPerClasseSpec extends Specification<Progetto> {
-  constructor(private readonly classeId: ClasseId) { super(); }
-  isSatisfiedBy(p: Progetto): boolean { return p.classe === this.classeId.value; }
+  constructor(private readonly classeId: ClasseId) {
+    super();
+  }
+  isSatisfiedBy(p: Progetto): boolean {
+    return p.classe === this.classeId.value;
+  }
   toQueryObject(): Record<string, unknown> {
     return { [COL_PROGETTI.CLASSE]: this.classeId.value };
   }
@@ -991,12 +1054,14 @@ git add -A && git commit -m "feat(glf): assertSpecificationContract + EqualityFi
 The one item whose payoff cannot be proven offline.
 
 **Files:**
+
 - Modify: `GasLibraryFactory/GasOnlineTestFramework/src/SampleSpreadsheetBuilder.js` (add `appendRows`)
 - Modify: `src/onlinetests/SampleDatabaseBuilder.ts:29` (`ISampleSpreadsheet`), and its 17 call sites
 - Modify: `src/onlinetests/data/SharedTestDatabaseBuilder.ts` (49 call sites), `src/onlinetests/data/Seeders.ts` (38 call sites)
 - Modify: the four `RecordingSpreadsheet` fakes in `test/unit/onlinetests/`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `appendRows(sheetName: string, rows: Array<Record<string, unknown>>): void` on both `SampleSpreadsheetBuilder` and `ISampleSpreadsheet`. `appendRow` **stays** — the fakes implement it and their tests stay.
 
@@ -1013,7 +1078,10 @@ test('appendRows scrive un solo blocco e fa un solo flush', () => {
 
   expect(sheet.getRange).toHaveBeenCalledTimes(1);
   expect(sheet.getRange).toHaveBeenCalledWith(2, 1, 2, 2);
-  expect(setValues).toHaveBeenCalledWith([[1, 2], [3, '']]);
+  expect(setValues).toHaveBeenCalledWith([
+    [1, 2],
+    [3, '']
+  ]);
   expect(SpreadsheetApp.flush).toHaveBeenCalledTimes(1);
 });
 
@@ -1105,6 +1173,7 @@ git commit -m "perf(ally): seeding online in batch via appendRows (prima Xs, dop
 ### Task 9: The remaining assertion sweep
 
 **Files:**
+
 - Modify: the remaining 49 loose sites across `test/unit/` in ALDO
 - Modify: ~941 sites across `GasLibraryFactory/*/src/__tests__/`
 - Modify: `GasExpressionEngineLib/src/__tests__/ExpressionEngineService.test.js:202`
@@ -1112,6 +1181,7 @@ git commit -m "perf(ally): seeding online in batch via appendRows (prima Xs, dop
 - Modify: `WorkspaceTemplateEngine/src/__tests__/integration/DocumentProcessorIntegration.test.js:192`
 
 **Interfaces:**
+
 - Consumes: everything above.
 - Produces: nothing importable.
 
@@ -1129,7 +1199,7 @@ The rate limiter is logic, not API: quota accounting, backoff intervals, batch s
 
 - [ ] **Step 4: The `DocumentProcessor` skip → `__testOnline__/`**
 
-"create new document from template (feature not implemented)" belongs where a real API exists. Move it under `__testOnline__/`. If the feature really is unimplemented, the test moves *and* is marked as the pending specification of that feature — it does not stay an `it.skip` in an offline suite, which is the only option that buys nothing.
+"create new document from template (feature not implemented)" belongs where a real API exists. Move it under `__testOnline__/`. If the feature really is unimplemented, the test moves _and_ is marked as the pending specification of that feature — it does not stay an `it.skip` in an offline suite, which is the only option that buys nothing.
 
 - [ ] **Step 5: The JSEP skip → pin the limitation**
 

@@ -498,7 +498,10 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
     // FISI is split per-partner (1F-LSO=bianchi, 1F-LSS=verdi); '1F' itself (the
     // parent) has no FISI column. Before this fix, resolvePermanenti('1F', FISI, ...)
     // resolved directly against the parent and returned [].
-    expect(emails(service, 'DOCENTE_MATERIA', cdu)).toEqual(['bianchi@school.it', 'verdi@school.it']);
+    expect(emails(service, 'DOCENTE_MATERIA', cdu)).toEqual([
+      'bianchi@school.it',
+      'verdi@school.it'
+    ]);
 
     // MATE is shared (COMUNE, rossi on both partners) -- primaProva matches SCIENTIFICO
     // (1F's own indirizzo), and the merge must not duplicate rossi.
@@ -547,7 +550,9 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
       recipe('CLASSE_COMPLETA')
     );
     expect(
-      emails(service, 'DOCENTE_MATERIA', cduMateria, { regolaSupplente: GestioneSupplenti.ENTRAMBI })
+      emails(service, 'DOCENTE_MATERIA', cduMateria, {
+        regolaSupplente: GestioneSupplenti.ENTRAMBI
+      })
     ).toEqual(['bianchi@school.it', 'neri@school.it', 'verdi@school.it']);
 
     // CDC, ENTRAMBI: the same fix reaches the group role too (rossi/MATE
@@ -556,9 +561,9 @@ describe('RisolutoreRuoliService — VARIAZIONI_CATTEDRA is now honored (regress
       { target: '1F', tipoTarget: 'classe', now: INSIDE_WINDOW },
       recipe('CLASSE_COMPLETA')
     );
-    expect(
-      emails(service, 'CDC', cduCdc, { regolaSupplente: GestioneSupplenti.ENTRAMBI })
-    ).toEqual(['bianchi@school.it', 'neri@school.it', 'rossi@school.it', 'verdi@school.it']);
+    expect(emails(service, 'CDC', cduCdc, { regolaSupplente: GestioneSupplenti.ENTRAMBI })).toEqual(
+      ['bianchi@school.it', 'neri@school.it', 'rossi@school.it', 'verdi@school.it']
+    );
   });
 });
 

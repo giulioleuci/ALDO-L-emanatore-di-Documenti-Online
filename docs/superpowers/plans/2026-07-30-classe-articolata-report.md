@@ -22,13 +22,15 @@
 ### Task 1: `AlunnoContestoVM` gains a per-student `indirizzo` (major)
 
 **Files:**
+
 - Modify: `src/application/context-engine/Cdu.ts:34-48` (`AlunnoContestoVM`)
 - Modify: `src/application/context-engine/providers/StudentiProvider.ts`
 - Test: `test/unit/application/context-engine/studenti-provider.test.ts`
 
 **Interfaces:**
+
 - Consumes: `IClasseRepository.getIndirizzo(classe: Classe): Indirizzo` (already exists, returns `{ nome, nomeSintetico, tipo, ... }`); `Classe.indirizzo: string` (the sigla).
-- Produces: `AlunnoContestoVM.indirizzo: { sigla: string; nome: string; nomeSintetico: string }` — every `AlunnoContestoVM` instance now carries this (both the plain-class branch and the articulated-parent branch, tagged with the *owning partner's* indirizzo, not the parent's).
+- Produces: `AlunnoContestoVM.indirizzo: { sigla: string; nome: string; nomeSintetico: string }` — every `AlunnoContestoVM` instance now carries this (both the plain-class branch and the articulated-parent branch, tagged with the _owning partner's_ indirizzo, not the parent's).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -208,15 +210,17 @@ git commit -m "feat(cdu): tag each articulated-class student with their own majo
 ### Task 2: `RappresentantiProvider` expands across the articulated group
 
 **Files:**
+
 - Modify: `src/application/context-engine/Cdu.ts:140-143` (`CduClasse.rappresentanti`)
 - Modify: `src/application/context-engine/providers/RappresentantiProvider.ts`
 - Test: `test/unit/application/context-engine/classe-provider.test.ts`
 
 **Interfaces:**
+
 - Consumes: `IClasseRepository.getArticolazione(classe).isParent()`, `getClassiPartner(classe): Classe[]`, `getIndirizzo(classe): Indirizzo`, `getStudenti(classe): Alunno[]`, `Alunno.isRappresentante()`, `Alunno.getRappresentanteGenitore(): string`, `Alunno.cognomeNome`, `Alunno.email.value`.
 - Produces: `CduClasse.rappresentanti.studenti: Array<{ nomeCompleto, email, indirizzo?: { nome } }>`, `.genitori: Array<{ nomeCompleto, indirizzo?: { nome } }>`. `indirizzo` is present only when the focus class is an articulated parent (undefined otherwise — unchanged behavior for every non-articulated document already relying on this shape).
 
-**Bug fixed:** today `RappresentantiProvider` reads `classi.getStudenti(classe)` directly; for an articulated parent (e.g. `3C`) no student's `CLASSE` column ever equals the parent's own id, so `rappresentanti` is silently empty for *any* document targeting the parent class.
+**Bug fixed:** today `RappresentantiProvider` reads `classi.getStudenti(classe)` directly; for an articulated parent (e.g. `3C`) no student's `CLASSE` column ever equals the parent's own id, so `rappresentanti` is silently empty for _any_ document targeting the parent class.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -342,7 +346,11 @@ export class RappresentantiProvider implements ContextProvider {
         const indirizzo = { nome: this.classi.getIndirizzo(partner).nome };
         for (const alunno of this.classi.getStudenti(partner)) {
           if (alunno.isRappresentante()) {
-            studenti.push({ nomeCompleto: alunno.cognomeNome, email: alunno.email.value, indirizzo });
+            studenti.push({
+              nomeCompleto: alunno.cognomeNome,
+              email: alunno.email.value,
+              indirizzo
+            });
           }
           const nomeGenitore = alunno.getRappresentanteGenitore().trim();
           if (nomeGenitore.length > 0) {
@@ -390,11 +398,13 @@ git commit -m "fix(cdu): expand rappresentanti across articulated partners for t
 ### Task 3: `ClasseProvider.coordinatori` expands across the articulated group
 
 **Files:**
+
 - Modify: `src/application/context-engine/Cdu.ts:135` (`CduClasse.coordinatori`)
 - Modify: `src/application/context-engine/providers/ClasseProvider.ts`
 - Test: `test/unit/application/context-engine/classe-provider.test.ts`
 
 **Interfaces:**
+
 - Consumes: same `IClasseRepository` methods as Task 2, plus `getCoordinatori(classe): Docente[]`, `getMateriaDocente(classe, email): string | null`, `Docente.getNomeCompleto()`, `Docente.getAppellativo()`, `Docente.id`.
 - Produces: `CduClasse.coordinatori: Array<{ nome, email, materia, appellativo, indirizzo?: { nome } }>` — `indirizzo` present only for an articulated-parent focus class.
 
@@ -459,7 +469,7 @@ In `src/application/context-engine/Cdu.ts`, edit line 135:
 In `src/application/context-engine/providers/ClasseProvider.ts`, replace the `coordinatori:` line inside `provide` (currently lines 53-58):
 
 ```typescript
-      coordinatori: this.buildCoordinatori(classe)
+coordinatori: this.buildCoordinatori(classe);
 ```
 
 Then add a new private method after `resolveClasse` (after line 88, before `buildArticolazione`):
@@ -514,11 +524,13 @@ git commit -m "fix(cdu): expand coordinatori across articulated partners for the
 ### Task 4: `DocenteCdcVM` gains `materieDescrizione` + `gruppoNome`
 
 **Files:**
+
 - Modify: `src/application/context-engine/Cdu.ts:18-31` (`DocenteCdcVM`)
 - Modify: `src/application/context-engine/TeachingCouncilProjection.ts`
 - Test: `test/unit/application/context-engine/consiglio-provider.test.ts`
 
 **Interfaces:**
+
 - Consumes: `IClasseRepository.orderedPartners(classe): Classe[]`, `getIndirizzo(classe): Indirizzo`.
 - Produces: `DocenteCdcVM.materieDescrizione: string` (every teacher's subjects, comma-joined, always computed); `DocenteCdcVM.gruppoNome: string | null` (the major name for `SEPARATO_PRIMO`/`SEPARATO_SECONDO`, `null` for `COMUNE`/non-articulated).
 
@@ -527,18 +539,18 @@ git commit -m "fix(cdu): expand coordinatori across articulated partners for the
 Edit `test/unit/application/context-engine/consiglio-provider.test.ts`. In the existing test `'CDC coordinatore VM: materie, roles and descrizione'` (currently lines 60-84), add two assertions after the `rossi.materie` check:
 
 ```typescript
-  expect(rossi.materieDescrizione).toBe('Matematica');
-  expect(rossi.gruppoNome).toBeNull();
+expect(rossi.materieDescrizione).toBe('Matematica');
+expect(rossi.gruppoNome).toBeNull();
 ```
 
 In the existing test `'CDC of an articulated parent: tipoArticolazione by partner membership (09 §9)'` (currently lines 86-96), add after the `tipoArticolazione` assertions:
 
 ```typescript
-  expect(byEmail(list, 'rossi@school.it').gruppoNome).toBeNull();
-  expect(byEmail(list, 'bianchi@school.it').gruppoNome).toBe('Liceo scientifico');
-  expect(byEmail(list, 'verdi@school.it').gruppoNome).toBe('Liceo scientifico scienze applicate');
-  expect(byEmail(list, 'bianchi@school.it').materieDescrizione).toBe('Fisica');
-  expect(byEmail(list, 'verdi@school.it').materieDescrizione).toBe('Fisica');
+expect(byEmail(list, 'rossi@school.it').gruppoNome).toBeNull();
+expect(byEmail(list, 'bianchi@school.it').gruppoNome).toBe('Liceo scientifico');
+expect(byEmail(list, 'verdi@school.it').gruppoNome).toBe('Liceo scientifico scienze applicate');
+expect(byEmail(list, 'bianchi@school.it').materieDescrizione).toBe('Fisica');
+expect(byEmail(list, 'verdi@school.it').materieDescrizione).toBe('Fisica');
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -591,41 +603,40 @@ function gruppoNome(
 Then, inside `councilVmStrategy`'s `groups.map(...)` callback (lines 202-250), rename the inline `materie:` array to a local `const` and reuse it, and compute `tipoArt` once:
 
 ```typescript
-      const materieVm = assignments.map((assignment) => ({
-        sigla: assignment.slot.materia,
-        nome:
-          materie.findByIdCached(MateriaId.of(assignment.slot.materia))?.nome ??
-          assignment.slot.materia,
-        colore: '',
-        specificita: assignment.slot.specifica
-      }));
-      const tipoArt = tipoArticolazione(classi, classe, assignments);
-      return {
-        anagrafica: {
-          nome: rowDocente.nome,
-          cognome: rowDocente.cognome,
-          email: rowDocente.id,
-          genere: rowDocente.genere,
-          appellativo: rowDocente.appellativo
-        },
-        materie: materieVm,
-        materieDescrizione: materieVm.map((m) => m.nome).join(', '),
-        ruoli: {
-          isCoordinatore,
-          isTutorAsl,
-          isTutorOrientamento,
-          descrizione: descrizione(isCoordinatore, isTutorAsl, isTutorOrientamento)
-        },
-        stato: {
-          isSupplente,
-          sostituisce:
-            sostituisce === null ? null : { nome: sostituisce.nomeCompleto, email: sostituisce.id }
-        },
-        tipoArticolazione: tipoArt,
-        gruppoNome: gruppoNome(classi, classe, tipoArt),
-        isITP: assignments.some((assignment) => assignment.slot.kind === 'ITP'),
-        flags: { isNotLast: index < groups.length - 1 }
-      } satisfies DocenteCdcVM;
+const materieVm = assignments.map((assignment) => ({
+  sigla: assignment.slot.materia,
+  nome:
+    materie.findByIdCached(MateriaId.of(assignment.slot.materia))?.nome ?? assignment.slot.materia,
+  colore: '',
+  specificita: assignment.slot.specifica
+}));
+const tipoArt = tipoArticolazione(classi, classe, assignments);
+return {
+  anagrafica: {
+    nome: rowDocente.nome,
+    cognome: rowDocente.cognome,
+    email: rowDocente.id,
+    genere: rowDocente.genere,
+    appellativo: rowDocente.appellativo
+  },
+  materie: materieVm,
+  materieDescrizione: materieVm.map((m) => m.nome).join(', '),
+  ruoli: {
+    isCoordinatore,
+    isTutorAsl,
+    isTutorOrientamento,
+    descrizione: descrizione(isCoordinatore, isTutorAsl, isTutorOrientamento)
+  },
+  stato: {
+    isSupplente,
+    sostituisce:
+      sostituisce === null ? null : { nome: sostituisce.nomeCompleto, email: sostituisce.id }
+  },
+  tipoArticolazione: tipoArt,
+  gruppoNome: gruppoNome(classi, classe, tipoArt),
+  isITP: assignments.some((assignment) => assignment.slot.kind === 'ITP'),
+  flags: { isNotLast: index < groups.length - 1 }
+} satisfies DocenteCdcVM;
 ```
 
 Remove the now-redundant original `materie:` and `tipoArticolazione: tipoArticolazione(classi, classe, assignments),` lines (replaced above).
@@ -652,11 +663,13 @@ git commit -m "feat(cdu): add materieDescrizione + gruppoNome to the teaching-co
 ### Task 5: `ConsiglioClasseProvider` emits `consiglioDiClasseComune`/`consiglioDiClasseSeparato`
 
 **Files:**
+
 - Modify: `src/application/context-engine/Cdu.ts:144` (`CduClasse`)
 - Modify: `src/application/context-engine/providers/ConsiglioClasseProvider.ts`
 - Test: `test/unit/application/context-engine/consiglio-provider.test.ts`
 
 **Interfaces:**
+
 - Consumes: `DocenteCdcVM.tipoArticolazione` (Task 4), `IClasseRepository.isArticolata(classe): boolean`.
 - Produces: `CduClasse.consiglioDiClasseComune?: DocenteCdcVM[]` and `CduClasse.consiglioDiClasseSeparato?: DocenteCdcVM[]` — both present (possibly empty arrays) only when the focus class is articulated; `undefined` otherwise. Filtering happens server-side (`.filter()`), never via a template pipe.
 
@@ -675,7 +688,11 @@ test('ConsiglioClasseProvider: articulated parent splits consiglio into comune/s
     'consiglio',
     new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
   );
-  const params: BuildParams = { target: '1F', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') };
+  const params: BuildParams = {
+    target: '1F',
+    tipoTarget: 'classe',
+    now: new Date('2026-07-01T09:00:00Z')
+  };
   const recipe: Recipe = {
     providers: ['class', 'consiglio'],
     options: makeOptions({ gestioneSupplenti: GestioneSupplenti.SOLO_TITOLARI })
@@ -684,9 +701,10 @@ test('ConsiglioClasseProvider: articulated parent splits consiglio into comune/s
   expect(focusClasse.consiglioDiClasseComune!.map((d) => d.anagrafica.email)).toEqual([
     'rossi@school.it'
   ]);
-  expect(
-    focusClasse.consiglioDiClasseSeparato!.map((d) => d.anagrafica.email).sort()
-  ).toEqual(['bianchi@school.it', 'verdi@school.it']);
+  expect(focusClasse.consiglioDiClasseSeparato!.map((d) => d.anagrafica.email).sort()).toEqual([
+    'bianchi@school.it',
+    'verdi@school.it'
+  ]);
 });
 
 test('ConsiglioClasseProvider: non-articulated class has no comune/separato split', () => {
@@ -699,7 +717,11 @@ test('ConsiglioClasseProvider: non-articulated class has no comune/separato spli
     'consiglio',
     new ConsiglioClasseProvider(classi, new MateriaRepository(db), teachingAssignments)
   );
-  const params: BuildParams = { target: '5A', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') };
+  const params: BuildParams = {
+    target: '5A',
+    tipoTarget: 'classe',
+    now: new Date('2026-07-01T09:00:00Z')
+  };
   const recipe: Recipe = { providers: ['class', 'consiglio'], options: makeOptions() };
   const focusClasse = b.build(params, recipe).focus.classe!;
   expect(focusClasse.consiglioDiClasseComune).toBeUndefined();
@@ -781,7 +803,7 @@ export class ConsiglioClasseProvider implements ContextProvider {
 }
 ```
 
-Keep whatever the original file's exact import specifiers were for `CollectionProjectionInterceptor` and the other GAS-lib types — **do not guess the module path**; open the current file first and copy its existing import lines verbatim, only adding the `private readonly` modifier to the `classi` constructor parameter and the new `if (this.classi.isArticolata(classe))` block at the end of `provide`. The listing above shows the intended *logic*, not a byte-exact replacement for imports whose exact source this plan didn't need to resolve.
+Keep whatever the original file's exact import specifiers were for `CollectionProjectionInterceptor` and the other GAS-lib types — **do not guess the module path**; open the current file first and copy its existing import lines verbatim, only adding the `private readonly` modifier to the `classi` constructor parameter and the new `if (this.classi.isArticolata(classe))` block at the end of `provide`. The listing above shows the intended _logic_, not a byte-exact replacement for imports whose exact source this plan didn't need to resolve.
 
 - [ ] **Step 5: Run tests to verify they pass**
 
@@ -805,10 +827,12 @@ git commit -m "feat(cdu): derive consiglioDiClasseComune/Separato for articulate
 ### Task 6: New `CONF_DOC` row + `E2eTemplateIds.docArticolata`
 
 **Files:**
+
 - Modify: `src/onlinetests/E2eSampleDatabaseBuilder.ts`
 - Test: `test/unit/onlinetests/e2e-sample-database-builder.test.ts`
 
 **Interfaces:**
+
 - Produces: `export const CONF_DOC_ARTICOLATA = 'E2E_DOC_ARTICOLATA';`, `E2eTemplateIds.docArticolata: string`, a new `TABLE.CONF_DOC` row consumed by Task 8.
 
 - [ ] **Step 1: Write the failing test**
@@ -857,7 +881,7 @@ export const CONF_DOC_ARTICOLATA = 'E2E_DOC_ARTICOLATA';
 In the `E2eTemplateIds` interface (lines 180-190), add after `docComplesso: string;`:
 
 ```typescript
-  docArticolata: string;
+docArticolata: string;
 ```
 
 - [ ] **Step 4: Seed the CONF_DOC row**
@@ -865,23 +889,23 @@ In the `E2eTemplateIds` interface (lines 180-190), add after `docComplesso: stri
 In `src/onlinetests/E2eSampleDatabaseBuilder.ts`, inside `seedConfDoc` (starting at line 810), add a new `sample.appendRow(TABLE.CONF_DOC, ...)` block right after the `CONF_DOC_COMPLESSO` block (after line 908, before the `CONF_DOC_SHEET_PERMESSI` block):
 
 ```typescript
-    sample.appendRow(TABLE.CONF_DOC, {
-      [COL_CONF_DOC.ID]: CONF_DOC_ARTICOLATA,
-      [COL_CONF_DOC.TIPO]: 'DOCUMENTO_COMPLESSO_CLASSE_ARTICOLATA',
-      [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
-      [COL_CONF_DOC.CONDIZIONE]: '',
-      [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.docArticolata }),
-      [COL_CONF_DOC.FILE_NAME]: 'E2E_Articolata_{{focus.classe.anagrafica.nome}}',
-      [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/ARTICOLATA',
-      [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
-      [COL_CONF_DOC.PERMESSI]: '',
-      [COL_CONF_DOC.POST_PROCESSO]: null,
-      [COL_CONF_DOC.PARAMETRI]: '',
-      [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
-      [COL_CONF_DOC.FORMATO]: 'GDOC',
-      [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
-      [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
-    });
+sample.appendRow(TABLE.CONF_DOC, {
+  [COL_CONF_DOC.ID]: CONF_DOC_ARTICOLATA,
+  [COL_CONF_DOC.TIPO]: 'DOCUMENTO_COMPLESSO_CLASSE_ARTICOLATA',
+  [COL_CONF_DOC.GENERATORE]: 'DOCUMENTO_GENERICO',
+  [COL_CONF_DOC.CONDIZIONE]: '',
+  [COL_CONF_DOC.MODELLI]: JSON.stringify({ templateId: templateIds.docArticolata }),
+  [COL_CONF_DOC.FILE_NAME]: 'E2E_Articolata_{{focus.classe.anagrafica.nome}}',
+  [COL_CONF_DOC.PATH_OUT]: '_ALDO_E2E_OUTPUT/ARTICOLATA',
+  [COL_CONF_DOC.DUPLICAZIONE]: 'NEGATA',
+  [COL_CONF_DOC.PERMESSI]: '',
+  [COL_CONF_DOC.POST_PROCESSO]: null,
+  [COL_CONF_DOC.PARAMETRI]: '',
+  [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: '',
+  [COL_CONF_DOC.FORMATO]: 'GDOC',
+  [COL_CONF_DOC.REGISTRA_DOC]: classRegistration,
+  [COL_CONF_DOC.REGISTRA_FOLD]: '{}'
+});
 ```
 
 - [ ] **Step 5: Run tests to verify they pass**
@@ -906,10 +930,12 @@ git commit -m "feat(e2e): seed CONF_DOC row for DOCUMENTO_COMPLESSO_CLASSE_ARTIC
 ### Task 7: New Drive template with 4 bullet lists
 
 **Files:**
+
 - Modify: `src/onlinetests/E2eTemplateProvisioner.ts`
 - Test: `test/unit/onlinetests/e2e-template-provisioner.test.ts`
 
 **Interfaces:**
+
 - Consumes: `E2eTemplateIds.docArticolata` (Task 6).
 - Produces: a new Drive document template (found-or-created by fixed name), authored with the CDU paths from Tasks 1-5.
 
@@ -1005,28 +1031,28 @@ const DOC_ARTICOLATA_PARAGRAPHS: E2eDocumentParagraphInput[] = [
 In `provision()` (lines 263-305), add after the `docComplesso` block:
 
 ```typescript
-    const docArticolata = this.findOrCreateDoc(
-      folderId,
-      NAME_DOC_ARTICOLATA,
-      DOC_ARTICOLATA_PARAGRAPHS
-    );
+const docArticolata = this.findOrCreateDoc(
+  folderId,
+  NAME_DOC_ARTICOLATA,
+  DOC_ARTICOLATA_PARAGRAPHS
+);
 ```
 
 And add `docArticolata` to the returned object:
 
 ```typescript
-    return {
-      verbale,
-      condotta,
-      riepilogo,
-      aslImportSheet,
-      docComplesso,
-      docArticolata,
-      sheetPermessi,
-      pianoLavoro,
-      staticAttachment,
-      piani
-    };
+return {
+  verbale,
+  condotta,
+  riepilogo,
+  aslImportSheet,
+  docComplesso,
+  docArticolata,
+  sheetPermessi,
+  pianoLavoro,
+  staticAttachment,
+  piani
+};
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -1051,9 +1077,11 @@ git commit -m "feat(e2e): author the classe-articolata Drive template (4 flat bu
 ### Task 8: Register the new online e2e scenario
 
 **Files:**
+
 - Modify: `src/onlinetests/checks/e2eScenarioChecks.ts`
 
 **Interfaces:**
+
 - Consumes: `CONF_DOC_ARTICOLATA` (Task 6), `CLASSE_C_PARENT` (`'3C'`, already exported by `E2eSampleDatabaseBuilder.ts:31`), `DocumentGenerationService.generateForClasse`, `IDriveFacade.getFileText`.
 - Produces: a new `runner.add(...)` entry executed by the online test harness (`npm run build:online` builds it; actually running it against live Google Docs is a separate, manual `push:online` step outside this plan's automated verification — see Task 9).
 
@@ -1096,61 +1124,61 @@ import {
 In `registerE2eScenarioChecks`, add a new `runner.add(...)` block right after the existing `'E2E scenario 10: genera documento complesso ...'` block (after line 488):
 
 ```typescript
-  runner.add(
-    'E2E scenario 10b: genera documento complesso classe articolata (3C)',
-    sample.sampleSpreadsheetUrl,
-    () => {
-      const drive = container.get<IDriveFacade>('drive');
-      const { fileId, status } = documents.generateForClasse(
-        ClasseId.of(CLASSE_C_PARENT),
-        CONF_DOC_ARTICOLATA
+runner.add(
+  'E2E scenario 10b: genera documento complesso classe articolata (3C)',
+  sample.sampleSpreadsheetUrl,
+  () => {
+    const drive = container.get<IDriveFacade>('drive');
+    const { fileId, status } = documents.generateForClasse(
+      ClasseId.of(CLASSE_C_PARENT),
+      CONF_DOC_ARTICOLATA
+    );
+    if (fileId === null) {
+      throw new ValidationError(
+        `Generazione documento complesso classe articolata per ${CLASSE_C_PARENT} non ha prodotto un fileId (status=${status})`
       );
-      if (fileId === null) {
-        throw new ValidationError(
-          `Generazione documento complesso classe articolata per ${CLASSE_C_PARENT} non ha prodotto un fileId (status=${status})`
-        );
-      }
-      const text = drive.getFileText(fileId);
-      if (/\{\{[^}]*\}\}/.test(text)) {
-        throw new ValidationError(
-          `Documento complesso classe articolata: placeholder non risolto trovato nel testo generato`
-        );
-      }
-      // e2eDocenteEmail(3)/(4) coordinate 3C-S/3C-C respectively (E2eSampleDatabaseBuilder
-      // classLayouts) with DOCENTE_COGNOMI surnames VERDI/FERRARI — their presence proves
-      // ClasseProvider.coordinatori now merges both partners' distinct coordinators
-      // (the bug fixed in Task 3), not just the (empty) parent row.
-      if (!text.includes('VERDI')) {
-        throw new ValidationError(
-          'Documento complesso classe articolata: coordinatore di 3C-S (VERDI) assente dal testo'
-        );
-      }
-      if (!text.includes('FERRARI')) {
-        throw new ValidationError(
-          'Documento complesso classe articolata: coordinatore di 3C-C (FERRARI) assente dal testo'
-        );
-      }
-      assertPersistedLinks(CONF_DOC_ARTICOLATA, 'Documento complesso classe articolata');
     }
-  );
+    const text = drive.getFileText(fileId);
+    if (/\{\{[^}]*\}\}/.test(text)) {
+      throw new ValidationError(
+        `Documento complesso classe articolata: placeholder non risolto trovato nel testo generato`
+      );
+    }
+    // e2eDocenteEmail(3)/(4) coordinate 3C-S/3C-C respectively (E2eSampleDatabaseBuilder
+    // classLayouts) with DOCENTE_COGNOMI surnames VERDI/FERRARI — their presence proves
+    // ClasseProvider.coordinatori now merges both partners' distinct coordinators
+    // (the bug fixed in Task 3), not just the (empty) parent row.
+    if (!text.includes('VERDI')) {
+      throw new ValidationError(
+        'Documento complesso classe articolata: coordinatore di 3C-S (VERDI) assente dal testo'
+      );
+    }
+    if (!text.includes('FERRARI')) {
+      throw new ValidationError(
+        'Documento complesso classe articolata: coordinatore di 3C-C (FERRARI) assente dal testo'
+      );
+    }
+    assertPersistedLinks(CONF_DOC_ARTICOLATA, 'Documento complesso classe articolata');
+  }
+);
 ```
 
 `assertPersistedLinks` (defined at line 140) loops `ALL_CLASSI_E2E` and expects a `LOG_DOCS` row for every one of them — but this scenario only generates for `CLASSE_C_PARENT`. **Do not reuse `assertPersistedLinks` as-is.** Replace that last line with a direct, single-class check instead:
 
 ```typescript
-      const logRow = db
-        .table(TABLE.LOG_DOCS)
-        .findAll()
-        .find(
-          (row) =>
-            row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_ARTICOLATA &&
-            row[COL_LOG_DOCS.CLASSI] === CLASSE_C_PARENT
-        );
-      if (logRow === undefined || String(logRow[COL_LOG_DOCS.LINK] ?? '').trim() === '') {
-        throw new ValidationError(
-          `Documento complesso classe articolata per ${CLASSE_C_PARENT} non ha un LOG_DOCS.LINK persistito`
-        );
-      }
+const logRow = db
+  .table(TABLE.LOG_DOCS)
+  .findAll()
+  .find(
+    (row) =>
+      row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_ARTICOLATA &&
+      row[COL_LOG_DOCS.CLASSI] === CLASSE_C_PARENT
+  );
+if (logRow === undefined || String(logRow[COL_LOG_DOCS.LINK] ?? '').trim() === '') {
+  throw new ValidationError(
+    `Documento complesso classe articolata per ${CLASSE_C_PARENT} non ha un LOG_DOCS.LINK persistito`
+  );
+}
 ```
 
 (So the final block does NOT call `assertPersistedLinks` at all — use the direct `logRow` check shown above in its place.)
@@ -1221,6 +1249,7 @@ git commit -m "chore: verification pass for classe-articolata document + CDU fix
 ### Task 10: Write `ARTICOLAZIONE.md`
 
 **Files:**
+
 - Create: `ARTICOLAZIONE.md` (repo root)
 
 This task runs **last**, after Tasks 1-9 are committed, so the report describes the actual (fixed) behavior rather than open bugs. Write the file with this content, adjusting any line numbers that shifted during implementation (re-grep each citation before finalizing — line numbers below are accurate as of this plan's writing, against commit `2b057a2`):
@@ -1240,6 +1269,7 @@ durante lo sviluppo di `DOCUMENTO_COMPLESSO_CLASSE_ARTICOLATA`
 ## 1. Generatori di documenti
 
 Un `CONF_DOC` separa due concetti (`ConfigurazioneDocumento.ts:17-32`):
+
 - `TIPO` — etichetta descrittiva libera (es. `REPORT_COMPLESSO`,
   `DOCUMENTO_COMPLESSO_CLASSE_ARTICOLATA`).
 - `GENERATORE` — chiave nel registro delle `GeneratorStrategy`
@@ -1321,7 +1351,7 @@ partner hanno studenti reali.
   `'SEPARATO_PRIMO'`/`'SEPARATO_SECONDO'` (solo in una), calcolato
   confrontando gli id-classe degli assignment con
   `orderedPartners(classe)` (`TeachingCouncilProjection.ts:169-184`).
-  Mancava solo la ***risoluzione del nome*** del gruppo (il tag era
+  Mancava solo la _**risoluzione del nome**_ del gruppo (il tag era
   puramente simbolico) e una stringa già pronta delle materie per
   docente — aggiunte in questo lavoro come `gruppoNome`/
   `materieDescrizione`, oltre a due array già filtrati
@@ -1366,13 +1396,13 @@ rappresentanti/coordinatori.
 
 ## 4. Lacune (aggiornato dopo il fix)
 
-| Lacuna | Stato |
-|---|---|
-| `COL_CONF_DOC.GESTIONE_ARTICOLAZIONE` mai letta in `src/application` | Aperta — non affrontata in questo lavoro (fuori scope, richiede una vera decisione di design su cosa dovrebbe fare) |
-| `RappresentantiProvider` non espandeva sulle partner per una classe parent | **Fixata** in questo lavoro (Task 2) |
-| `ClasseProvider.coordinatori` non espandeva sulle partner per una classe parent | **Fixata** in questo lavoro (Task 3) |
-| `consiglioDiClasse` mancava nome del gruppo/major e stringa materie pronta | **Fixata** in questo lavoro (Task 4) |
-| Nessun modo di generare "un solo documento per il gruppo" diverso da puntare alla parent + CDU espanso | Aperta — architetturalmente non esiste un target "gruppo articolato" di prima classe in `DocumentGenerationService`; funziona solo perché i provider ora si espandono internamente quando il focus è la parent |
+| Lacuna                                                                                                          | Stato                                                                                                                                                                                                                                                                                                                                                        |
+| --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `COL_CONF_DOC.GESTIONE_ARTICOLAZIONE` mai letta in `src/application`                                            | Aperta — non affrontata in questo lavoro (fuori scope, richiede una vera decisione di design su cosa dovrebbe fare)                                                                                                                                                                                                                                          |
+| `RappresentantiProvider` non espandeva sulle partner per una classe parent                                      | **Fixata** in questo lavoro (Task 2)                                                                                                                                                                                                                                                                                                                         |
+| `ClasseProvider.coordinatori` non espandeva sulle partner per una classe parent                                 | **Fixata** in questo lavoro (Task 3)                                                                                                                                                                                                                                                                                                                         |
+| `consiglioDiClasse` mancava nome del gruppo/major e stringa materie pronta                                      | **Fixata** in questo lavoro (Task 4)                                                                                                                                                                                                                                                                                                                         |
+| Nessun modo di generare "un solo documento per il gruppo" diverso da puntare alla parent + CDU espanso          | Aperta — architetturalmente non esiste un target "gruppo articolato" di prima classe in `DocumentGenerationService`; funziona solo perché i provider ora si espandono internamente quando il focus è la parent                                                                                                                                               |
 | Fixture e2e: tutte le classi (comprese le due partner di `3C`) condividono lo stesso `INDIRIZZI` id (`IND_E2E`) | Aperta — non blocca la correttezza (ogni entità viene comunque taggata con l'indirizzo della propria classe di provenienza), ma rende la demo del nuovo documento meno leggibile: entrambi i gruppi mostrano lo stesso nome di indirizzo tra parentesi. Non affrontata in questo lavoro per non toccare il seeding condiviso da tutti gli altri scenari e2e. |
 ```
 

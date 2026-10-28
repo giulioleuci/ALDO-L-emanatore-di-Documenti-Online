@@ -176,9 +176,7 @@ export function registerJobRunnerEmailChecks(
       groupName('jobrunner.email', 'TEST_MODE e destinatario sicuro'),
       sample.sampleSpreadsheetUrl,
       () => {
-        throw new ValidationError(
-          'JobRunner email rifiutato: MASTER.TEST_MODE deve essere true'
-        );
+        throw new ValidationError('JobRunner email rifiutato: MASTER.TEST_MODE deve essere true');
       }
     );
     return;
@@ -294,18 +292,14 @@ function checkTriggerReale(
       .filter((row) => row[COL_LOG_DOCS.ID_GEN] === CONF_DOC_JOBRUNNER)
   );
   const sleep =
-    deps.sleep ?? ((milliseconds: number) => ServiceFactory.getUtilitiesService().sleep(milliseconds));
+    deps.sleep ??
+    ((milliseconds: number) => ServiceFactory.getUtilitiesService().sleep(milliseconds));
   const now = deps.now ?? (() => Date.now());
   const pollIntervalMs = deps.pollIntervalMs ?? POLL_INTERVAL_MS;
   const pollTimeoutMs = deps.pollTimeoutMs ?? POLL_TIMEOUT_MS;
 
   try {
-    const result = avviaGenerazioneDataDriven(
-      container,
-      CONF_DOC_JOBRUNNER,
-      jobRunner,
-      MS_TINY
-    );
+    const result = avviaGenerazioneDataDriven(container, CONF_DOC_JOBRUNNER, jobRunner, MS_TINY);
     if (result !== null) {
       throw new ValidationError('JobRunner trigger reale: attesa sospensione con esito null');
     }
@@ -334,7 +328,9 @@ function checkTriggerReale(
 
     assertDocumentRows(rowsForRun(), expectedTargets, expectedTargets.length);
     if (properties.get(`job_for_trigger_${triggerId}`) !== null) {
-      throw new ValidationError('JobRunner trigger reale: contesto trigger non rimosso al completamento');
+      throw new ValidationError(
+        'JobRunner trigger reale: contesto trigger non rimosso al completamento'
+      );
     }
   } finally {
     cancelIfStillSuspended(jobRunner, jobName);

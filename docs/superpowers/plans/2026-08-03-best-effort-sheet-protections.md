@@ -21,10 +21,12 @@
 ### Task 1: Lock GLF result and failure contracts with tests
 
 **Files:**
+
 - Modify: `GasLibraryFactory/GoogleApiWrapper/src/internal/services-managers/__tests__/SpreadsheetGridManager.test.js` (existing manager test file; use repository's exact test location if indexed file differs)
 - Modify: `GasLibraryFactory/GoogleApiWrapper/src/services/__tests__/SpreadsheetService.test.js` only if delegation coverage needs a new assertion
 
 **Interfaces:**
+
 - Consume existing `SpreadsheetGridManager.protectRanges(spreadsheetId, requests, options)`.
 - Define best-effort result shape: existing result fields plus `failures: Array<{ request, message }>`.
 
@@ -58,11 +60,13 @@ git -C GasLibraryFactory commit -m "test: specify best-effort Sheet protection f
 ### Task 2: Implement GLF best-effort protection
 
 **Files:**
+
 - Modify: `GasLibraryFactory/GoogleApiWrapper/src/internal/services-managers/SpreadsheetGridManager.js`
 - Modify: `GasLibraryFactory/GoogleApiWrapper/src/services/SpreadsheetService.js` only if delegation signature/type documentation needs updating
 - Modify: corresponding GLF TypeScript declarations or generated API documentation if present in library build workflow
 
 **Interfaces:**
+
 - Preserve `protectRanges(spreadsheetId, protectionRequests, options = {})`.
 - Add `options.onError === 'continue'` branch.
 - Return `{ spreadsheetId, protectedCount, protectedRangeIds, replies, failures }` in continuation mode; strict mode keeps current return shape.
@@ -97,11 +101,13 @@ git -C GasLibraryFactory commit -m "feat(GoogleApiWrapper): support best-effort 
 ### Task 3: Refresh ALDO library contract
 
 **Files:**
+
 - Modify: `types/gaslibs/index.d.ts` if `SpreadsheetService.protectRanges` options/result declarations are local and need new fields
 - Modify: `src/infrastructure/facades/SpreadsheetServiceFacade.ts` or actual facade file only if it narrows options/result
 - Modify: `vendor/gaslibs.Code.js` only through `npm run refresh:vendor`; never hand-edit
 
 **Interfaces:**
+
 - ALDO calls existing `SpreadsheetService.protectRanges` with `{ onError: 'continue' }`.
 - Failure records remain typed as original request plus message.
 
@@ -129,10 +135,12 @@ git commit -m "build: expose best-effort Sheet protections"
 ### Task 4: Make ALDO Sheet rendering tolerant of ACL failures
 
 **Files:**
+
 - Modify: `src/application/strategies/SheetMaterieConPermessiGeneratorStrategy.ts`
 - Test: `test/unit/application/sheet-materie-generator.test.ts`
 
 **Interfaces:**
+
 - `render(fileId, cdu, config): void` still renders first.
 - `protectColumns` calls `this.sheets.protectRanges(fileId, requests, { onError: 'continue' })` and logs each returned failure.
 
@@ -162,10 +170,12 @@ git commit -m "fix: keep Sheet generation after invalid protection editors"
 ### Task 5: Correct online E2E assertions
 
 **Files:**
+
 - Modify: `src/onlinetests/checks/e2eScenarioChecks.ts`
 - Modify: `test/unit/onlinetests/e2e-scenario-checks.test.ts`
 
 **Interfaces:**
+
 - `verifyProtectedRangeScenario` requires non-null `fileId` and verifies rendered headers/placeholders even when `testMode` uses fake addresses.
 - Invalid-editor errors are not swallowed as generation exceptions.
 
@@ -195,6 +205,7 @@ git commit -m "test: require rendered Sheet despite invalid mock editors"
 ### Task 6: Build and verify online artifact
 
 **Files:**
+
 - Generated only by build: `dist/*`, `vendor/*` as applicable; do not hand-edit.
 
 - [ ] **Step 1: Run build validation.**

@@ -210,9 +210,7 @@ function folderCriteria(
   const cartelle = filtri as FiltriCartelle;
   const criteria: Specification<LogCartella>[] = [];
   if (cartelle.idGen !== undefined)
-    criteria.push(
-      new FunctionSpecification<LogCartella>((item) => item.idGen === cartelle.idGen)
-    );
+    criteria.push(new FunctionSpecification<LogCartella>((item) => item.idGen === cartelle.idGen));
   if (cartelle.tipo !== undefined)
     criteria.push(new FunctionSpecification<LogCartella>((item) => item.tipo === cartelle.tipo));
   if (cartelle.nome !== undefined)

@@ -15,7 +15,12 @@ function focusedPianoCdu(tipo: TipoPiano) {
   }
   const db = new FakeDatabase(tables);
   return composeContextBuilder(db).build(
-    { target: 'a1@school.it', tipoTarget: 'alunno', pianoTipo: tipo, now: new Date('2026-07-01T09:00:00Z') },
+    {
+      target: 'a1@school.it',
+      tipoTarget: 'alunno',
+      pianoTipo: tipo,
+      now: new Date('2026-07-01T09:00:00Z')
+    },
     recipe('PIANO_PERSONALIZZATO')
   );
 }

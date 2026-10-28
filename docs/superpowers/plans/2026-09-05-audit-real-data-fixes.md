@@ -27,22 +27,22 @@
 
 **Modificati (produzione):**
 
-| File | Responsabilità dopo il cambio | Task |
-|---|---|---|
-| `src/infrastructure/role-resolution/AldoTeachingAssignmentResolver.ts` | unico confine verso `RoleResolutionLib`; normalizza `asOf` a giorno di calendario | 1 |
-| `src/application/context-engine/providers/ConsiglioClasseProvider.ts` | smette di normalizzare per conto proprio | 1 |
-| `src/onlinetests/data/fixtures.ts` | date di supplenza nella forma reale (`YYYY-MM-DD`) | 1 |
-| `src/application/services/EmailBatchService.ts` | ripresa batch per identità logica del target, non per indice | 2 |
-| `src/application/services/DocumentBatchService.ts` | snapshot dei target anche per gli assi CLASSE e DIPARTIMENTO | 3 |
-| `src/application/services/EmailNotificationService.ts` | enumerazione carenze limitata agli studenti attivi | 4 |
-| `src/infrastructure/repositories/ClasseRepository.ts`, `src/domain/repositories/IClasseRepository.ts` | `getStudenti` con default sicuro (solo attivi) | 5 |
-| `src/application/context-engine/TeachingCouncilProjection.ts` | esporta `descrizione()` per riuso | 6 |
-| `src/application/pipelines/emailSteps.ts` | flag di ruolo del destinatario risolti live | 6 |
-| `src/config/schema.ts` | costante `MATERIA_SOSTEGNO` | 6 |
-| `src/application/services/AggregatoreDati.ts` | visibilità documenti/cartelle per utente risolta live | 7 |
-| `src/application/email/boxes.ts` | propaga le classi di competenza al metodo `*PerUtente` | 7 |
-| `src/application/context-engine/providers/SchoolProvider.ts`, `src/application/context-engine/Cdu.ts` | `staff` espone tutti i titolari di un ruolo | 8 |
-| `SPECS_ALDO/02_CDU_STRUTTURA.md` | contratto `RuoloStaffVM` aggiornato | 8 |
+| File                                                                                                  | Responsabilità dopo il cambio                                                     | Task |
+| ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ---- |
+| `src/infrastructure/role-resolution/AldoTeachingAssignmentResolver.ts`                                | unico confine verso `RoleResolutionLib`; normalizza `asOf` a giorno di calendario | 1    |
+| `src/application/context-engine/providers/ConsiglioClasseProvider.ts`                                 | smette di normalizzare per conto proprio                                          | 1    |
+| `src/onlinetests/data/fixtures.ts`                                                                    | date di supplenza nella forma reale (`YYYY-MM-DD`)                                | 1    |
+| `src/application/services/EmailBatchService.ts`                                                       | ripresa batch per identità logica del target, non per indice                      | 2    |
+| `src/application/services/DocumentBatchService.ts`                                                    | snapshot dei target anche per gli assi CLASSE e DIPARTIMENTO                      | 3    |
+| `src/application/services/EmailNotificationService.ts`                                                | enumerazione carenze limitata agli studenti attivi                                | 4    |
+| `src/infrastructure/repositories/ClasseRepository.ts`, `src/domain/repositories/IClasseRepository.ts` | `getStudenti` con default sicuro (solo attivi)                                    | 5    |
+| `src/application/context-engine/TeachingCouncilProjection.ts`                                         | esporta `descrizione()` per riuso                                                 | 6    |
+| `src/application/pipelines/emailSteps.ts`                                                             | flag di ruolo del destinatario risolti live                                       | 6    |
+| `src/config/schema.ts`                                                                                | costante `MATERIA_SOSTEGNO`                                                       | 6    |
+| `src/application/services/AggregatoreDati.ts`                                                         | visibilità documenti/cartelle per utente risolta live                             | 7    |
+| `src/application/email/boxes.ts`                                                                      | propaga le classi di competenza al metodo `*PerUtente`                            | 7    |
+| `src/application/context-engine/providers/SchoolProvider.ts`, `src/application/context-engine/Cdu.ts` | `staff` espone tutti i titolari di un ruolo                                       | 8    |
+| `SPECS_ALDO/02_CDU_STRUTTURA.md`                                                                      | contratto `RuoloStaffVM` aggiornato                                               | 8    |
 
 **Modificati (test):** `test/unit/infrastructure/aldo-teaching-assignment-resolver.test.ts`, `test/unit/application/email-batch-service.test.ts`, `test/unit/application/document-batch-service.test.ts`, `test/unit/application/email-notification-service.test.ts`, `test/unit/application/context-engine/classe-provider.test.ts`, `test/unit/application/pipelines/email-steps.test.ts`, `test/unit/application/aggregatore-dati.test.ts`, `test/unit/application/context-engine/providers/school-provider.test.ts`.
 
@@ -64,12 +64,14 @@
 `SUPPLENZE.DAL`/`AL` e `VARIAZIONI_CATTEDRA.DAL` sono date di calendario `YYYY-MM-DD` che `RoleResolutionLib` parsa a mezzanotte UTC e confronta come istanti (`asOf <= validTo`). Chi passa un `asOf` con l'ora perde l'ultimo giorno della supplenza; oggi convivono due granularità (`RisolutoreRuoliService.ts:135` timestamp pieno, `ConsiglioClasseProvider.ts:34` mezzanotte). Un solo punto di normalizzazione chiude entrambi i finding.
 
 **Files:**
+
 - Modify: `src/infrastructure/role-resolution/AldoTeachingAssignmentResolver.ts:24-44`
 - Modify: `src/application/context-engine/providers/ConsiglioClasseProvider.ts:34`
 - Modify: `src/onlinetests/data/fixtures.ts:183`
 - Test: `test/unit/infrastructure/aldo-teaching-assignment-resolver.test.ts`
 
 **Interfaces:**
+
 - Consumes: niente da task precedenti.
 - Produces: `AldoTeachingAssignmentResolver.resolveMateria(classe, materia, data, routingPolicy?)` e `resolveConsiglio(classe, data, options?)` mantengono la firma; cambia solo la semantica del terzo parametro, che ora conta come **giorno di calendario UTC** e non come istante.
 
@@ -137,9 +139,9 @@ function giornoDiCalendario(data: Date): Date {
 e usarla nella `resolve`:
 
 ```ts
-      return configuration
-        .resolve(giornoDiCalendario(data), routingPolicy ?? null)
-        .map((result) => this.toTeachingAssignment(result));
+return configuration
+  .resolve(giornoDiCalendario(data), routingPolicy ?? null)
+  .map((result) => this.toTeachingAssignment(result));
 ```
 
 - [x] **Step 4: Eseguire il test e verificare che passi**
@@ -152,7 +154,7 @@ Expected: PASS
 In `src/application/context-engine/providers/ConsiglioClasseProvider.ts` sostituire la riga 34:
 
 ```ts
-    const data = new Date(cdu.meta.timestamp);
+const data = new Date(cdu.meta.timestamp);
 ```
 
 (la normalizzazione a giorno ora avviene a valle, nel resolver; tenerne due significa tenere due convenzioni.)
@@ -186,10 +188,12 @@ git commit -m "fix(role-resolution): normalize asOf to the calendar day at the r
 `EmailBatchService` ri-enumera i target a ogni run e riprende da `resume.nextIndex`. Un ritiro o una nuova iscrizione fra due run sposta gli indici: esattamente un target saltato in modo permanente per ogni scostamento. `emailTargetId` (`src/application/email/saluto.ts:42`) è già l'identità logica usata dalla deduplica LOG_MAIL e include `carenzaProgressivo`, quindi distingue due carenze dello stesso studente — cosa che `processed` (che contiene `target.target`) non fa.
 
 **Files:**
+
 - Modify: `src/application/services/EmailBatchService.ts:18-40` (stato), `:54-62` (docstring), `:228-284` (`suspendForQuota`), `:304-416` (handler)
 - Test: `test/unit/application/email-batch-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `emailTargetId(target: EmailTarget): string` da `src/application/email/saluto.ts`.
 - Produces: `EmailBatchCheckpoint` guadagna `processedIds: string[]` (cumulativo su tutti i run del job). `nextIndex` resta nel checkpoint come **contatore di avanzamento** (target completati in totale), non è più il punto di ripresa.
 
@@ -256,8 +260,8 @@ In `src/application/services/EmailBatchService.ts`, dentro `interface EmailBatch
 e cambiare il commento di `nextIndex` in:
 
 ```ts
-  /** Contatore di avanzamento (target completati in totale), non un punto di ripresa: vedi `processedIds`. */
-  nextIndex: number;
+/** Contatore di avanzamento (target completati in totale), non un punto di ripresa: vedi `processedIds`. */
+nextIndex: number;
 ```
 
 - [x] **Step 4: Riprendere dal set invece che dall'indice**
@@ -265,18 +269,18 @@ e cambiare il commento di `nextIndex` in:
 Sempre in `batchSendHandler`, sostituire il blocco `:309-316`:
 
 ```ts
-      const doneIds = new Set(resume?.processedIds ?? []);
-      const enumerati = this.email.enumerateTargets(config);
-      const targets = enumerati.filter((target) => !doneIds.has(emailTargetId(target)));
-      const totale = doneIds.size + targets.length;
+const doneIds = new Set(resume?.processedIds ?? []);
+const enumerati = this.email.enumerateTargets(config);
+const targets = enumerati.filter((target) => !doneIds.has(emailTargetId(target)));
+const totale = doneIds.size + targets.length;
 
-      const processed = resume === null ? [] : resume.processed.slice();
-      const processedIds = resume?.processedIds?.slice() ?? [];
-      const errors = resume === null ? [] : resume.errors.slice();
-      const failedTargets = resume?.failedTargets?.slice() ?? [];
-      let sent = resume?.sent ?? 0;
-      let i = 0;
-      this.logger?.logBatchStart(targets.length);
+const processed = resume === null ? [] : resume.processed.slice();
+const processedIds = resume?.processedIds?.slice() ?? [];
+const errors = resume === null ? [] : resume.errors.slice();
+const failedTargets = resume?.failedTargets?.slice() ?? [];
+let sent = resume?.sent ?? 0;
+let i = 0;
+this.logger?.logBatchStart(targets.length);
 ```
 
 Aggiungere l'import in cima al file, se assente:
@@ -287,28 +291,28 @@ import { emailTargetId } from '../email/saluto';
 
 - [x] **Step 5: Sostituire `targets.length` con `totale` dove indica il totale del job**
 
-Nel corpo del `while`/`for` e nelle chiamate di logging, `targets.length` continua a indicare *quanti ne restano in questo run*, mentre il totale del job è `totale`. Sostituzioni puntuali:
+Nel corpo del `while`/`for` e nelle chiamate di logging, `targets.length` continua a indicare _quanti ne restano in questo run_, mentre il totale del job è `totale`. Sostituzioni puntuali:
 
 ```ts
-        this.logger?.logItemStart(doneIds.size + i + 1, totale, 'Target', targetHeader, 'EMAIL');
+this.logger?.logItemStart(doneIds.size + i + 1, totale, 'Target', targetHeader, 'EMAIL');
 ```
 
 ```ts
-        const percentage = ((doneIds.size + i) / totale) * 100;
+const percentage = ((doneIds.size + i) / totale) * 100;
 ```
 
 ```ts
-        this.monitor?.updateProgress(
-          jobId,
-          percentage,
-          `${processed.length}/${totale} destinatari elaborati: ${progressDetail}`
-        );
+this.monitor?.updateProgress(
+  jobId,
+  percentage,
+  `${processed.length}/${totale} destinatari elaborati: ${progressDetail}`
+);
 ```
 
 e, nel `push` dei target completati (subito dopo `processed.push(target.target);`):
 
 ```ts
-        processedIds.push(emailTargetId(target));
+processedIds.push(emailTargetId(target));
 ```
 
 Nel checkpoint yieldato (`:401-416`) sostituire `nextIndex: i` con:
@@ -372,7 +376,7 @@ git add src/application/services/EmailBatchService.ts test/unit/application/emai
 git commit -m "fix(email): resume email batches by logical target id instead of positional index"
 ```
 
-Nota per il messaggio di commit: gli stati persistiti *prima* del deploy non hanno `processedIds` e ripartono da zero; la deduplica LOG_MAIL (`EmailNotificationService.ts:243`) impedisce comunque i reinvii.
+Nota per il messaggio di commit: gli stati persistiti _prima_ del deploy non hanno `processedIds` e ripartono da zero; la deduplica LOG_MAIL (`EmailNotificationService.ts:243`) impedisce comunque i reinvii.
 
 ---
 
@@ -381,10 +385,12 @@ Nota per il messaggio di commit: gli stati persistiti *prima* del deploy non han
 Sei assi su otto congelano la lista dei target nel checkpoint (`planTargets`, `docenteClasseMateriaTargets`, `classeMateriaTargets`, `classeDocenteTargets`, `docenteTargets`, `alunnoTargets`). `generateClassi` e `generateDipartimenti` no: ricalcolano `findAttive()` / `findAll()` a ogni run e riprendono per indice. Stesso rischio del Task 2 e incoerenza interna allo stesso file.
 
 **Files:**
+
 - Modify: `src/application/services/DocumentBatchService.ts:55-77` (stato), `:955-1022` (`generateDipartimenti`), `:1024-1094` (`generateClassi`)
 - Test: `test/unit/application/document-batch-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `IClasseRepository.findById(id: ClasseId): Classe | null`, già usato altrove nel file.
 - Produces: `BatchResumeState` guadagna `classeTargets?: string[]` e `dipartimentoTargets?: string[]` (ID di classe / di dipartimento). Il pattern è identico a `alunnoTargets` (`:886-896`).
 
@@ -393,38 +399,38 @@ Sei assi su otto congelano la lista dei target nel checkpoint (`planTargets`, `d
 In `test/unit/application/document-batch-service.test.ts`, dentro il `describe('DocumentBatchService.generateDipartimenti', ...)`:
 
 ```ts
-  test('resume consumes persisted dipartimentoTargets after the department source changes', () => {
-    const { service, generated } = wireDipartimenti();
-    const initial = service.batchGenerateHandler({
-      confDocId: 'VERBALE_DIPARTIMENTO',
-      jobId: 'job_dip'
-    });
-    const first = initial.next();
-    expect(first.done).toBe(false);
-    expect(first.value).toMatchObject({ dipartimentoTargets: ['LETTERE', 'SCIENZE'] });
-
-    const { result } = drain(service.batchGenerateHandler({ resumeState: first.value }));
-
-    expect(generated.map((g) => g.dipartimentoId)).toEqual(['LETTERE', 'SCIENZE']);
-    expect(result).toMatchObject({ totale: 2, processed: ['LETTERE', 'SCIENZE'] });
+test('resume consumes persisted dipartimentoTargets after the department source changes', () => {
+  const { service, generated } = wireDipartimenti();
+  const initial = service.batchGenerateHandler({
+    confDocId: 'VERBALE_DIPARTIMENTO',
+    jobId: 'job_dip'
   });
+  const first = initial.next();
+  expect(first.done).toBe(false);
+  expect(first.value).toMatchObject({ dipartimentoTargets: ['LETTERE', 'SCIENZE'] });
 
-  test('a resume without persisted dipartimentoTargets fails loud', () => {
-    const { service } = wireDipartimenti();
-    expect(() =>
-      service
-        .batchGenerateHandler({
-          resumeState: {
-            confDocId: 'VERBALE_DIPARTIMENTO',
-            jobId: 'job_dip',
-            nextIndex: 1,
-            processed: ['LETTERE'],
-            errori: []
-          }
-        })
-        .next()
-    ).toThrow(ConfigurationError);
-  });
+  const { result } = drain(service.batchGenerateHandler({ resumeState: first.value }));
+
+  expect(generated.map((g) => g.dipartimentoId)).toEqual(['LETTERE', 'SCIENZE']);
+  expect(result).toMatchObject({ totale: 2, processed: ['LETTERE', 'SCIENZE'] });
+});
+
+test('a resume without persisted dipartimentoTargets fails loud', () => {
+  const { service } = wireDipartimenti();
+  expect(() =>
+    service
+      .batchGenerateHandler({
+        resumeState: {
+          confDocId: 'VERBALE_DIPARTIMENTO',
+          jobId: 'job_dip',
+          nextIndex: 1,
+          processed: ['LETTERE'],
+          errori: []
+        }
+      })
+      .next()
+  ).toThrow(ConfigurationError);
+});
 ```
 
 e, accanto ai test `handler yields one resumable checkpoint per targeted class...`:
@@ -482,29 +488,29 @@ In `interface BatchResumeState`, sotto `alunnoTargets?: AlunnoBatchTarget[];`:
 In `generateDipartimenti`, sostituire la riga `const tutti = this.dipartimenti.findAll();` con:
 
 ```ts
-    let tutti: string[];
-    if (resume === null) {
-      tutti = this.dipartimenti.findAll().map((dipartimento) => dipartimento.id ?? '?');
-    } else {
-      if (resume.dipartimentoTargets === undefined) {
-        throw new ConfigurationError(
-          `Stato di ripresa ${confDocId} privo dei target dipartimento persistiti`
-        );
-      }
-      tutti = resume.dipartimentoTargets.slice();
-    }
+let tutti: string[];
+if (resume === null) {
+  tutti = this.dipartimenti.findAll().map((dipartimento) => dipartimento.id ?? '?');
+} else {
+  if (resume.dipartimentoTargets === undefined) {
+    throw new ConfigurationError(
+      `Stato di ripresa ${confDocId} privo dei target dipartimento persistiti`
+    );
+  }
+  tutti = resume.dipartimentoTargets.slice();
+}
 ```
 
 Nel corpo del ciclo, `const dipartimento = tutti[i]!;` e `const id = dipartimento.id ?? '?';` diventano una riga sola:
 
 ```ts
-          const id = tutti[i]!;
+const id = tutti[i]!;
 ```
 
 e nel checkpoint yieldato aggiungere, sotto `esecuzioneIniziata: this.esecuzioneIniziata`:
 
 ```ts
-            dipartimentoTargets: tutti
+dipartimentoTargets: tutti;
 ```
 
 - [x] **Step 5: Congelare i target delle classi**
@@ -512,35 +518,35 @@ e nel checkpoint yieldato aggiungere, sotto `esecuzioneIniziata: this.esecuzione
 In `generateClassi`, sostituire il blocco `const attive = ...`:
 
 ```ts
-    let attive: Classe[];
-    if (resume === null) {
-      attive = this.classi.filterPerGestioneArticolazione(
-        this.classi.findAttive(),
-        config.gestioneArticolazione
-      );
-    } else {
-      if (resume.classeTargets === undefined) {
-        throw new ConfigurationError(
-          `Stato di ripresa ${confDocId} privo dei target classe persistiti`
-        );
-      }
-      // Una classe sparita fra due run non deve uccidere il job: la si registra
-      // come errore e si prosegue (audit 2026-09-05 §3).
-      attive = resume.classeTargets.flatMap((id) => {
-        const classe = this.classi.findById(ClasseId.of(id));
-        if (classe === null) {
-          errori.push(`${id}: classe non più presente in CLASSI — saltata`);
-          return [];
-        }
-        return [classe];
-      });
+let attive: Classe[];
+if (resume === null) {
+  attive = this.classi.filterPerGestioneArticolazione(
+    this.classi.findAttive(),
+    config.gestioneArticolazione
+  );
+} else {
+  if (resume.classeTargets === undefined) {
+    throw new ConfigurationError(
+      `Stato di ripresa ${confDocId} privo dei target classe persistiti`
+    );
+  }
+  // Una classe sparita fra due run non deve uccidere il job: la si registra
+  // come errore e si prosegue (audit 2026-09-05 §3).
+  attive = resume.classeTargets.flatMap((id) => {
+    const classe = this.classi.findById(ClasseId.of(id));
+    if (classe === null) {
+      errori.push(`${id}: classe non più presente in CLASSI — saltata`);
+      return [];
     }
+    return [classe];
+  });
+}
 ```
 
 e nel checkpoint yieldato aggiungere, sotto `esecuzioneIniziata: this.esecuzioneIniziata`:
 
 ```ts
-            classeTargets: attive.map((classe) => classe.id ?? '')
+classeTargets: attive.map((classe) => classe.id ?? '');
 ```
 
 Verificare che `ClasseId` e il tipo `Classe` siano importati nel file (lo sono: `ClasseId` è usato in `generateForClasse`, `Classe` nei tipi degli assi docente/classe). Se un import manca, aggiungerlo.
@@ -566,10 +572,12 @@ git commit -m "fix(documents): freeze class and department batch targets in the 
 `targetsPerCarenza` risolve lo studente senza controllare `isAttivo()`, a differenza di `PER_ALUNNO` (`:347`) e `PER_GENITORI_ALUNNO` (`:597`), che partono da `findAttivi()`. Uno studente ritirato con una carenza aperta fa comunque partire la mail alla famiglia.
 
 **Files:**
+
 - Modify: `src/application/services/EmailNotificationService.ts:627-634`
 - Test: `test/unit/application/email-notification-service.test.ts:544-575`
 
 **Interfaces:**
+
 - Consumes: `Alunno.isAttivo(): boolean` (`src/domain/entities/Alunno.ts:67`).
 - Produces: nessuna firma nuova. `enumerateTargets(conf)` per i tre processi `PER_CARENZA_GENITORI*` restituisce solo target di studenti attivi.
 
@@ -597,9 +605,9 @@ Expected: FAIL — `Received: ["a1@school.it", "a2@school.it"]`
 In `src/application/services/EmailNotificationService.ts`, in `targetsPerCarenza`, subito dopo il blocco che gestisce `alunno === null`:
 
 ```ts
-      // Coerente con PER_ALUNNO e PER_GENITORI_ALUNNO, che partono da
-      // findAttivi(): un ritiro non è un'anomalia di dati, nessun warn.
-      if (!alunno.isAttivo()) continue;
+// Coerente con PER_ALUNNO e PER_GENITORI_ALUNNO, che partono da
+// findAttivi(): un ritiro non è un'anomalia di dati, nessun warn.
+if (!alunno.isAttivo()) continue;
 ```
 
 - [x] **Step 4: Eseguire il test e verificare che passi**
@@ -664,20 +672,22 @@ git commit -m "fix(email): skip withdrawn students when enumerating carenza targ
 
 Verifica dei call site (già fatta, non ripeterla):
 
-| Call site | Oggi | Dopo |
-|---|---|---|
-| `ReportService.ts:86,160` | `false` esplicito | invariato |
-| `studenti.ts:17,19` | parametro esplicito | invariato |
-| `StoricoClasseProvider.ts:48`, `PianiPersClasseProvider.ts:52` | `true` esplicito | invariato |
-| `StudentiProvider.ts:40` | default + `.filter(isAttivo)` a valle | invariato di fatto |
-| `RappresentantiProvider.ts:22` | default `false` — **il bug** | corretto |
+| Call site                                                      | Oggi                                  | Dopo               |
+| -------------------------------------------------------------- | ------------------------------------- | ------------------ |
+| `ReportService.ts:86,160`                                      | `false` esplicito                     | invariato          |
+| `studenti.ts:17,19`                                            | parametro esplicito                   | invariato          |
+| `StoricoClasseProvider.ts:48`, `PianiPersClasseProvider.ts:52` | `true` esplicito                      | invariato          |
+| `StudentiProvider.ts:40`                                       | default + `.filter(isAttivo)` a valle | invariato di fatto |
+| `RappresentantiProvider.ts:22`                                 | default `false` — **il bug**          | corretto           |
 
 **Files:**
+
 - Modify: `src/infrastructure/repositories/ClasseRepository.ts:231`
 - Modify: `src/domain/repositories/IClasseRepository.ts:44`
 - Test: `test/unit/application/context-engine/classe-provider.test.ts`
 
 **Interfaces:**
+
 - Produces: `IClasseRepository.getStudenti(classe: Classe, soloAttivi?: boolean): Alunno[]` — il default diventa `true`.
 
 - [x] **Step 1: Scrivere il test che fallisce**
@@ -734,7 +744,7 @@ Expected: PASS
 - [x] **Step 5: Verificare i test che si appoggiavano al vecchio default**
 
 Run: `npx jest --config jest.config.cjs test/unit/infrastructure/classe-cattedre.test.ts test/unit/infrastructure/piano-repository.test.ts test/unit/application/context-engine/studenti.test.ts test/unit/application/report-service.test.ts`
-Expected: PASS. Se un test falliva perché contava sui ritirati inclusi *per default*, rendere il parametro esplicito nel test (`getStudenti(classe, false)`) invece di rimettere il default insicuro.
+Expected: PASS. Se un test falliva perché contava sui ritirati inclusi _per default_, rendere il parametro esplicito nel test (`getStudenti(classe, false)`) invece di rimettere il default insicuro.
 
 - [x] **Step 6: Suite completa e commit**
 
@@ -754,12 +764,14 @@ git commit -m "fix(classi): default getStudenti to active students only"
 **Prerequisito bloccante:** confermare l'ID della riga MATERIE del sostegno (vedi "Decisioni già prese"). Il piano usa `'SOS'`.
 
 **Files:**
+
 - Modify: `src/config/schema.ts` (in coda alle costanti di colonna)
 - Modify: `src/application/context-engine/TeachingCouncilProjection.ts:186`
 - Modify: `src/application/pipelines/emailSteps.ts:208-253`
 - Test: `test/unit/application/pipelines/email-steps.test.ts`
 
 **Interfaces:**
+
 - Consumes: `IClasseRepository.getCoordinatori(classe)`, `IClasseRepository.getDocentiRuoloArticolato(classe, nomeRuolo)`, `ClasseId.of(id)`, `MateriaVM.sigla` (che è l'ID della materia, `subjectVmMapper.ts:34`).
 - Produces: `export function descrizione(isCoordinatore: boolean, isTutorAsl: boolean, isTutorOrientamento: boolean): string[]` da `TeachingCouncilProjection.ts`; `export const MATERIA_SOSTEGNO: string` da `schema.ts`.
 
@@ -782,7 +794,11 @@ test('BuildCDUStep resolves destinatario role flags from CLASSI, not from the PR
 });
 
 test('BuildCDUStep marks a non-coordinatore false even on a PER_COORDINATORE send (audit §6)', () => {
-  const target = { ...docenteTarget(), docenteEmail: 'bianchi@school.it', emails: ['bianchi@school.it'] };
+  const target = {
+    ...docenteTarget(),
+    docenteEmail: 'bianchi@school.it',
+    emails: ['bianchi@school.it']
+  };
   const w = wire({ PROCESSO: 'PER_COORDINATORE' }, target);
   buildStep(w).execute(w.ctx);
 
@@ -830,11 +846,11 @@ import { MATERIA_SOSTEGNO } from '../../config/schema';
 Nel metodo `buildDestinatario`, dopo la riga `const { cattedre, materieCompetenza } = this.buildCattedre(t, classiCompetenza, when);`:
 
 ```ts
-    const ruoli = this.ruoliDestinatario(docente, classiCompetenza);
-    const isDocenteSostegno = materieCompetenza.some(
-      (materia) =>
-        materia.sigla === MATERIA_SOSTEGNO || materia.sigla.startsWith(`${MATERIA_SOSTEGNO}.`)
-    );
+const ruoli = this.ruoliDestinatario(docente, classiCompetenza);
+const isDocenteSostegno = materieCompetenza.some(
+  (materia) =>
+    materia.sigla === MATERIA_SOSTEGNO || materia.sigla.startsWith(`${MATERIA_SOSTEGNO}.`)
+);
 ```
 
 e sostituire il blocco di costanti nel `return`:
@@ -913,11 +929,13 @@ git commit -m "fix(email): resolve destinatario role flags from CLASSI instead o
 `AlberoCartelle.ts:76` unisce e non pota mai il CSV `UTENTI`; `AggregatoreDati.getDocumentiPerUtente/getCartellePerUtente` decidono cosa un utente riceve leggendo quel CSV registrato in passato. Risultato: chi ha perso la cattedra continua a ricevere link a tempo indeterminato, chi è arrivato in corso d'anno non matcha nulla. Le classi di competenza attuali sono già calcolate a monte (`sourceScopeFor`, `emailSteps.ts:122-140`): basta portarle fino al filtro. `UTENTI` resta audit trail, nessuna migrazione dati.
 
 **Files:**
+
 - Modify: `src/application/services/AggregatoreDati.ts:63-100` (accessor), `:130-140` (`perMetodo`), `:178-187` e `:215-224` (wrapper)
 - Modify: `src/application/email/boxes.ts:623-631`
 - Test: `test/unit/application/aggregatore-dati.test.ts`
 
 **Interfaces:**
+
 - Consumes: `LogDocumento.getClassi()/containsUtente(email)` e `LogCartella.getClassi()/containsUtente(email)` (stessa forma strutturale in entrambe le entità).
 - Produces:
   - `AggregatoreDati.getDocumentiPerUtente(utenteEmail: string, filtri?: FiltriSorgente, classiCompetenza?: string[]): LogDocumento[]`
@@ -974,9 +992,9 @@ test('getDocumentiPerUtente shows class documents to a teacher who arrived mid-y
   ];
   const agg = aggregatore(tables);
 
-  expect(
-    agg.getDocumentiPerUtente('nuovo@school.it', undefined, ['5A']).map((d) => d.id)
-  ).toEqual(['d-classe']);
+  expect(agg.getDocumentiPerUtente('nuovo@school.it', undefined, ['5A']).map((d) => d.id)).toEqual([
+    'd-classe'
+  ]);
 });
 
 test('getCartellePerUtente without a live scope still falls back to the registered UTENTI (audit §5)', () => {
@@ -1077,11 +1095,11 @@ In `perMetodo`, aggiungere al tipo inline dei `params`, dopo `utenteEmail?: stri
 Nei due wrapper privati, passare il terzo argomento:
 
 ```ts
-    return this.getDocumentiPerUtente(params.utenteEmail, filtri, params.classiCompetenza);
+return this.getDocumentiPerUtente(params.utenteEmail, filtri, params.classiCompetenza);
 ```
 
 ```ts
-    return this.getCartellePerUtente(params.utenteEmail, filtri, params.classiCompetenza);
+return this.getCartellePerUtente(params.utenteEmail, filtri, params.classiCompetenza);
 ```
 
 - [x] **Step 5: Passare le classi di competenza dal box**
@@ -1124,12 +1142,14 @@ git commit -m "fix(boxes): resolve per-user document and folder visibility from 
 `SchoolProvider.ts:19` prende `ruolo.getEmails()[0]`, mentre `RuoloSpeciale` modella "uno o più docenti" e `RisolutoreRuoliService.referente` li restituisce tutti: `cdu.istituto.staff` mostra un solo titolare mentre l'ACL per lo stesso ruolo li abilita tutti. `persona` resta il primo titolare, così nessun template esistente si rompe.
 
 **Files:**
+
 - Modify: `src/application/context-engine/Cdu.ts:463-468`
 - Modify: `src/application/context-engine/providers/SchoolProvider.ts:16-40`
 - Modify: `SPECS_ALDO/02_CDU_STRUTTURA.md:154-160`
 - Test: `test/unit/application/context-engine/providers/school-provider.test.ts`
 
 **Interfaces:**
+
 - Consumes: `RuoloSpeciale.getEmails(): Email[]`.
 - Produces: `RuoloStaffVM` guadagna `persone: PersonaVM[]` e `hasPersone: boolean`; `persona`/`hasPersona` restano invariati (primo titolare).
 
@@ -1138,45 +1158,48 @@ git commit -m "fix(boxes): resolve per-user document and folder visibility from 
 In `test/unit/application/context-engine/providers/school-provider.test.ts`, dentro il `describe('SchoolProvider', ...)`:
 
 ```ts
-  it('exposes every holder of a role, not just the first (audit §7)', () => {
-    const master: Pick<IMasterSheetRepository, 'findConfigAnnoCorrente'> = {
-      findConfigAnnoCorrente: () =>
-        ({ annoScolasticoRaw: '2025-2026', dirigente: 'Prof.ssa Maria Bianchi' }) as never
-    };
-    const ruoli: Pick<IRuoloSpecialeRepository, 'findAllCached'> = {
-      findAllCached: () =>
-        [
-          {
-            id: 'REF_BES',
-            getEmails: () => [{ value: 'mario.rossi@scuola.edu.it' }, { value: 'lucia.verdi@scuola.edu.it' }]
-          },
-          { id: 'AN_DIG', getEmails: () => [] }
-        ] as never
-    };
-    const docenti: Pick<IDocenteRepository, 'findById'> = {
-      findById: (email: string) =>
-        (email === 'mario.rossi@scuola.edu.it'
-          ? { nome: 'Mario', cognome: 'Rossi', genere: 'M', id: email }
-          : email === 'lucia.verdi@scuola.edu.it'
-            ? { nome: 'Lucia', cognome: 'Verdi', genere: 'F', id: email }
-            : null) as never
-    };
-    const provider = new SchoolProvider(master as never, ruoli as never, docenti as never);
-    const cdu = makeCdu();
+it('exposes every holder of a role, not just the first (audit §7)', () => {
+  const master: Pick<IMasterSheetRepository, 'findConfigAnnoCorrente'> = {
+    findConfigAnnoCorrente: () =>
+      ({ annoScolasticoRaw: '2025-2026', dirigente: 'Prof.ssa Maria Bianchi' }) as never
+  };
+  const ruoli: Pick<IRuoloSpecialeRepository, 'findAllCached'> = {
+    findAllCached: () =>
+      [
+        {
+          id: 'REF_BES',
+          getEmails: () => [
+            { value: 'mario.rossi@scuola.edu.it' },
+            { value: 'lucia.verdi@scuola.edu.it' }
+          ]
+        },
+        { id: 'AN_DIG', getEmails: () => [] }
+      ] as never
+  };
+  const docenti: Pick<IDocenteRepository, 'findById'> = {
+    findById: (email: string) =>
+      (email === 'mario.rossi@scuola.edu.it'
+        ? { nome: 'Mario', cognome: 'Rossi', genere: 'M', id: email }
+        : email === 'lucia.verdi@scuola.edu.it'
+          ? { nome: 'Lucia', cognome: 'Verdi', genere: 'F', id: email }
+          : null) as never
+  };
+  const provider = new SchoolProvider(master as never, ruoli as never, docenti as never);
+  const cdu = makeCdu();
 
-    provider.provide(cdu);
+  provider.provide(cdu);
 
-    const refBes = cdu.istituto!.staff.perId.REF_BES!;
-    expect(refBes.persone.map((p) => p.email)).toEqual([
-      'mario.rossi@scuola.edu.it',
-      'lucia.verdi@scuola.edu.it'
-    ]);
-    expect(refBes.hasPersone).toBe(true);
-    expect(refBes.persona?.email).toBe('mario.rossi@scuola.edu.it'); // compat: primo titolare
-    const anDig = cdu.istituto!.staff.perId.AN_DIG!;
-    expect(anDig.persone).toEqual([]);
-    expect(anDig.hasPersone).toBe(false);
-  });
+  const refBes = cdu.istituto!.staff.perId.REF_BES!;
+  expect(refBes.persone.map((p) => p.email)).toEqual([
+    'mario.rossi@scuola.edu.it',
+    'lucia.verdi@scuola.edu.it'
+  ]);
+  expect(refBes.hasPersone).toBe(true);
+  expect(refBes.persona?.email).toBe('mario.rossi@scuola.edu.it'); // compat: primo titolare
+  const anDig = cdu.istituto!.staff.perId.AN_DIG!;
+  expect(anDig.persone).toEqual([]);
+  expect(anDig.hasPersone).toBe(false);
+});
 ```
 
 - [x] **Step 2: Eseguire il test e verificare che fallisca**
@@ -1206,21 +1229,21 @@ export interface RuoloStaffVM {
 In `src/application/context-engine/providers/SchoolProvider.ts`, sostituire il corpo del `map`:
 
 ```ts
-    const elenco = this.ruoli.findAllCached().map((ruolo) => {
-      const persone = ruolo
-        .getEmails()
-        .map((email) => this.persona(email.value))
-        .filter((persona): persona is PersonaVM => persona !== null);
-      const persona = persone[0] ?? null;
-      return {
-        ruoloId: ruolo.id ?? '',
-        ruoloNome: ruolo.nome,
-        persona,
-        hasPersona: persona !== null,
-        persone,
-        hasPersone: persone.length > 0
-      };
-    });
+const elenco = this.ruoli.findAllCached().map((ruolo) => {
+  const persone = ruolo
+    .getEmails()
+    .map((email) => this.persona(email.value))
+    .filter((persona): persona is PersonaVM => persona !== null);
+  const persona = persone[0] ?? null;
+  return {
+    ruoloId: ruolo.id ?? '',
+    ruoloNome: ruolo.nome,
+    persona,
+    hasPersona: persona !== null,
+    persone,
+    hasPersone: persone.length > 0
+  };
+});
 ```
 
 - [x] **Step 5: Eseguire il test e verificare che passi**

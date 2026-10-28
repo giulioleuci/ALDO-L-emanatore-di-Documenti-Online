@@ -240,7 +240,9 @@ export function eseguiAzioni(opts: EseguiAzioniOptions): number {
       case 'TRASFORMA_CAMPO': {
         const trasforma = TRASFORMAZIONI[azione.operazione ?? ''];
         if (trasforma === undefined) {
-          logger.warn(`AZIONE TRASFORMA_CAMPO: operazione "${String(azione.operazione)}" sconosciuta — saltata`);
+          logger.warn(
+            `AZIONE TRASFORMA_CAMPO: operazione "${String(azione.operazione)}" sconosciuta — saltata`
+          );
           break;
         }
         updated += transformMatching(db, azione.tab ?? '', azione.col ?? '', criteri, trasforma);

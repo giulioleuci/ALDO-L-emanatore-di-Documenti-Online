@@ -33,10 +33,9 @@ describe('LogEmail construction and composite id', () => {
 
 describe('LogEmail.getDestinatari', () => {
   test('splits and trims the CSV, dropping empty entries', () => {
-    expect(log({ [COL_LOG_MAIL.DESTINATARI]: 'a@school.it, ,b@school.it ,' }).getDestinatari()).toEqual([
-      'a@school.it',
-      'b@school.it'
-    ]);
+    expect(
+      log({ [COL_LOG_MAIL.DESTINATARI]: 'a@school.it, ,b@school.it ,' }).getDestinatari()
+    ).toEqual(['a@school.it', 'b@school.it']);
   });
 
   test('empty DESTINATARI yields an empty array', () => {

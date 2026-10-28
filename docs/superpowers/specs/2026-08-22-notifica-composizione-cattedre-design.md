@@ -35,12 +35,12 @@ delle classi in cui insegna + materie effettivamente insegnate in ciascuna class
 
 ## Decisioni (con l'utente)
 
-| Decisione | Scelta |
-|---|---|
-| Ambito | Batch a tutti i docenti, nuovo pattern `CONF_MAIL` con `PROCESSO=PER_DOCENTE` |
-| Forma dati | Lista piatta ricca + struttura per-classe |
-| Supplenze | Materie **effettive alla data di invio** (stesso resolver dei target) |
-| Presentazione | Nuovo box dedicato `cattedre` **e** `testo_dinamico` per formati custom |
+| Decisione     | Scelta                                                                                                                                            |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ambito        | Batch a tutti i docenti, nuovo pattern `CONF_MAIL` con `PROCESSO=PER_DOCENTE`                                                                     |
+| Forma dati    | Lista piatta ricca + struttura per-classe                                                                                                         |
+| Supplenze     | Materie **effettive alla data di invio** (stesso resolver dei target)                                                                             |
+| Presentazione | Nuovo box dedicato `cattedre` **e** `testo_dinamico` per formati custom                                                                           |
 | Library-first | GasLibraryFactory non offre lookup inverso attore→cattedre; la composizione resta ALDO-domain su `RoleResolutionLib`. Nessuna estensione libreria |
 
 ## Design
@@ -71,19 +71,21 @@ Da `mie` si costruiscono i SubjectVM con il mapper standard
 
 ```yaml
 contesto:
-  sostituisce: PersonVM | null       # invariato
-  classiCompetenza: string[]         # invariato
-  materieCompetenza: SubjectVM[]     # STUB RIMOSSO: tutte le materie effettive del
-                                     #   destinatario, deduplicate su tutte le classi
-  cattedre: CattedraVM[]             # NUOVO: raggruppamento per classe
+  sostituisce: PersonVM | null # invariato
+  classiCompetenza: string[] # invariato
+  materieCompetenza:
+    SubjectVM[] # STUB RIMOSSO: tutte le materie effettive del
+    #   destinatario, deduplicate su tutte le classi
+  cattedre: CattedraVM[] # NUOVO: raggruppamento per classe
 
 CattedraVM:
-  classeId: string                   # "5AB-LC-LS"
-  classeNome: string                 # nome completo della classe
+  classeId: string # "5AB-LC-LS"
+  classeNome: string # nome completo della classe
   anno: number
   sezione: string
-  materie: SubjectVM[]               # VM completi: sigla, nome, nomeSintetico (sintesi),
-                                     #   colore1/colore2, specificita, isITP, flag esami...
+  materie:
+    SubjectVM[] # VM completi: sigla, nome, nomeSintetico (sintesi),
+    #   colore1/colore2, specificita, isITP, flag esami...
 ```
 
 Nota: cambia il tipo di `materieCompetenza` da `string[]` a `SubjectVM[]`. È sicuro:

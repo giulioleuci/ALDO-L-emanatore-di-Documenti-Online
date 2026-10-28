@@ -4,11 +4,7 @@ type Assert<T extends true> = T;
 type ConDocentiCompleto = Required<
   Pick<
     MateriaVM,
-    | 'docenti'
-    | 'hasDocenti'
-    | 'docentiDescrizione'
-    | 'docentiDescrizioneEstesa'
-    | 'hasCattedraItp'
+    'docenti' | 'hasDocenti' | 'docentiDescrizione' | 'docentiDescrizioneEstesa' | 'hasCattedraItp'
   >
 >;
 

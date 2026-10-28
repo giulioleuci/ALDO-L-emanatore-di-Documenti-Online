@@ -1,7 +1,11 @@
 import type { IDatabase } from '../../infrastructure/db/Database';
 import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import type { ISpreadsheetReportFacade } from '../../infrastructure/facades/SpreadsheetReportFacade';
-import { VALIDATION_TABLES, regoleValidazione, messaggioErrore } from '../../config/validationRules';
+import {
+  VALIDATION_TABLES,
+  regoleValidazione,
+  messaggioErrore
+} from '../../config/validationRules';
 
 /** One row of the report sheet (design doc Feature 2 §Output Format). */
 export interface ValidationRow {
@@ -52,7 +56,8 @@ export class DatabaseValidationService {
    * violations. Used both by the menu (no argument) and by the VALIDA_DB action.
    */
   esegui(tabelle?: string[]): ValidationReport {
-    const richieste = tabelle === undefined ? null : tabelle.filter((t) => VALIDATION_TABLES.includes(t));
+    const richieste =
+      tabelle === undefined ? null : tabelle.filter((t) => VALIDATION_TABLES.includes(t));
     const datasets = this.leggiTabelle();
     const { violations } = new DatasetValidator({ logger: this.logger }).validate(
       datasets,
@@ -79,7 +84,10 @@ export class DatabaseValidationService {
     const righe =
       violazioni.length === 0
         ? [HEADER, [NESSUN_ERRORE, '', '', '', '']]
-        : [HEADER, ...violazioni.map((v) => [v.tabella, String(v.riga), v.campo, v.valore, v.errore])];
+        : [
+            HEADER,
+            ...violazioni.map((v) => [v.tabella, String(v.riga), v.campo, v.valore, v.errore])
+          ];
 
     const spreadsheetId = this.deps.report.creaReport(nome, anno.idCartellaRoot, righe);
     this.logger.info(`Validazione DB: ${violazioni.length} violazioni, report ${spreadsheetId}`);

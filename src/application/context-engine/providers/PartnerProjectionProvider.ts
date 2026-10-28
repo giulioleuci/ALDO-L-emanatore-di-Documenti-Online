@@ -66,7 +66,13 @@ export class PartnerProjectionProvider implements ContextProvider {
     );
 
     const primo = this.buildProjection(sottoClassi[0]!.nome, cdu, params, options, consiglioPrimo);
-    const secondo = this.buildProjection(sottoClassi[1]!.nome, cdu, params, options, consiglioSecondo);
+    const secondo = this.buildProjection(
+      sottoClassi[1]!.nome,
+      cdu,
+      params,
+      options,
+      consiglioSecondo
+    );
     focusClasse.partner = { ...elencoVm([primo, secondo]), primo, secondo };
   }
 
@@ -97,7 +103,13 @@ export class PartnerProjectionProvider implements ContextProvider {
       ...(outerCdu.istituto === undefined ? {} : { istituto: outerCdu.istituto }),
       focus: {},
       tech: {
-        entita: { classe: null, alunno: null, docente: null, patternEmail: null, documentoMetadato: null },
+        entita: {
+          classe: null,
+          alunno: null,
+          docente: null,
+          patternEmail: null,
+          documentoMetadato: null
+        },
         servizi: [],
         pipeline: { statoCorrente: 'IN_CORSO', stepEseguiti: [], errori: [], logEsecuzione: [] }
       }

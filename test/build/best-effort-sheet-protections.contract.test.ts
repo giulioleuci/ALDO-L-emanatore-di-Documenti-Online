@@ -1,6 +1,6 @@
-function compileBestEffortProtectionContract(service: SpreadsheetService):
-  | { request: SpreadsheetProtectRequest; message: string }
-  | undefined {
+function compileBestEffortProtectionContract(
+  service: SpreadsheetService
+): { request: SpreadsheetProtectRequest; message: string } | undefined {
   const result = service.protectRanges(
     'spreadsheet-id',
     { range: 'Sheet1!A:A' },

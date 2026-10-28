@@ -33,17 +33,19 @@ export function buildElencoMaterieConPermessi(
     colore: SPECIAL_COLORE
   };
   const registry = new ProjectionRegistry().register('aldoMateriaPermessiVm', (value) =>
-    (value as Array<{ sigla: string; specificita?: string | null; nome: string }>).map((materia) => ({
-      sigla: materia.sigla,
-      specificita: materia.specificita,
-      nome: materia.nome,
-      isSpecial: false,
-      roles: [materia.sigla],
-      // SubjectVM (Task 8) carries colore1/colore2, not a flat `colore` — this
-      // column color has never been sourced from the materia (was hardcoded ''
-      // pre-Task-8 too); keep it blank rather than leak SubjectVM's extra fields.
-      colore: ''
-    }))
+    (value as Array<{ sigla: string; specificita?: string | null; nome: string }>).map(
+      (materia) => ({
+        sigla: materia.sigla,
+        specificita: materia.specificita,
+        nome: materia.nome,
+        isSpecial: false,
+        roles: [materia.sigla],
+        // SubjectVM (Task 8) carries colore1/colore2, not a flat `colore` — this
+        // column color has never been sourced from the materia (was hardcoded ''
+        // pre-Task-8 too); keep it blank rather than leak SubjectVM's extra fields.
+        colore: ''
+      })
+    )
   );
   const projector = new CollectionProjector({
     registry,

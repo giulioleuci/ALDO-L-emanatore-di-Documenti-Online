@@ -1,4 +1,10 @@
-import type { Cdu, DestinatarioVM, CattedraVM, MateriaVM, ClasseSintesiVM } from '../context-engine/Cdu';
+import type {
+  Cdu,
+  DestinatarioVM,
+  CattedraVM,
+  MateriaVM,
+  ClasseSintesiVM
+} from '../context-engine/Cdu';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
 import type { BuildParams, RecipeOptions } from '../context-engine/Recipe';
 import { emailTargetId, type EmailTarget } from '../email/saluto';
@@ -27,11 +33,7 @@ import type { AggregatoreDati } from '../services/AggregatoreDati';
 import { getClasseEntity } from '../context-engine/techEntities';
 import { recipe } from '../context-engine/Recipe';
 import { salutoPerTarget } from '../email/saluto';
-import {
-  createBoxComposer,
-  renderBoxes,
-  type SourceScope
-} from '../email/boxes';
+import { createBoxComposer, renderBoxes, type SourceScope } from '../email/boxes';
 import { eseguiAzioni, hasJsonValue, type PostProcessDb } from './standaloneActions';
 import { COL_CONF_MAIL, MATERIA_SOSTEGNO } from '../../config/schema';
 import { ProcessoInvio, StatoEmail, DuplicazioneDocumento } from '../../domain/value-objects/enums';
@@ -225,7 +227,12 @@ export class BuildCDUStep extends Step {
             genere: docente.genere
           })
         : t.tipo === 'alunno' && alunno !== null
-          ? buildPersonaVm({ nome: alunno.cognomeNome, cognome: null, email: alunno.id ?? '', genere: null })
+          ? buildPersonaVm({
+              nome: alunno.cognomeNome,
+              cognome: null,
+              email: alunno.id ?? '',
+              genere: null
+            })
           : buildPersonaVm({ nome: '', cognome: null, email: t.emails[0] ?? '', genere: null });
 
     const classiCompetenza =
@@ -241,7 +248,11 @@ export class BuildCDUStep extends Step {
         materia.sigla === MATERIA_SOSTEGNO || materia.sigla.startsWith(`${MATERIA_SOSTEGNO}.`)
     );
 
-    const classi = classiCompetenza.map((nome): ClasseSintesiVM => ({ nome, anno: 0, sezione: '' }));
+    const classi = classiCompetenza.map((nome): ClasseSintesiVM => ({
+      nome,
+      anno: 0,
+      sezione: ''
+    }));
     return {
       ...persona,
       ruoliAttivi: ruoli.elenco,
@@ -251,11 +262,36 @@ export class BuildCDUStep extends Step {
       isTutorAsl: ruoli.isTutorAsl,
       isDocenteSostegno,
       isSupplente: titolare !== null,
-      sostituisce: titolare === null ? null : buildPersonaVm({ nome: titolare.nome, cognome: titolare.cognome, email: titolare.id, genere: titolare.genere }),
+      sostituisce:
+        titolare === null
+          ? null
+          : buildPersonaVm({
+              nome: titolare.nome,
+              cognome: titolare.cognome,
+              email: titolare.id,
+              genere: titolare.genere
+            }),
       hasSostituisce: titolare !== null,
-      classi: { elenco: classi, hasElenco: classi.length > 0, numero: classi.length, elencoDescrizione: classi.map((classe) => classe.nome).join(', ') },
-      materie: { elenco: materieCompetenza, hasElenco: materieCompetenza.length > 0, numero: materieCompetenza.length, elencoDescrizione: materieCompetenza.map((materia) => materia.nome).join(', '), sigle: materieCompetenza.map((materia) => materia.sigla).join(', ') },
-      cattedre: { elenco: cattedre, hasElenco: cattedre.length > 0, numero: cattedre.length, elencoDescrizione: cattedre.map((cattedra) => cattedra.sezioneEstesa).join(', '), orePot: docente?.getOrePot() ?? 0 },
+      classi: {
+        elenco: classi,
+        hasElenco: classi.length > 0,
+        numero: classi.length,
+        elencoDescrizione: classi.map((classe) => classe.nome).join(', ')
+      },
+      materie: {
+        elenco: materieCompetenza,
+        hasElenco: materieCompetenza.length > 0,
+        numero: materieCompetenza.length,
+        elencoDescrizione: materieCompetenza.map((materia) => materia.nome).join(', '),
+        sigle: materieCompetenza.map((materia) => materia.sigla).join(', ')
+      },
+      cattedre: {
+        elenco: cattedre,
+        hasElenco: cattedre.length > 0,
+        numero: cattedre.length,
+        elencoDescrizione: cattedre.map((cattedra) => cattedra.sezioneEstesa).join(', '),
+        orePot: docente?.getOrePot() ?? 0
+      },
       comunicazione: {
         salutoIniziale: salutoPerTarget(t, docente, alunno),
         oggetto: '',
@@ -558,7 +594,7 @@ export class ComposeEmailStep extends Step {
     const boxes = ctx.get<string[]>('boxHtmlOrdered') ?? [];
     const footer =
       '<div style="margin-top:30px; font-size:12px; color:#888;">' +
-      '<p>‼️ Non rispondere a questo indirizzo email: è utilizzato solo per l\'invio di questa comunicazione e, non essendo monitorato, non riceveresti risposta.</p>' +
+      "<p>‼️ Non rispondere a questo indirizzo email: è utilizzato solo per l'invio di questa comunicazione e, non essendo monitorato, non riceveresti risposta.</p>" +
       '</div>';
 
     // Saluto/oggetto embed sheet-sourced names; the header colour lands in a
@@ -600,7 +636,10 @@ export class ComposeEmailStep extends Step {
     }
   }
 
-  protected override _getLogDetails(ctx: PipelineContext): { Subject: string; Attachments: number } {
+  protected override _getLogDetails(ctx: PipelineContext): {
+    Subject: string;
+    Attachments: number;
+  } {
     return {
       Subject: ctx.get<string>('oggettoRisolto') ?? '',
       Attachments: (ctx.get<string[]>('allegatiIds') ?? []).length
@@ -629,7 +668,8 @@ export class ResolveRecipientsStep extends Step {
       t.teachingAssignmentTarget !== true
     ) {
       // Coordinator, PER_CDC, family and student targets are declared recipients.
-      const dest: Destinazione = t.cc !== undefined ? { emails: t.emails, cc: t.cc } : { emails: t.emails };
+      const dest: Destinazione =
+        t.cc !== undefined ? { emails: t.emails, cc: t.cc } : { emails: t.emails };
       this.setResult(ctx, 'destinatariFinali', [dest] satisfies Destinazione[]);
       return;
     }
@@ -747,7 +787,9 @@ export class SendEmailStep extends Step {
     this.setResult(ctx, 'sentBcc', resolvedBcc);
   }
 
-  protected override _getLogDetails(ctx: PipelineContext): Record<string, string | number | string[]> {
+  protected override _getLogDetails(
+    ctx: PipelineContext
+  ): Record<string, string | number | string[]> {
     const errors = ctx.get<string[]>('sendErrors') ?? [];
     const cc = ctx.get<string[]>('sentCc') ?? [];
     const bcc = ctx.get<string[]>('sentBcc') ?? [];

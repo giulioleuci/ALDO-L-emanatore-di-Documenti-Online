@@ -53,11 +53,13 @@ The spec's §5 strategy-factory diagram names exactly 4 reachable strategies (`D
 ### Task 1: Domain — `GeneratoreAxis` enum + `ConfigurazioneDocumento` validation
 
 **Files:**
+
 - Modify: `src/domain/value-objects/enums.ts`
 - Modify: `src/domain/entities/ConfigurazioneDocumento.ts`
 - Test: `test/unit/domain/configurazione-documento.test.ts` (create if it doesn't exist yet — check first with `find test/unit/domain -iname "configurazione-documento*"`)
 
 **Interfaces:**
+
 - Produces: `GeneratoreAxis` enum (`CLASSE`, `DOCENTE`, `PIANO_PERSONALIZZATO`, `CLASSE_MATERIA`, `CLASSE_DOCENTE`, `CLASSE_DOCENTE_MATERIA`, `DIPARTIMENTO`, `ALUNNO`); `ConfigurazioneDocumento.generatore: GeneratoreAxis`; constructor throws `ConfigurationError` for an invalid/missing `GENERATORE` or `FORMATO` (not `GDOC`/`GSHEET`).
 - Consumes: existing `FormatoOutput` enum (`GDOC`/`GSHEET`/`PDF`/`TEXT`) — no new parallel `FormatoDocumento` type is introduced; `CONF_DOC.FORMATO` is validated to only ever be `GDOC` or `GSHEET` at construction time, `PDF`/`TEXT` become invalid values for `CONF_DOC` rows (they stay in the shared enum since `documentSteps.ts:buildFileLink` already has a generic fallback branch for them — grep confirmed no other consumer needs a separate type).
 
@@ -81,16 +83,16 @@ describe('ConfigurazioneDocumento — GENERATORE/FORMATO validation', () => {
 
   it('accepts every documented GeneratoreAxis value', () => {
     for (const axis of Object.values(GeneratoreAxis)) {
-      expect(ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.GENERATORE]: axis })).generatore).toBe(
-        axis
-      );
+      expect(
+        ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.GENERATORE]: axis })).generatore
+      ).toBe(axis);
     }
   });
 
   it('rejects an unknown GENERATORE', () => {
-    expect(() => ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.GENERATORE]: 'BOH' }))).toThrow(
-      ConfigurationError
-    );
+    expect(() =>
+      ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.GENERATORE]: 'BOH' }))
+    ).toThrow(ConfigurationError);
   });
 
   it('rejects a missing GENERATORE', () => {
@@ -100,15 +102,15 @@ describe('ConfigurazioneDocumento — GENERATORE/FORMATO validation', () => {
   });
 
   it('accepts GDOC/GSHEET and rejects PDF/TEXT/unknown FORMATO', () => {
-    expect(ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.FORMATO]: 'GSHEET' })).formato).toBe(
-      'GSHEET'
-    );
-    expect(() => ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.FORMATO]: 'PDF' }))).toThrow(
-      ConfigurationError
-    );
-    expect(() => ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.FORMATO]: undefined }))).toThrow(
-      ConfigurationError
-    );
+    expect(
+      ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.FORMATO]: 'GSHEET' })).formato
+    ).toBe('GSHEET');
+    expect(() =>
+      ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.FORMATO]: 'PDF' }))
+    ).toThrow(ConfigurationError);
+    expect(() =>
+      ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.FORMATO]: undefined }))
+    ).toThrow(ConfigurationError);
   });
 
   it('rejects tabelleImportate=true on GSHEET', () => {
@@ -144,7 +146,10 @@ describe('ConfigurazioneDocumento — GENERATORE/FORMATO validation', () => {
   it('rejects aggiungiMaterie and aggiungiMaterieConPermessi both truthy', () => {
     const row = validRow({
       [COL_CONF_DOC.FORMATO]: 'GSHEET',
-      [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ aggiungiMaterie: true, aggiungiMaterieConPermessi: true })
+      [COL_CONF_DOC.PARAMETRI]: JSON.stringify({
+        aggiungiMaterie: true,
+        aggiungiMaterieConPermessi: true
+      })
     });
     expect(() => ConfigurazioneDocumento.fromData(row)).toThrow(
       'aggiungiMaterie e aggiungiMaterieConPermessi sono mutuamente esclusivi'
@@ -280,6 +285,7 @@ git commit -m "feat(domain): GeneratoreAxis enum + CONF_DOC GENERATORE/FORMATO/P
 ### Task 2: `DocumentStrategyFactory` replacing `strategyRegistry`
 
 **Files:**
+
 - Create: `src/application/factories/DocumentStrategyFactory.ts`
 - Modify: `src/application/pipelines/documentSteps.ts` (`RenderTemplateStep`)
 - Modify: `src/application/services/DocumentGenerationService.ts` (`DocumentGenerationDeps.strategyRegistry` → `strategyFactory`; drop the 3 `!this.strategyRegistry.has(...)` guards)
@@ -288,6 +294,7 @@ git commit -m "feat(domain): GeneratoreAxis enum + CONF_DOC GENERATORE/FORMATO/P
 - Test: `test/unit/application/factories/document-strategy-factory.test.ts` (new), `test/unit/application/pipelines/document-steps.test.ts` (or wherever `RenderTemplateStep` is tested — `grep -rl "RenderTemplateStep" test/unit`)
 
 **Interfaces:**
+
 - Consumes: `ConfigurazioneDocumento.formato`/`.generatore`/`.getParametri()` (Task 1), existing strategy classes.
 - Produces: `class DocumentStrategyFactory { resolve(config: ConfigurazioneDocumento): GeneratorStrategy }`.
 
@@ -345,7 +352,9 @@ describe('DocumentStrategyFactory', () => {
       sheetPermessi
     );
     expect(
-      factory.resolve(config({ [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }) }))
+      factory.resolve(
+        config({ [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }) })
+      )
     ).toBe(docTabelle);
   });
 
@@ -416,7 +425,9 @@ describe('DocumentStrategyFactory', () => {
   it('throws when the required optional strategy was never wired (off-GAS)', () => {
     const factory = new DocumentStrategyFactory(docGenerico, foglioGenerico, docPersonalizzato);
     expect(() =>
-      factory.resolve(config({ [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }) }))
+      factory.resolve(
+        config({ [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ tabelleImportate: true }) })
+      )
     ).toThrow('DOCUMENTO_CON_TABELLE_IMPORTATE');
     expect(() => factory.resolve(config({ [COL_CONF_DOC.FORMATO]: 'GSHEET' }))).not.toThrow();
     expect(() =>
@@ -479,7 +490,9 @@ export class DocumentStrategyFactory {
     if (config.formato === FormatoOutput.GSHEET) {
       if (parametri.aggiungiMaterieConPermessi) {
         if (this.sheetPermessi === undefined) {
-          throw new PipelineError('SHEET_CON_MATERIE_E_PERMESSI non disponibile in questo ambiente');
+          throw new PipelineError(
+            'SHEET_CON_MATERIE_E_PERMESSI non disponibile in questo ambiente'
+          );
         }
         return this.sheetPermessi;
       }
@@ -494,7 +507,9 @@ export class DocumentStrategyFactory {
     if (config.generatore === GeneratoreAxis.PIANO_PERSONALIZZATO) return this.docPersonalizzato;
     if (parametri.tabelleImportate === true) {
       if (this.docTabelle === undefined) {
-        throw new PipelineError('DOCUMENTO_CON_TABELLE_IMPORTATE non disponibile in questo ambiente');
+        throw new PipelineError(
+          'DOCUMENTO_CON_TABELLE_IMPORTATE non disponibile in questo ambiente'
+        );
       }
       return this.docTabelle;
     }
@@ -539,6 +554,7 @@ Remove the now-unused `GeneratorStrategy` type import at the top of the file and
 - [ ] **Step 6: Re-key `DocumentGenerationService` and its pipeline wiring**
 
 In `src/application/services/DocumentGenerationService.ts`:
+
 - Replace `strategyRegistry: Map<string, GeneratorStrategy>;` with `strategyFactory: DocumentStrategyFactory;` in `DocumentGenerationDeps` and the matching private field/constructor assignment.
 - Delete the three occurrences of:
   ```ts
@@ -560,6 +576,7 @@ find test -iname "*verbale-generator-strategy*" -delete
 ```
 
 In `src/config/Bootstrap.ts`:
+
 - Remove `import { VerbaleGeneratorStrategy } from '../application/strategies/VerbaleGeneratorStrategy';`.
 - Keep the `import { SheetMaterieGeneratorStrategy } from '../application/strategies/SheetMaterieGeneratorStrategy';` — it is now wired directly into the factory as the `aggiungiMaterie` (no-ACL) strategy (per the user's decision to split `materiePermessi`, see "Judgment Calls" above); it is no longer only reachable as `SheetMaterieConPermessiGeneratorStrategy`'s superclass.
 - Replace the `c.register('strategyRegistry', ...)` block with:
@@ -621,10 +638,12 @@ git commit -m "feat(documents): DocumentStrategyFactory replaces GENERATORE-keye
 ### Task 3: Re-key `documentSteps.ts` axis-derived logic off `TIPO`
 
 **Files:**
+
 - Modify: `src/application/pipelines/documentSteps.ts` (`sottotipo()`, `CheckDuplicatesStep`)
 - Test: whichever file covers `CheckDuplicatesStep`/`sottotipo` (`grep -rl "sottotipo\|CheckDuplicatesStep" test/unit/application/pipelines`)
 
 **Interfaces:**
+
 - Consumes: `ConfigurazioneDocumento.generatore` (Task 1, now `GeneratoreAxis`).
 - Produces: same `sottotipo()`/dedup-`tipi` behavior, now keyed on `GENERATORE` instead of the old `TIPO` string literals `'DOCUMENTO_DOCENTE_CLASSE_MATERIA'`/`'DOCUMENTO_CLASSE_MATERIA'`.
 
@@ -632,7 +651,7 @@ git commit -m "feat(documents): DocumentStrategyFactory replaces GENERATORE-keye
 
 Find the existing test exercising `sottotipo()` for the docente/materia and classe/materia cases (search for `DOCUMENTO_DOCENTE_CLASSE_MATERIA` or `SOTTOTIPO` inside `test/unit/application/pipelines/`). Add/adjust cases asserting the SOTTOTIPO composition now triggers off `GENERATORE=CLASSE_DOCENTE_MATERIA`/`GENERATORE=CLASSE_MATERIA` with an arbitrary, non-matching `TIPO` value (e.g. `TIPO='PROGRAMMA_SVOLTO'`), proving `TIPO` no longer drives it:
 
-```ts
+````ts
 it('composes materia::docente SOTTOTIPO from GENERATORE=CLASSE_DOCENTE_MATERIA regardless of TIPO', () => {
   const ctx = buildContextWith({
     config: { [COL_CONF_DOC.TIPO]: 'QUALSIASI_ETICHETTA', [COL_CONF_DOC.GENERATORE]: 'CLASSE_DOCENTE_MATERIA' },
@@ -661,7 +680,7 @@ function sottotipo(ctx: PipelineContext): string {
   }
   return '';
 }
-```
+````
 
 In `CheckDuplicatesStep._executeLogic`, the `tipi` array currently guards a legacy-checkpoint-compat alias (`DOCUMENTO_DOCENTE_MATERIA`) for the duplicate-identity `TIPO` component — that alias was about the **`TIPO` column value written into `LOG_DOCS.TIPO`**, which is unaffected by this migration (TIPO stays free-form per spec §2.5), so leave the `tipi`/`idGen` duplicate-identity logic untouched. Only `sottotipo()` (used for the `SOTTOTIPO` component of that same identity) changes. Import `GeneratoreAxis` from `'../../domain/value-objects/enums'` at the top of the file (already importing `FormatoOutput` from there).
 
@@ -686,10 +705,12 @@ git commit -m "refactor(documents): SOTTOTIPO composition keyed on GENERATORE, n
 ### Task 4: `RisolutoreRuoliService` — `DOCENTE_CORRENTE`, `DOCENTI_DIPARTIMENTO`, `CAPO_DIPART`
 
 **Files:**
+
 - Modify: `src/application/services/RisolutoreRuoliService.ts`
 - Test: `test/unit/application/risolutore-ruoli-service.test.ts` (or wherever this service is tested — `find test/unit -iname "*risolutore-ruoli*"`)
 
 **Interfaces:**
+
 - Produces: three new registry entries in `buildRegistro()` — `DOCENTE_CORRENTE`, `DOCENTI_DIPARTIMENTO`, `CAPO_DIPART` (alias of the existing `CAPO_DIPARTIMENTO`, extended per spec §6.2.1).
 - Consumes: `ctx.cdu.focus.docente` (already populated by `DocenteClasseMateriaFocusProvider` today, and by the new `DocenteClasseFocusProvider`/`DocenteAggregatoFocusProvider` in Tasks 5–6), `ctx.cdu.focus.dipartimento` (populated by `DipartimentoProvider`).
 
@@ -697,7 +718,9 @@ git commit -m "refactor(documents): SOTTOTIPO composition keyed on GENERATORE, n
 
 ```ts
 it('DOCENTE_CORRENTE resolves cdu.focus.docente.email', () => {
-  const cdu = baseCdu({ focus: { docente: { email: 'prof@scuola.it', nomeCompleto: 'Prof', genere: 'M' } } });
+  const cdu = baseCdu({
+    focus: { docente: { email: 'prof@scuola.it', nomeCompleto: 'Prof', genere: 'M' } }
+  });
   expect(service.risolvi('DOCENTE_CORRENTE', cdu).map((e) => e.value)).toEqual(['prof@scuola.it']);
 });
 
@@ -709,7 +732,12 @@ it('DOCENTI_DIPARTIMENTO resolves cdu.focus.dipartimento.docenti', () => {
   const cdu = baseCdu({
     focus: { dipartimento: { docenti: [{ email: 'a@x.it' }, { email: 'b@x.it' }] } }
   });
-  expect(service.risolvi('DOCENTI_DIPARTIMENTO', cdu).map((e) => e.value).sort()).toEqual(['a@x.it', 'b@x.it']);
+  expect(
+    service
+      .risolvi('DOCENTI_DIPARTIMENTO', cdu)
+      .map((e) => e.value)
+      .sort()
+  ).toEqual(['a@x.it', 'b@x.it']);
 });
 
 it('CAPO_DIPART reads focus.dipartimento.capo.email directly when populated', () => {
@@ -781,6 +809,7 @@ git commit -m "feat(roles): DOCENTE_CORRENTE, DOCENTI_DIPARTIMENTO, CAPO_DIPART 
 ### Task 5: `CLASSE_DOCENTE` axis — `DocenteClasseFocusProvider` + recipe + service method
 
 **Files:**
+
 - Create: `src/application/context-engine/providers/DocenteClasseFocusProvider.ts`
 - Modify: `src/application/context-engine/Recipe.ts` (new `CLASSE_DOCENTE` recipe)
 - Modify: `src/application/context-engine/ContextEngineFactory.ts` (register provider)
@@ -788,6 +817,7 @@ git commit -m "feat(roles): DOCENTE_CORRENTE, DOCENTI_DIPARTIMENTO, CAPO_DIPART 
 - Test: `test/unit/application/context-engine/providers/docente-classe-focus-provider.test.ts` (new), `test/unit/application/document-generation-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `cdu.focus.classe.consiglioDiClasse` (already populated by the `consiglio` provider), `BuildParams.docenteCorrente`.
 - Produces: provider token `docenteClasseFocus`; sets `cdu.focus.docente` (the teacher's `PersonVM`, no `materia` narrowing — unlike `DocenteClasseMateriaFocusProvider`); `DocumentGenerationService.generateForClasseDocente(target: ClasseId, docenteEmail: string, confDocId: string, jobId?: string): DocumentGenerationResult`.
 
@@ -809,7 +839,12 @@ function cduWithConsiglio(consiglio: Array<{ email: string }>): Cdu {
           materie: [],
           materieDescrizione: '',
           materieSigle: '',
-          ruoli: { isCoordinatore: false, isTutorAsl: false, isTutorOrientamento: false, descrizione: [] },
+          ruoli: {
+            isCoordinatore: false,
+            isTutorAsl: false,
+            isTutorOrientamento: false,
+            descrizione: []
+          },
           stato: { isSupplente: false, sostituisce: null },
           tipoArticolazione: null,
           gruppoNome: null,
@@ -824,14 +859,18 @@ function cduWithConsiglio(consiglio: Array<{ email: string }>): Cdu {
 describe('DocenteClasseFocusProvider', () => {
   it('sets focus.docente to the matching council member', () => {
     const cdu = cduWithConsiglio([{ email: 'rossi@x.it' }, { email: 'bianchi@x.it' }]);
-    new DocenteClasseFocusProvider().provide(cdu, { docenteCorrente: 'bianchi@x.it' } as BuildParams);
+    new DocenteClasseFocusProvider().provide(cdu, {
+      docenteCorrente: 'bianchi@x.it'
+    } as BuildParams);
     expect(cdu.focus.docente?.email).toBe('bianchi@x.it');
   });
 
   it('throws PipelineError when the teacher is not on the council', () => {
     const cdu = cduWithConsiglio([{ email: 'rossi@x.it' }]);
     expect(() =>
-      new DocenteClasseFocusProvider().provide(cdu, { docenteCorrente: 'assente@x.it' } as BuildParams)
+      new DocenteClasseFocusProvider().provide(cdu, {
+        docenteCorrente: 'assente@x.it'
+      } as BuildParams)
     ).toThrow(PipelineError);
   });
 });
@@ -965,6 +1004,7 @@ git commit -m "feat(cdu): CLASSE_DOCENTE axis — DocenteClasseFocusProvider, re
 ### Task 6: `DOCENTE` aggregate axis — `DocenteAggregatoFocusProvider` + recipe + service method
 
 **Files:**
+
 - Modify: `src/application/context-engine/Cdu.ts` (`focus.docente` widened)
 - Create: `src/application/context-engine/providers/DocenteAggregatoFocusProvider.ts`
 - Modify: `src/application/context-engine/Recipe.ts` (new `DOCENTE_AGGREGATO` recipe)
@@ -973,6 +1013,7 @@ git commit -m "feat(cdu): CLASSE_DOCENTE axis — DocenteClasseFocusProvider, re
 - Test: `test/unit/application/context-engine/providers/docente-aggregato-focus-provider.test.ts` (new), `test/unit/application/document-generation-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `BuildParams.docenteCorrente`, `BuildParams.classiCompetenza` (every class id the teacher teaches in — the caller, `DocumentGenerationService.generateForDocente`, supplies this; it is **not** auto-derived by the provider), `ITeachingAssignmentResolver.resolveConsiglio`, `IMateriaRepository`.
 - Produces: provider token `docenteAggregatoFocus`; `cdu.focus.docente: PersonVM & { cattedre: CattedraVM[] }`; `DocumentGenerationService.generateForDocente(docenteEmail: string, classiCompetenza: string[], confDocId: string, jobId?: string): DocumentGenerationResult`.
 
@@ -1092,7 +1133,12 @@ export class DocenteAggregatoFocusProvider implements ContextProvider {
           })
         )
         .filter((m): m is NonNullable<typeof m> => m !== null);
-      cattedre.push({ classeNome: classe.nome, anno: classe.anno.value, sezione: classe.sezione, materie });
+      cattedre.push({
+        classeNome: classe.nome,
+        anno: classe.anno.value,
+        sezione: classe.sezione,
+        materie
+      });
     }
 
     if (anagrafica === undefined) {
@@ -1209,10 +1255,12 @@ git commit -m "feat(cdu): DOCENTE aggregate axis — DocenteAggregatoFocusProvid
 ### Task 7: `DocumentBatchService` — re-key dispatch to `GENERATORE`, add `DOCENTE`/`CLASSE_DOCENTE`/`ALUNNO` batch axes
 
 **Files:**
+
 - Modify: `src/application/services/DocumentBatchService.ts`
 - Test: `test/unit/application/document-batch-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `ConfigurazioneDocumento.generatore: GeneratoreAxis` (Task 1); `DocumentGenerationService.generateForClasseDocente`/`generateForDocente` (Tasks 5–6); `IAlunnoRepository.findAttivi()` (already a constructor dependency, used by `generatePiani`).
 - Produces: `batchGenerateHandler` dispatches on `config.generatore` for all 8 axes; new `ClasseDocenteBatchTarget`, `DocenteBatchTarget` (`{ docenteEmail: string; classiCompetenza: string[] }`), `AlunnoBatchTarget` (`{ email: string }`) checkpoint types; new `generateClasseDocente`, `generateDocenti`, `generateAlunni` private generator methods.
 
@@ -1241,7 +1289,9 @@ describe('DocumentBatchService.generateClasseDocente', () => {
   test('emits one target per (classe, docente) pair, not per (classe, docente, materia)', () => {
     // 5A: docente 'bianchi' teaches MATE+FISI -> ONE target {classe:'5A', docenteEmail:'bianchi'}
   });
-  test('resume from persisted classeDocenteTargets skips completed work', () => { /* ... */ });
+  test('resume from persisted classeDocenteTargets skips completed work', () => {
+    /* ... */
+  });
 });
 
 describe('DocumentBatchService.generateDocenti', () => {
@@ -1300,25 +1350,27 @@ if (config.generatore === GeneratoreAxis.PIANO_PERSONALIZZATO) {
   if (config.tipo !== 'PIANO_PERS') {
     throw new ConfigurationError(`CONF_DOC ${confDocId} deve avere TIPO PIANO_PERS`);
   }
-  return yield* this.generatePiani(config, confDocId, jobId, resume, processed, errori);
+  return yield * this.generatePiani(config, confDocId, jobId, resume, processed, errori);
 }
 switch (config.generatore) {
   case GeneratoreAxis.CLASSE_DOCENTE_MATERIA:
-    return yield* this.generateDocentiClasseMateria(config, confDocId, jobId, resume, processed, errori);
+    return (
+      yield * this.generateDocentiClasseMateria(config, confDocId, jobId, resume, processed, errori)
+    );
   case GeneratoreAxis.CLASSE_MATERIA:
-    return yield* this.generateClassiMateria(config, confDocId, jobId, resume, processed, errori);
+    return yield * this.generateClassiMateria(config, confDocId, jobId, resume, processed, errori);
   case GeneratoreAxis.CLASSE_DOCENTE:
-    return yield* this.generateClasseDocente(config, confDocId, jobId, resume, processed, errori);
+    return yield * this.generateClasseDocente(config, confDocId, jobId, resume, processed, errori);
   case GeneratoreAxis.DOCENTE:
-    return yield* this.generateDocenti(config, confDocId, jobId, resume, processed, errori);
+    return yield * this.generateDocenti(config, confDocId, jobId, resume, processed, errori);
   case GeneratoreAxis.DIPARTIMENTO:
-    return yield* this.generateDipartimenti(confDocId, jobId, resume, processed, errori);
+    return yield * this.generateDipartimenti(confDocId, jobId, resume, processed, errori);
   case GeneratoreAxis.ALUNNO:
-    return yield* this.generateAlunni(confDocId, jobId, resume, processed, errori);
+    return yield * this.generateAlunni(confDocId, jobId, resume, processed, errori);
   case GeneratoreAxis.CLASSE:
-    return yield* this.generateClassi(config, confDocId, jobId, resume, processed, errori);
+    return yield * this.generateClassi(config, confDocId, jobId, resume, processed, errori);
   default:
-    return yield* this.generateClassi(config, confDocId, jobId, resume, processed, errori);
+    return yield * this.generateClassi(config, confDocId, jobId, resume, processed, errori);
 }
 ```
 
@@ -1611,6 +1663,7 @@ git commit -m "feat(batch): re-key axis dispatch onto GENERATORE, add DOCENTE/CL
 ### Task 8: Documentation sync
 
 **Files:**
+
 - Modify: `SPECS_ALDO/01_SCHEMA_DATABASE.md`
 - Modify: `SPECS_ALDO/02_CDU_STRUTTURA.md`
 
@@ -1619,13 +1672,15 @@ git commit -m "feat(batch): re-key axis dispatch onto GENERATORE, add DOCENTE/CL
 - [ ] **Step 1: Rewrite the `CONF_DOC` `GENERATORE`/`FORMATO`/`TIPO` semantics**
 
 In `SPECS_ALDO/01_SCHEMA_DATABASE.md` §`CONF_DOC` (around line 325+):
+
 - Replace the "Altri `CONF_DOC.TIPO` riservati (asse di batch)" block (line 371+) — batch axis is no longer driven by `TIPO`. Rewrite as: "`GENERATORE` pilota l'asse di iterazione del batch (`DocumentBatchService.batchGenerateHandler`) — valori ammessi: `CLASSE`, `DOCENTE`, `PIANO_PERSONALIZZATO`, `CLASSE_MATERIA`, `CLASSE_DOCENTE`, `CLASSE_DOCENTE_MATERIA`, `DIPARTIMENTO`, `ALUNNO` (§4 dello spec di redesign). `TIPO` resta un'etichetta libera scritta in `LOG_DOCS.TIPO`, salvo il vincolo residuo: se `GENERATORE=PIANO_PERSONALIZZATO`, `TIPO` DEVE essere `PIANO_PERS`." Keep the `PIANI.TIPO`/`PIANO_PERS` paragraph (lines 349-363) as-is — unaffected.
 - Add a row/paragraph documenting `FORMATO` is restricted to `GDOC`/`GSHEET` only (constructor-validated, `ConfigurationError` otherwise) and `PARAMETRI.aggiungiMaterie`/`aggiungiMaterieConPermessi`/`tabelleImportate` feature flags (the first two mutually exclusive) with the exact compatibility rules from spec §5.2 (quote the four Italian `ConfigurationError` messages verbatim so the spec doc and the code error text never drift).
-- Note the retirement of `SHEET_CON_MATERIE_E_PERMESSI`/`DOCUMENTO_CON_TABELLE_IMPORTATE`/`VERBALE_CDC`/`SHEET_CON_MATERIE`/`DOC_PERSONALIZZATO`/`DOCUMENTO_GENERICO`/`FOGLIO_GENERICO` as `GENERATORE` *values* (they never were axis values, but were the old registry keys — clarify this column's meaning changed entirely, not just its allowed value list).
+- Note the retirement of `SHEET_CON_MATERIE_E_PERMESSI`/`DOCUMENTO_CON_TABELLE_IMPORTATE`/`VERBALE_CDC`/`SHEET_CON_MATERIE`/`DOC_PERSONALIZZATO`/`DOCUMENTO_GENERICO`/`FOGLIO_GENERICO` as `GENERATORE` _values_ (they never were axis values, but were the old registry keys — clarify this column's meaning changed entirely, not just its allowed value list).
 
 - [ ] **Step 2: Document the two new CDU paths**
 
 In `SPECS_ALDO/02_CDU_STRUTTURA.md`, add:
+
 - `focus.docente` for the `CLASSE_DOCENTE` axis (no `materia` narrowing — same shape used today by `CLASSE_DOCENTE_MATERIA`, just without the per-subject filter).
 - `focus.docente.cattedre` (`CattedraVM[]`) for the `DOCENTE` aggregate axis — one entry per class the teacher teaches, subjects grouped per class (mirrors `destinatario.contesto.cattedre`'s email-pipeline shape, §4.1.2/new §4.5 entry).
 

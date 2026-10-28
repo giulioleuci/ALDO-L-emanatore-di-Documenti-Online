@@ -59,7 +59,11 @@ test('registers real Drive ACL and protected-range read-back checks', () => {
 
 function protectedRangeCallback(
   ranges: Array<{ description?: string; editors?: { users?: string[] }; warningOnly?: boolean }>
-): { callback: () => void | OnlineTestSkippedOutcome; getFiles: jest.Mock; getProtectedRanges: jest.Mock } {
+): {
+  callback: () => void | OnlineTestSkippedOutcome;
+  getFiles: jest.Mock;
+  getProtectedRanges: jest.Mock;
+} {
   const runner = new RecordingRunner();
   const getFiles = jest.fn(() => ({ parents: ['folder'] }));
   const getProtectedRanges = jest.fn(() => ranges);

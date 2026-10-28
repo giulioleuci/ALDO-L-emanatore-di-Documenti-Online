@@ -31,22 +31,22 @@ outgoing holder). Evaluated per-axis, independently, against the anchor's
 output — looking up nominal assignments only avoids a circular dependency
 where restriction-expansion would need the very resolution it's feeding).
 
-| CLASSI  | MATERIE | Meaning                                                                             |
-| ------- | ------- | ------------------------------------------------------------------------------------ |
-| `*`     | `*`     | Unrestricted — every class, every subject (existing wildcard behavior, unchanged). |
-| `*`     | CSV     | Every class, only the listed subjects — existing behavior, unchanged.               |
-| CSV     | `*`     | Listed classes, every subject — existing behavior, unchanged.                       |
-| CSV     | CSV     | Cartesian product of the two lists — existing behavior, unchanged.                  |
-| empty   | CSV     | **New.** Only (classe, materia) pairs where materia ∈ MATERIE **and** the anchor teacher nominally teaches that materia in that classe. |
-| CSV     | empty   | **New, symmetric with the row above.** Only (classe, materia) pairs where classe ∈ CLASSI **and** the anchor teacher nominally teaches some subject in that classe — restricted to the subjects they actually teach there. |
-| empty   | empty   | **New.** All (classe, materia) pairs the anchor teacher nominally teaches, full stop. |
-| empty   | `*`     | **New.** All (classe, materia) pairs where the anchor teaches that materia in that classe... but MATERIE=`*` combined with empty CLASSI degenerates to the same result as empty/empty (every materia the teacher touches, everywhere they touch it) — treat as equivalent to the empty/empty row rather than a distinct case. |
-| `*`     | empty   | **New, symmetric.** Same degeneration: equivalent to empty/empty. |
+| CLASSI | MATERIE | Meaning                                                                                                                                                                                                                                                                                                                       |
+| ------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `*`    | `*`     | Unrestricted — every class, every subject (existing wildcard behavior, unchanged).                                                                                                                                                                                                                                            |
+| `*`    | CSV     | Every class, only the listed subjects — existing behavior, unchanged.                                                                                                                                                                                                                                                         |
+| CSV    | `*`     | Listed classes, every subject — existing behavior, unchanged.                                                                                                                                                                                                                                                                 |
+| CSV    | CSV     | Cartesian product of the two lists — existing behavior, unchanged.                                                                                                                                                                                                                                                            |
+| empty  | CSV     | **New.** Only (classe, materia) pairs where materia ∈ MATERIE **and** the anchor teacher nominally teaches that materia in that classe.                                                                                                                                                                                       |
+| CSV    | empty   | **New, symmetric with the row above.** Only (classe, materia) pairs where classe ∈ CLASSI **and** the anchor teacher nominally teaches some subject in that classe — restricted to the subjects they actually teach there.                                                                                                    |
+| empty  | empty   | **New.** All (classe, materia) pairs the anchor teacher nominally teaches, full stop.                                                                                                                                                                                                                                         |
+| empty  | `*`     | **New.** All (classe, materia) pairs where the anchor teaches that materia in that classe... but MATERIE=`*` combined with empty CLASSI degenerates to the same result as empty/empty (every materia the teacher touches, everywhere they touch it) — treat as equivalent to the empty/empty row rather than a distinct case. |
+| `*`    | empty   | **New, symmetric.** Same degeneration: equivalent to empty/empty.                                                                                                                                                                                                                                                             |
 
 "Nominally teaches X in classe Y, across MAIN/ITP/SPECIFICA" is answered by
 `ClasseRepository.getTeachingSlots(classe)` (`src/infrastructure/repositories/ClasseRepository.ts:107-139`),
 filtered to slots whose `actorEmails` contains the anchor's email — a docente
-holding *only* an ITP or SPECIFICA slot for a subject still counts as teaching
+holding _only_ an ITP or SPECIFICA slot for a subject still counts as teaching
 it, matching point D's requirement that this work correctly with
 `[MATERIA].ITP`/`[MATERIA].[SPECIFICA]`.
 

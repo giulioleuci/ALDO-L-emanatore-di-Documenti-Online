@@ -243,11 +243,9 @@ describe('document pipeline operational log details', () => {
       composeRisolutoreRuoli(db),
       engine
     ).execute(ctx);
-    const registration = new RegisterDocumentStep(
-      logger,
-      db,
-      new FakeTemplateEngine()
-    ).execute(ctx);
+    const registration = new RegisterDocumentStep(logger, db, new FakeTemplateEngine()).execute(
+      ctx
+    );
 
     expect(logDetails(permissions)).toEqual({
       Editors: ['rossi@school.it'],
@@ -563,7 +561,12 @@ test('PrepareInfrastructureStep stores only REGISTRA_FOLD-rendered metadata', ()
   ctx.set('config', config);
   ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
 
-  new PrepareInfrastructureStep(logger, new FakeDriveFacade(), db, new FakeTemplateEngine()).execute(ctx);
+  new PrepareInfrastructureStep(
+    logger,
+    new FakeDriveFacade(),
+    db,
+    new FakeTemplateEngine()
+  ).execute(ctx);
 
   expect(db.table('LOG_FOLD').findAll()[0]).toMatchObject({
     CLASSI: '5B',
@@ -626,19 +629,22 @@ test('SelectTemplateStep evaluates conditional MODELLI entries via GasExpression
 test.each([
   [TipoPiano.PEI, 'tmpl_pei'],
   [TipoPiano.PDP_BES, 'tmpl_pdp_bes']
-])('SelectTemplateStep selects %s from conditional MODELLI using focus.piano.tipo', (tipo, templateId) => {
-  const tables = fixtureTables();
-  tables.PIANI.push({ STUDENTE: 'a1@school.it', TIPO: 'PDP_BES', PARAMETRI: '{}' });
-  const db = new FakeDatabase(tables);
-  const ctx = baseCtx(db);
-  const config = pianoConfig();
-  ctx.set('config', config);
-  ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
-  ctx.set('cdu', buildPianoCdu(db, tipo));
+])(
+  'SelectTemplateStep selects %s from conditional MODELLI using focus.piano.tipo',
+  (tipo, templateId) => {
+    const tables = fixtureTables();
+    tables.PIANI.push({ STUDENTE: 'a1@school.it', TIPO: 'PDP_BES', PARAMETRI: '{}' });
+    const db = new FakeDatabase(tables);
+    const ctx = baseCtx(db);
+    const config = pianoConfig();
+    ctx.set('config', config);
+    ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
+    ctx.set('cdu', buildPianoCdu(db, tipo));
 
-  new SelectTemplateStep(logger, new ConfigurazioneDocumentoRepository(db), engine).execute(ctx);
-  expect(ctx.get('templateId')).toBe(templateId);
-});
+    new SelectTemplateStep(logger, new ConfigurazioneDocumentoRepository(db), engine).execute(ctx);
+    expect(ctx.get('templateId')).toBe(templateId);
+  }
+);
 
 test('SelectTemplateStep rejects a focused plan type without a matching MODELLI branch', () => {
   const tables = fixtureTables();
@@ -1115,7 +1121,15 @@ describe('PostProcessStep — AGGIORNA_PERMESSI_STORICI', () => {
     // regression check on the filter's own logic in isolation.
     const history = storico(['old-pdp', 'new-pdp']);
 
-    new PostProcessStep(logger, db, new FakeTemplateEngine(), now, drive, roles, history.service).execute(ctx);
+    new PostProcessStep(
+      logger,
+      db,
+      new FakeTemplateEngine(),
+      now,
+      drive,
+      roles,
+      history.service
+    ).execute(ctx);
 
     expect(drive.permissions).toEqual([
       { fileId: 'old-pdp', email: 'coord4d@school.it', permesso: 'LETTURA' }
@@ -1131,7 +1145,15 @@ describe('PostProcessStep — AGGIORNA_PERMESSI_STORICI', () => {
   test('does not call Drive when no historical file matches', () => {
     const { db, ctx } = setup();
     const drive = new FakeDriveFacade();
-    new PostProcessStep(logger, db, new FakeTemplateEngine(), now, drive, roles, storico([]).service).execute(ctx);
+    new PostProcessStep(
+      logger,
+      db,
+      new FakeTemplateEngine(),
+      now,
+      drive,
+      roles,
+      storico([]).service
+    ).execute(ctx);
     expect(drive.setPermissionsCallCount).toBe(0);
     expect(ctx.get('postProcessUpdated')).toBe(0);
   });
@@ -1139,14 +1161,30 @@ describe('PostProcessStep — AGGIORNA_PERMESSI_STORICI', () => {
   test('uses the implicit generator criterion when criteri is absent', () => {
     const { db, ctx } = setup(action({ criteri: undefined }));
     const history = storico([]);
-    new PostProcessStep(logger, db, new FakeTemplateEngine(), now, new FakeDriveFacade(), roles, history.service).execute(ctx);
+    new PostProcessStep(
+      logger,
+      db,
+      new FakeTemplateEngine(),
+      now,
+      new FakeDriveFacade(),
+      roles,
+      history.service
+    ).execute(ctx);
     expect(history.idsMatching).toHaveBeenCalledWith({ ID_GEN: 'PIANI_PERSONALIZZATI' }, 1);
   });
 
   test.each(['target', 'ruolo', 'permesso', 'profondita'])('rejects a missing %s', (key) => {
     const { db, ctx } = setup(action({ [key]: undefined }));
     expect(() =>
-      new PostProcessStep(logger, db, new FakeTemplateEngine(), now, new FakeDriveFacade(), roles, storico([]).service).execute(ctx)
+      new PostProcessStep(
+        logger,
+        db,
+        new FakeTemplateEngine(),
+        now,
+        new FakeDriveFacade(),
+        roles,
+        storico([]).service
+      ).execute(ctx)
     ).toThrow();
   });
 
@@ -1161,7 +1199,15 @@ describe('PostProcessStep — AGGIORNA_PERMESSI_STORICI', () => {
     });
 
     expect(() =>
-      new PostProcessStep(logger, db, new FakeTemplateEngine(), now, drive, roles, storico(['old-pdp']).service).execute(ctx)
+      new PostProcessStep(
+        logger,
+        db,
+        new FakeTemplateEngine(),
+        now,
+        drive,
+        roles,
+        storico(['old-pdp']).service
+      ).execute(ctx)
     ).toThrow();
     expect(db.table('LOG_DOCS').find((row) => row.ID === 'new-pdp')).toBeDefined();
   });
@@ -1236,7 +1282,9 @@ test('ApplyPermissionsStep skips an ACL entry whose condizione evaluates false',
   ctx.set('config', {
     ...config,
     PERMESSI: JSON.stringify({
-      folder: [{ ruolo: 'REF_BES', permesso: 'LETTURA', condizione: "{{focus.piano.tipo}} != 'PFP'" }]
+      folder: [
+        { ruolo: 'REF_BES', permesso: 'LETTURA', condizione: "{{focus.piano.tipo}} != 'PFP'" }
+      ]
     })
   });
   ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));
@@ -1254,7 +1302,9 @@ test('ApplyPermissionsStep applies an ACL entry whose condizione evaluates true'
   ctx.set('config', {
     ...config,
     PERMESSI: JSON.stringify({
-      folder: [{ ruolo: 'REF_BES', permesso: 'LETTURA', condizione: "{{focus.piano.tipo}} != 'PFP'" }]
+      folder: [
+        { ruolo: 'REF_BES', permesso: 'LETTURA', condizione: "{{focus.piano.tipo}} != 'PFP'" }
+      ]
     })
   });
   ctx.set('confDoc', ConfigurazioneDocumento.fromData(config));

@@ -166,7 +166,9 @@ export function prepareStudentCouncilAssignments(
  * to the docenti this specific student actually has. Unlike `focus.classe.elencoMaterieConPermessi`
  * (a whole-class/Sheets-ACL projection), this returns the full `SubjectVM` per column.
  */
-export function materieDistinteConsiglioFiltrato(consiglioDiClasseFiltrato: DocenteCdcVM[]): MateriaVM[] {
+export function materieDistinteConsiglioFiltrato(
+  consiglioDiClasseFiltrato: DocenteCdcVM[]
+): MateriaVM[] {
   const bySigla = new Map<string, MateriaVM>();
   for (const docente of consiglioDiClasseFiltrato) {
     for (const materia of docente.materie) {
@@ -226,7 +228,9 @@ function gruppoNome(
 
 const utils = new UtilsService();
 
-function dedupeMaterie<T extends { sigla: string; specificita: string | null; isItp: boolean }>(items: T[]): T[] {
+function dedupeMaterie<T extends { sigla: string; specificita: string | null; isItp: boolean }>(
+  items: T[]
+): T[] {
   return utils.uniqBy(items, (item) => `${item.sigla} ${item.specificita ?? ''} ${item.isItp}`);
 }
 
@@ -336,20 +340,34 @@ export function buildSupplenzeAggregate(
     });
     byPair.set(key, pair);
   }
-  const items = [...byPair.values()].map(({ supplente, titolare, slots }) => ({
-    supplente: buildPersonaVm({ nome: supplente.nome, cognome: supplente.cognome, email: supplente.id, genere: supplente.genere, isEsterno: false }),
-    titolare: buildPersonaVm({ nome: titolare.nome, cognome: titolare.cognome, email: titolare.id, genere: titolare.genere, isEsterno: false }),
-    materie: dedupeMaterie(
-      slots
-        .map((slot) => materiaVmFromSlot(materie, classe, slot))
-        .filter((vm): vm is MateriaVM => vm !== null)
-    )
-  })).map((item) => ({
-    ...item,
-    hasMaterie: item.materie.length > 0,
-    materieDescrizione: item.materie.map((materia) => materia.nome).join(', '),
-    materieSigle: item.materie.map((materia) => materia.sigla).join(', ')
-  }));
+  const items = [...byPair.values()]
+    .map(({ supplente, titolare, slots }) => ({
+      supplente: buildPersonaVm({
+        nome: supplente.nome,
+        cognome: supplente.cognome,
+        email: supplente.id,
+        genere: supplente.genere,
+        isEsterno: false
+      }),
+      titolare: buildPersonaVm({
+        nome: titolare.nome,
+        cognome: titolare.cognome,
+        email: titolare.id,
+        genere: titolare.genere,
+        isEsterno: false
+      }),
+      materie: dedupeMaterie(
+        slots
+          .map((slot) => materiaVmFromSlot(materie, classe, slot))
+          .filter((vm): vm is MateriaVM => vm !== null)
+      )
+    }))
+    .map((item) => ({
+      ...item,
+      hasMaterie: item.materie.length > 0,
+      materieDescrizione: item.materie.map((materia) => materia.nome).join(', '),
+      materieSigle: item.materie.map((materia) => materia.sigla).join(', ')
+    }));
   items.sort((a, b) => {
     const bySupplente = (a.supplente.nomeCompleto ?? '').localeCompare(
       b.supplente.nomeCompleto ?? ''
@@ -370,10 +388,7 @@ export function buildSupplenzeAggregate(
  */
 export function scopeByArticolazione<
   T extends { tipoArticolazione: 'COMUNE' | 'SEPARATO_PRIMO' | 'SEPARATO_SECONDO' | null }
->(
-  docenti: T[],
-  tipo: 'SEPARATO_PRIMO' | 'SEPARATO_SECONDO' | null
-): T[] {
+>(docenti: T[], tipo: 'SEPARATO_PRIMO' | 'SEPARATO_SECONDO' | null): T[] {
   if (tipo === null) return docenti;
   return docenti.filter((d) => d.tipoArticolazione === 'COMUNE' || d.tipoArticolazione === tipo);
 }
@@ -513,7 +528,7 @@ function councilVmStrategy(
               : tipoArt === 'SEPARATO_SECONDO'
                 ? 'Separato secondo'
                 : '',
-        gruppoNome: gruppoNome(classi, classe, tipoArt),
+        gruppoNome: gruppoNome(classi, classe, tipoArt)
       } satisfies DocenteCdcVM;
     });
   };

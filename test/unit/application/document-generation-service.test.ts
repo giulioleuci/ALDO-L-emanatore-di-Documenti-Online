@@ -56,14 +56,19 @@ function wire(
     now?: Date;
     monitor?: FakeProcessMonitor;
     storicoDocumenti?: StoricoDocumentiService;
-    storicoDb?: { anniStorici: (profondita: number) => Array<{ anno: string; db: FakeDatabase; logDocs: unknown }> };
+    storicoDb?: {
+      anniStorici: (
+        profondita: number
+      ) => Array<{ anno: string; db: FakeDatabase; logDocs: unknown }>;
+    };
   } = {}
 ) {
   const db = options.db ?? new FakeDatabase(tables);
   const drive = new FakeDriveFacade();
   const templates = new FakeTemplateEngine();
   const strategyFactory =
-    options.strategyFactory ?? stubFactory(options.strategy ?? new DocumentoGenericoGeneratorStrategy(templates));
+    options.strategyFactory ??
+    stubFactory(options.strategy ?? new DocumentoGenericoGeneratorStrategy(templates));
   const deps = {
     db,
     drive,
@@ -131,15 +136,20 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
     expect(drive.copies).toHaveLength(0);
   });
 
-  test.each(['REGISTRA_DOC', 'REGISTRA_FOLD'])('rolls back both log tables when %s is malformed', (column) => {
-    const tables = fixtureTables();
-    tables.CONF_DOC![0]![column] = '{';
-    const { db, service } = wire(tables);
+  test.each(['REGISTRA_DOC', 'REGISTRA_FOLD'])(
+    'rolls back both log tables when %s is malformed',
+    (column) => {
+      const tables = fixtureTables();
+      tables.CONF_DOC![0]![column] = '{';
+      const { db, service } = wire(tables);
 
-    expect(() => service.generateForClasse(ClasseId.of('5A'), 'CD1')).toThrow(`${column} malformato`);
-    expect(db.table(TABLE.LOG_DOCS).findAll()).toEqual([]);
-    expect(db.table(TABLE.LOG_FOLD).findAll()).toEqual([]);
-  });
+      expect(() => service.generateForClasse(ClasseId.of('5A'), 'CD1')).toThrow(
+        `${column} malformato`
+      );
+      expect(db.table(TABLE.LOG_DOCS).findAll()).toEqual([]);
+      expect(db.table(TABLE.LOG_FOLD).findAll()).toEqual([]);
+    }
+  );
 
   test("returns status 'SKIPPED' when CheckDuplicatesStep prevents a newFileId from being produced", () => {
     const { service } = wire();
@@ -336,19 +346,11 @@ describe('DocumentGenerationService.generateForPiano', () => {
     const { service } = wire(fixtureTables(), {
       strategy: new DocPersonalizzatoGeneratorStrategy(new FakeTemplateEngine())
     });
-    const nowSpy = jest
-      .spyOn(Date, 'now')
-      .mockReturnValueOnce(1000)
-      .mockReturnValue(9572);
+    const nowSpy = jest.spyOn(Date, 'now').mockReturnValueOnce(1000).mockReturnValue(9572);
 
     try {
       expect(
-        service.generateForPiano(
-          'a2@school.it',
-          TipoPiano.PDP_DSA,
-          'PIANI_PERSONALIZZATI',
-          'job'
-        )
+        service.generateForPiano('a2@school.it', TipoPiano.PDP_DSA, 'PIANI_PERSONALIZZATI', 'job')
       ).toEqual({
         fileId: 'file_2',
         fileName: 'Piano_PDP (DSA)_NERI PAOLO',
@@ -363,7 +365,11 @@ describe('DocumentGenerationService.generateForPiano', () => {
 
   test('runs two focused plan subtypes through one conditional configuration and skips their reruns independently', () => {
     const tables = fixtureTables();
-    tables.PIANI.push({ STUDENTE: 'a1@school.it', TIPO: 'PDP_BES', PARAMETRI: '{"gravita":"lieve"}' });
+    tables.PIANI.push({
+      STUDENTE: 'a1@school.it',
+      TIPO: 'PDP_BES',
+      PARAMETRI: '{"gravita":"lieve"}'
+    });
     tables.CONF_DOC!.push({
       ID: 'PIANI_PERSONALIZZATI',
       TIPO: 'PIANO_PERS',
@@ -418,7 +424,9 @@ describe('DocumentGenerationService.generateForPiano', () => {
         })
       ])
     );
-    expect(service.generateForPiano('a1@school.it', TipoPiano.PEI, 'PIANI_PERSONALIZZATI')).toMatchObject({
+    expect(
+      service.generateForPiano('a1@school.it', TipoPiano.PEI, 'PIANI_PERSONALIZZATI')
+    ).toMatchObject({
       fileId: null,
       fileName: null,
       fileLink: null,
@@ -431,9 +439,9 @@ describe('DocumentGenerationService.generateForPiano', () => {
 
   test('throws when the CONF_DOC row does not exist, same as generateForClasse', () => {
     const { service } = wire();
-    expect(() =>
-      service.generateForPiano('a1@school.it', TipoPiano.PEI, 'MISSING_ID')
-    ).toThrow(PipelineError);
+    expect(() => service.generateForPiano('a1@school.it', TipoPiano.PEI, 'MISSING_ID')).toThrow(
+      PipelineError
+    );
   });
 
   test('skips the same student plan across dates while preserving a different subtype', () => {
@@ -456,25 +464,15 @@ describe('DocumentGenerationService.generateForPiano', () => {
     });
 
     expect(
-      firstRun.service.generateForPiano(
-        'a1@school.it',
-        TipoPiano.PEI,
-        'PIANI_PERSONALIZZATI'
-      ).status
+      firstRun.service.generateForPiano('a1@school.it', TipoPiano.PEI, 'PIANI_PERSONALIZZATI')
+        .status
     ).toBe('GENERATO');
     expect(
-      laterRun.service.generateForPiano(
-        'a1@school.it',
-        TipoPiano.PEI,
-        'PIANI_PERSONALIZZATI'
-      )
+      laterRun.service.generateForPiano('a1@school.it', TipoPiano.PEI, 'PIANI_PERSONALIZZATI')
     ).toMatchObject({ fileId: null, fileName: null, fileLink: null, status: 'SKIPPED' });
     expect(
-      laterRun.service.generateForPiano(
-        'a1@school.it',
-        TipoPiano.PDP_BES,
-        'PIANI_PERSONALIZZATI'
-      ).status
+      laterRun.service.generateForPiano('a1@school.it', TipoPiano.PDP_BES, 'PIANI_PERSONALIZZATI')
+        .status
     ).toBe('GENERATO');
 
     expect(firstRun.drive.copies).toHaveLength(1);
@@ -492,7 +490,11 @@ describe('DocumentGenerationService.generateForPiano', () => {
 
   test('PIANI_PERSONALIZZATI_NO_PEI (01_SCHEMA_DATABASE.md "Eccezione ammessa"): CONDIZIONE skips PEI, generates other subtypes identically', () => {
     const tables = fixtureTables();
-    tables.PIANI.push({ STUDENTE: 'a1@school.it', TIPO: 'PDP_BES', PARAMETRI: '{"gravita":"lieve"}' });
+    tables.PIANI.push({
+      STUDENTE: 'a1@school.it',
+      TIPO: 'PDP_BES',
+      PARAMETRI: '{"gravita":"lieve"}'
+    });
     tables.CONF_DOC!.push({
       ID: 'PIANI_PERSONALIZZATI_NO_PEI',
       TIPO: 'PIANO_PERS',
@@ -597,7 +599,7 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
     ]);
   });
 
-  test('targeting a partner class directly sees only its own data, not the sibling partner\'s LOG_DOCS (narrowed to parent-only expansion)', () => {
+  test("targeting a partner class directly sees only its own data, not the sibling partner's LOG_DOCS (narrowed to parent-only expansion)", () => {
     const tables = fixtureTables();
     tables.CONF_DOC!.push({
       ID: 'CD_PARTNER',
@@ -628,7 +630,11 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
       TUTOR_2: '',
       CURRICULUM: null
     });
-    tables.PIANI!.push({ STUDENTE: 'altro-studente@school.test', TIPO: 'PDP_DSA', PARAMETRI: null });
+    tables.PIANI!.push({
+      STUDENTE: 'altro-studente@school.test',
+      TIPO: 'PDP_DSA',
+      PARAMETRI: null
+    });
     tables.LOG_DOCS!.push({
       ID: 'LD_SIBLING',
       ID_GEN: 'CD_PARTNER',
@@ -690,7 +696,10 @@ describe('DocumentGenerationService.generateForDocenteClasseMateria', () => {
     }
   }
 
-  function pushDocenteClasseMateriaConfig(tables: Record<string, Row[]>, id = 'CD_DOCENTE_CLASSE_MATERIA'): void {
+  function pushDocenteClasseMateriaConfig(
+    tables: Record<string, Row[]>,
+    id = 'CD_DOCENTE_CLASSE_MATERIA'
+  ): void {
     tables.CONF_DOC!.push({
       ID: id,
       TIPO: 'DOCUMENTO_DOCENTE_CLASSE_MATERIA',
@@ -833,11 +842,7 @@ describe('DocumentGenerationService.generateForClasseMateria', () => {
     const strategy = new CapturingStrategy();
     const { service } = wire(tables, { strategy });
 
-    const result = service.generateForClasseMateria(
-      ClasseId.of('5A'),
-      'MATE',
-      'CD_CLASSE_MATERIA'
-    );
+    const result = service.generateForClasseMateria(ClasseId.of('5A'), 'MATE', 'CD_CLASSE_MATERIA');
 
     expect(strategy.cdu?.focus.materia?.sigla).toBe('MATE');
     expect(
@@ -964,10 +969,12 @@ describe('DocumentGenerationService.generateForDipartimento', () => {
 
     expect(strategy.cdu?.meta.target).toBe('SCIENTIFICO_DIP');
     expect(strategy.cdu?.meta.tipoTarget).toBe('dipartimento');
-    expect(strategy.cdu?.focus.dipartimento).toEqual(expect.objectContaining({
-      id: 'SCIENTIFICO_DIP',
-      nome: 'Dipartimento scientifico'
-    }));
+    expect(strategy.cdu?.focus.dipartimento).toEqual(
+      expect.objectContaining({
+        id: 'SCIENTIFICO_DIP',
+        nome: 'Dipartimento scientifico'
+      })
+    );
     expect(strategy.cdu?.focus.dipartimento?.capo).toEqual(
       expect.objectContaining({ email: 'rossi@school.it' })
     );
@@ -1057,8 +1064,8 @@ describe('DocumentGenerationService.generateForDocente', () => {
 
   test('throws when the CONF_DOC row does not exist, same as generateForClasse', () => {
     const { service } = wire();
-    expect(() =>
-      service.generateForDocente('bianchi@school.it', ['5A'], 'MISSING_ID')
-    ).toThrow(PipelineError);
+    expect(() => service.generateForDocente('bianchi@school.it', ['5A'], 'MISSING_ID')).toThrow(
+      PipelineError
+    );
   });
 });

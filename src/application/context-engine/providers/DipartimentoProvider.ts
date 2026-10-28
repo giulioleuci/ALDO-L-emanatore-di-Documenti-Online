@@ -46,11 +46,25 @@ export class DipartimentoProvider implements ContextProvider {
     const capo =
       capoDocente === null
         ? null
-        : buildPersonaVm({ nome: capoDocente.nome, cognome: capoDocente.cognome, email: capoDocente.id, genere: capoDocente.genere, isEsterno: false });
+        : buildPersonaVm({
+            nome: capoDocente.nome,
+            cognome: capoDocente.cognome,
+            email: capoDocente.id,
+            genere: capoDocente.genere,
+            isEsterno: false
+          });
 
     const docenti = this.docenti
       .findByDipartimento(dipartimento.dipartimentoId)
-      .map((d) => buildPersonaVm({ nome: d.nome, cognome: d.cognome, email: d.id, genere: d.genere, isEsterno: false }))
+      .map((d) =>
+        buildPersonaVm({
+          nome: d.nome,
+          cognome: d.cognome,
+          email: d.id,
+          genere: d.genere,
+          isEsterno: false
+        })
+      )
       .sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto));
 
     const materieIds = dipartimento.getMaterieIds().map((m) => m.value);

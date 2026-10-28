@@ -36,9 +36,9 @@ describe('RowScopeExpansion ambient-global wrappers', () => {
   });
 
   test('slotCompatible treats ANY as a wildcard and requires a matching specifica otherwise', () => {
-    expect(slotCompatible({ kind: ANY, specifica: ANY }, { kind: 'SPECIFICA', specifica: 'x' })).toBe(
-      true
-    );
+    expect(
+      slotCompatible({ kind: ANY, specifica: ANY }, { kind: 'SPECIFICA', specifica: 'x' })
+    ).toBe(true);
     expect(
       slotCompatible({ kind: 'ITP', specifica: ANY }, { kind: 'SPECIFICA', specifica: 'x' })
     ).toBe(false);

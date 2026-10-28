@@ -24,6 +24,7 @@
 ### Task 1: DB validation ignores completely empty and whitespace-only rows
 
 **Files:**
+
 - Modify: `GasLibraryFactory/GasSchemaValidatorLib/src/DatasetValidator.js`
 - Test: `GasLibraryFactory/GasSchemaValidatorLib/src/__tests__/DatasetValidator.test.js`
 - Modify: `GasLibraryFactory/SheetDBLib/src/TableService.js:962-966`
@@ -31,6 +32,7 @@
 - Modify (generated, ALDO repo): `vendor/gaslibs.Code.js`, `vendor/CHECKSUM`, `vendor/VERSION` via `npm run refresh:vendor`
 
 **Interfaces:**
+
 - Consumes: nothing from this plan's other tasks — fully independent.
 - Produces: `DatasetValidator.validate(datasets, rules)` keeps its existing signature and return shape (`{ violations: [] }`); it now silently drops any row where every cell is empty/whitespace before applying rules. `TableService._processRawData` keeps its existing `{columns, rows}` return shape; it now also treats a row whose every cell is `null`/`undefined`/whitespace-only as empty. No other task calls either function.
 
@@ -114,28 +116,28 @@ git commit -m "fix(dataset-validator): ignore completely empty/whitespace-only r
 In `GasLibraryFactory/SheetDBLib/src/__tests__/TableService.test.js`, inside the existing `describe('Edge Cases and Error Handling', ...)` block, add a test right after `'should skip completely empty rows in data'`:
 
 ```js
-    it('should skip whitespace-only rows in data', () => {
-      const dataWithWhitespaceRows = [
-        ['ID', 'name'],
-        ['1', 'Alice'],
-        [' ', '\t'], // whitespace-only row
-        ['2', 'Bob']
-      ];
-      table = new TableService(
-        'Users',
-        'SPREADSHEET_ID_123',
-        mocks.spreadsheetService,
-        mocks.logger,
-        mocks.utils,
-        dataWithWhitespaceRows
-      );
+it('should skip whitespace-only rows in data', () => {
+  const dataWithWhitespaceRows = [
+    ['ID', 'name'],
+    ['1', 'Alice'],
+    [' ', '\t'], // whitespace-only row
+    ['2', 'Bob']
+  ];
+  table = new TableService(
+    'Users',
+    'SPREADSHEET_ID_123',
+    mocks.spreadsheetService,
+    mocks.logger,
+    mocks.utils,
+    dataWithWhitespaceRows
+  );
 
-      const rows = table.getRows();
+  const rows = table.getRows();
 
-      expect(rows).toHaveLength(2);
-      expect(rows[0].name).toBe('Alice');
-      expect(rows[1].name).toBe('Bob');
-    });
+  expect(rows).toHaveLength(2);
+  expect(rows[0].name).toBe('Alice');
+  expect(rows[1].name).toBe('Bob');
+});
 ```
 
 - [ ] **Step 7: Run it to confirm it fails**
@@ -205,6 +207,7 @@ git commit -m "chore(vendor): pull in empty-row-safe DatasetValidator/TableServi
 ### Task 2: `DOCENTI.ORE_POT` column surfaced in the cattedre email box
 
 **Files:**
+
 - Modify: `SPECS_ALDO/01_SCHEMA_DATABASE.md` (DOCENTI table)
 - Modify: `src/config/schema.ts` (`COL_DOCENTI`)
 - Modify: `src/domain/entities/Docente.ts`
@@ -217,6 +220,7 @@ git commit -m "chore(vendor): pull in empty-row-safe DatasetValidator/TableServi
 - Test: `test/unit/application/email-boxes.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing from this plan's other tasks — fully independent.
 - Produces: `Docente.getOrePot(): number` (0 when `ORE_POT` is absent/non-numeric); `DestinatarioVM.cattedre.orePot: number`; ambient global `class PluralizeFilter { execute(count: number, singular: string, plural: string): string; }`. No other task consumes these.
 
@@ -391,7 +395,7 @@ Expected: FAIL with a TypeScript error / `undefined` mismatch — `cattedre` has
 In `src/application/context-engine/Cdu.ts`, change:
 
 ```ts
-  cattedre: ElencoVM<CattedraVM> & { elencoDescrizione: string };
+cattedre: ElencoVM<CattedraVM> & { elencoDescrizione: string };
 ```
 
 to:
@@ -436,14 +440,31 @@ test('cattedre box appends "Ore di potenziamento" as the last item when orePot >
   const composer = createBoxComposer(logger, templates);
   const cdu = cduRecord();
   cdu['destinatario'] = {
-      cattedre: { elenco: [
+    cattedre: {
+      elenco: [
         {
-          classe: { nome: '5A', anno: 5, sezione: 'A' }, sezioneEstesa: 'A',
-          materie: [cattedraVm({ nome: 'Matematica' })], hasMaterie: true, numeroMaterie: 1, materieDescrizione: 'Matematica', materieSigle: 'MATE'
+          classe: { nome: '5A', anno: 5, sezione: 'A' },
+          sezioneEstesa: 'A',
+          materie: [cattedraVm({ nome: 'Matematica' })],
+          hasMaterie: true,
+          numeroMaterie: 1,
+          materieDescrizione: 'Matematica',
+          materieSigle: 'MATE'
         }
-      ], hasElenco: true, numero: 1, elencoDescrizione: '5A', orePot: 3 }
+      ],
+      hasElenco: true,
+      numero: 1,
+      elencoDescrizione: '5A',
+      orePot: 3
+    }
   };
-  const out = renderBoxes(composer, confMail([{ TIPO_BOX: 'cattedre' }]), cdu, materie(), templates);
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'cattedre' }]),
+    cdu,
+    materie(),
+    templates
+  );
   expect(out.boxes.perId['cattedre_0']!.html).toContain('Ore di potenziamento: 3 ore');
 });
 
@@ -452,14 +473,31 @@ test('cattedre box uses the singular "ora" when orePot === 1', () => {
   const composer = createBoxComposer(logger, templates);
   const cdu = cduRecord();
   cdu['destinatario'] = {
-      cattedre: { elenco: [
+    cattedre: {
+      elenco: [
         {
-          classe: { nome: '5A', anno: 5, sezione: 'A' }, sezioneEstesa: 'A',
-          materie: [cattedraVm({ nome: 'Matematica' })], hasMaterie: true, numeroMaterie: 1, materieDescrizione: 'Matematica', materieSigle: 'MATE'
+          classe: { nome: '5A', anno: 5, sezione: 'A' },
+          sezioneEstesa: 'A',
+          materie: [cattedraVm({ nome: 'Matematica' })],
+          hasMaterie: true,
+          numeroMaterie: 1,
+          materieDescrizione: 'Matematica',
+          materieSigle: 'MATE'
         }
-      ], hasElenco: true, numero: 1, elencoDescrizione: '5A', orePot: 1 }
+      ],
+      hasElenco: true,
+      numero: 1,
+      elencoDescrizione: '5A',
+      orePot: 1
+    }
   };
-  const out = renderBoxes(composer, confMail([{ TIPO_BOX: 'cattedre' }]), cdu, materie(), templates);
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'cattedre' }]),
+    cdu,
+    materie(),
+    templates
+  );
   expect(out.boxes.perId['cattedre_0']!.html).toContain('Ore di potenziamento: 1 ora');
 });
 
@@ -468,14 +506,31 @@ test('cattedre box omits "Ore di potenziamento" when orePot is 0 or absent', () 
   const composer = createBoxComposer(logger, templates);
   const cdu = cduRecord();
   cdu['destinatario'] = {
-      cattedre: { elenco: [
+    cattedre: {
+      elenco: [
         {
-          classe: { nome: '5A', anno: 5, sezione: 'A' }, sezioneEstesa: 'A',
-          materie: [cattedraVm({ nome: 'Matematica' })], hasMaterie: true, numeroMaterie: 1, materieDescrizione: 'Matematica', materieSigle: 'MATE'
+          classe: { nome: '5A', anno: 5, sezione: 'A' },
+          sezioneEstesa: 'A',
+          materie: [cattedraVm({ nome: 'Matematica' })],
+          hasMaterie: true,
+          numeroMaterie: 1,
+          materieDescrizione: 'Matematica',
+          materieSigle: 'MATE'
         }
-      ], hasElenco: true, numero: 1, elencoDescrizione: '5A', orePot: 0 }
+      ],
+      hasElenco: true,
+      numero: 1,
+      elencoDescrizione: '5A',
+      orePot: 0
+    }
   };
-  const out = renderBoxes(composer, confMail([{ TIPO_BOX: 'cattedre' }]), cdu, materie(), templates);
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'cattedre' }]),
+    cdu,
+    materie(),
+    templates
+  );
   expect(out.boxes.perId['cattedre_0']!.html).not.toContain('Ore di potenziamento');
 });
 ```
@@ -490,10 +545,10 @@ Expected: FAIL — the rendered HTML contains no "Ore di potenziamento" text yet
 In `types/gaslibs/index.d.ts`, inside the `declare global { ... }` block, in the `// --- WorkspaceTemplateEngine ---` section (after the `Mustache` class declaration), add:
 
 ```ts
-  /** Conditional string selector: returns the singular or plural form based on a numeric count. */
-  class PluralizeFilter {
-    execute(count: number, singular: string, plural: string): string;
-  }
+/** Conditional string selector: returns the singular or plural form based on a numeric count. */
+class PluralizeFilter {
+  execute(count: number, singular: string, plural: string): string;
+}
 ```
 
 - [ ] **Step 17: Update `createBoxComposer`'s cattedre extractor and `renderCattedreBox`**
@@ -501,23 +556,23 @@ In `types/gaslibs/index.d.ts`, inside the `declare global { ... }` block, in the
 In `src/application/email/boxes.ts`, change the `cattedre` registration in `createBoxComposer` from:
 
 ```ts
-  simple(
-    'cattedre',
-    'Cattedre',
-    (ctx) => ctx.get('destinatario.cattedre.elenco', []),
-    (d) => (d as unknown[]).length === 0
-  );
+simple(
+  'cattedre',
+  'Cattedre',
+  (ctx) => ctx.get('destinatario.cattedre.elenco', []),
+  (d) => (d as unknown[]).length === 0
+);
 ```
 
 to:
 
 ```ts
-  simple(
-    'cattedre',
-    'Cattedre',
-    (ctx) => ctx.get('destinatario.cattedre', { elenco: [], orePot: 0 }),
-    (d) => (d as { elenco: unknown[] }).elenco.length === 0
-  );
+simple(
+  'cattedre',
+  'Cattedre',
+  (ctx) => ctx.get('destinatario.cattedre', { elenco: [], orePot: 0 }),
+  (d) => (d as { elenco: unknown[] }).elenco.length === 0
+);
 ```
 
 and change `renderCattedreBox` from:
@@ -584,12 +639,14 @@ git commit -m "feat(email): render Ore di potenziamento in the cattedre box via 
 ### Task 3: Trash-aware `LOG_FOLD` reconciliation
 
 **Files:**
+
 - Modify: `src/infrastructure/facades/DriveServiceFacade.ts` (`IDriveFacade`, `DriveServiceFacade`)
 - Modify: `test/fakes/FakeDriveFacade.ts`
 - Modify: `src/infrastructure/services/AlberoCartelle.ts`
 - Test: `test/unit/infrastructure/albero-cartelle.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing from this plan's other tasks — fully independent.
 - Produces: `IDriveFacade.isFolderTrashed(folderId: string): boolean`. No other task consumes it.
 
@@ -699,15 +756,15 @@ to:
 Then fix `upsertLog`'s match key so it targets the row it was actually given (`current`) instead of the new `folderId` — required because in the trash branch above, `folderId` (fresh) now differs from `current`'s stored `ID` (stale):
 
 ```ts
-    if (current === null) table.insert(row);
-    else table.updateRowWhere({ [COL_LOG_FOLD.ID]: folderId }, row);
+if (current === null) table.insert(row);
+else table.updateRowWhere({ [COL_LOG_FOLD.ID]: folderId }, row);
 ```
 
 to:
 
 ```ts
-    if (current === null) table.insert(row);
-    else table.updateRowWhere({ [COL_LOG_FOLD.ID]: String(current[COL_LOG_FOLD.ID]) }, row);
+if (current === null) table.insert(row);
+else table.updateRowWhere({ [COL_LOG_FOLD.ID]: String(current[COL_LOG_FOLD.ID]) }, row);
 ```
 
 - [ ] **Step 5: Run the full `AlberoCartelle` suite to confirm it passes with no regressions**

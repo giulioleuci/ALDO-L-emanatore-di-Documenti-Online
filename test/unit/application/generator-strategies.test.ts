@@ -120,11 +120,7 @@ describe('DocPersonalizzatoGeneratorStrategy (10 §9)', () => {
       parametriGenerazione: { sostegno: 'totale' }
     };
     const templates = new FakeTemplateEngine();
-    new DocPersonalizzatoGeneratorStrategy(templates).render(
-      'file_4',
-      cdu,
-      confDoc()
-    );
+    new DocPersonalizzatoGeneratorStrategy(templates).render('file_4', cdu, confDoc());
     const ctx = templates.contextFor('file_4')!;
     expect(templates.processString('{{piano.campoInesistente}}', ctx)).toBe('');
   });

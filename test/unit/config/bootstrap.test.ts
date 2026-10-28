@@ -367,7 +367,10 @@ test('riprendiJobSospeso registers the ESECUZIONE_AZIONI handler', () => {
   const c = container();
   const registered: string[] = [];
   const runner = {
-    resume: (_name: string, register: (queue: { registerJobHandler: (t: string) => void }) => void) => {
+    resume: (
+      _name: string,
+      register: (queue: { registerJobHandler: (t: string) => void }) => void
+    ) => {
       register({ registerJobHandler: (t: string) => registered.push(t) });
     }
   } as unknown as JobRunnerService;

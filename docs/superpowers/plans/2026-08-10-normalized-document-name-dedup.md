@@ -21,11 +21,13 @@
 ### Task 1: Stable document-name duplicate identity
 
 **Files:**
+
 - Modify: `test/unit/application/pipelines/document-steps.test.ts`
 - Modify: `test/unit/application/document-generation-service.test.ts`
 - Modify: `src/application/pipelines/documentSteps.ts`
 
 **Interfaces:**
+
 - Consumes: `CheckDuplicatesStep._executeLogic(ctx: PipelineContext): void`, `ITemplateEngine.processString(template, data)`.
 - Produces: duplicate matching that compares `LOG_DOCS.NOME` against filename rendered with every `{{progressivo}}` token replaced by `_PROGRESSIVO_PH_`; each sentinel is matched as the numeric value used by real filename generation.
 
@@ -93,12 +95,14 @@ Expected: PASS.
 ### Task 2: Preserve logical mail identity in test-mode audit records
 
 **Files:**
+
 - Modify: `test/unit/application/pipelines/email-steps.test.ts`
 - Modify: `test/unit/application/email-notification-service.test.ts`
 - Modify: `src/application/pipelines/emailSteps.ts`
 - Modify: `src/application/services/EmailNotificationService.ts`
 
 **Interfaces:**
+
 - Consumes: `LogEmailStep._executeLogic(ctx: PipelineContext): void`, `EmailNotificationService.loadSuccessfulLogicalTargetIds(patternId, row)`.
 - Produces: `LOG_MAIL.ALLEGATI.logicalTargetId: string` for every delivery and `LOG_MAIL.ALLEGATI.testMode: boolean` only for preview delivery; history ignores `testMode === true`.
 
@@ -108,7 +112,10 @@ Expected: PASS.
 test('logs logicalTargetId for a test-mode delivery', () => {
   runLogEmailStep({ testEmail: 'tester@school.it', emailTarget: docenteTarget });
   expect(logMail.registraInvio).toHaveBeenCalledWith(
-    expect.any(String), expect.any(Array), expect.anything(), expect.any(String),
+    expect.any(String),
+    expect.any(Array),
+    expect.anything(),
+    expect.any(String),
     expect.objectContaining({ logicalTargetId: 'docente:docente@school.it', testMode: true }),
     undefined
   );
@@ -160,11 +167,13 @@ Expected: PASS.
 ### Task 3: Align authoritative contracts and execute verification
 
 **Files:**
+
 - Modify: `SPECS_ALDO/01_SCHEMA_DATABASE.md`
 - Modify: `SPECS_ALDO/02_CDU_STRUTTURA.md`
 - Modify: `SPECS_ALDO/03_VALUE_OBJECTS_ED_ENUM.md`
 
 **Interfaces:**
+
 - Consumes: Task 1 and Task 2 observable contracts.
 - Produces: documentation whose duplicate identity and test-mode audit behavior match code.
 

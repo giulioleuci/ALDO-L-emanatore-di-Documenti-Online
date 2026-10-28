@@ -37,9 +37,7 @@ export function buildStoricoAlunnoVm(anni: AnnoAlunnoStorico[]): StoricoAlunnoVM
             a.a.localeCompare(b.a)
         )
         .map((movimento) =>
-          buildMovimentoAlunnoVm(movimento, (id) =>
-            classiInterne.has(id) ? { nome: id } : null
-          )
+          buildMovimentoAlunnoVm(movimento, (id) => (classiInterne.has(id) ? { nome: id } : null))
         );
       return {
         annoScolastico: anno.anno,
@@ -50,7 +48,9 @@ export function buildStoricoAlunnoVm(anni: AnnoAlunnoStorico[]): StoricoAlunnoVM
         isNonPromosso: anno.esito === 'NON_PROMOSSO',
         carenze,
         hasCarenze: carenze.length > 0,
-        carenzeDescrizione: carenze.map((carenza) => `${carenza.materiaSigla}: ${carenza.valore}`).join(', '),
+        carenzeDescrizione: carenze
+          .map((carenza) => `${carenza.materiaSigla}: ${carenza.valore}`)
+          .join(', '),
         piani,
         hasPiani: piani.length > 0,
         presenza: buildPresenzaAlunnoVm(
@@ -75,7 +75,9 @@ export function buildStoricoAlunnoVm(anni: AnnoAlunnoStorico[]): StoricoAlunnoVM
     numeroAnni: mapped.length,
     bocciature: {
       ...elencoVm(bocciature),
-      elencoDescrizione: bocciature.map((anno) => `${anno.annoScolastico} (${anno.classe.nome})`).join(', ')
+      elencoDescrizione: bocciature
+        .map((anno) => `${anno.annoScolastico} (${anno.classe.nome})`)
+        .join(', ')
     }
   };
 }

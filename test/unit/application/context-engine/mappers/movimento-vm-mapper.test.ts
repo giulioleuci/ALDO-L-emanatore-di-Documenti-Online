@@ -14,14 +14,30 @@ function movimento(tipo: TipoMovimento, data: string, da: string, a: string) {
 }
 
 test('maps one canonical student movement with printable labels and endpoints', () => {
-  expect(buildMovimentoAlunnoVm(movimento(TipoMovimento.CAMBIO, '2026-02-03', '4A', '5A'), resolveClasse)).toEqual({
+  expect(
+    buildMovimentoAlunnoVm(movimento(TipoMovimento.CAMBIO, '2026-02-03', '4A', '5A'), resolveClasse)
+  ).toEqual({
     tipo: 'CAMBIO',
     tipoLabel: 'Cambio di classe',
     data: '2026-02-03',
     dataBreve: '03/02/2026',
     dataEstesa: '03 febbraio 2026',
-    provenienza: { valore: '4A', descrizione: '4A', classe: { nome: '4A' }, scuolaEsterna: null, isClasse: true, isScuolaEsterna: false },
-    destinazione: { valore: '5A', descrizione: '5A', classe: { nome: '5A' }, scuolaEsterna: null, isClasse: true, isScuolaEsterna: false },
+    provenienza: {
+      valore: '4A',
+      descrizione: '4A',
+      classe: { nome: '4A' },
+      scuolaEsterna: null,
+      isClasse: true,
+      isScuolaEsterna: false
+    },
+    destinazione: {
+      valore: '5A',
+      descrizione: '5A',
+      classe: { nome: '5A' },
+      scuolaEsterna: null,
+      isClasse: true,
+      isScuolaEsterna: false
+    },
     isIngresso: false,
     isUscita: false,
     isRitirato: false,
@@ -35,8 +51,15 @@ test.each([
   ['USCITA', new Set(['4A']), '4A', 'Scuola esterna'],
   ['INTERNA', new Set(['4A', '5A']), '4A', '5A']
 ] as const)('derives %s relative to class scope', (direzione, scope, da, a) => {
-  const base = buildMovimentoAlunnoVm(movimento(TipoMovimento.CAMBIO, '2026-02-03', da, a), resolveClasse);
-  const result = buildMovimentoClasseVm(base, { nomeCompleto: 'Verdi Anna', email: 'anna@scuola.it' }, scope);
+  const base = buildMovimentoAlunnoVm(
+    movimento(TipoMovimento.CAMBIO, '2026-02-03', da, a),
+    resolveClasse
+  );
+  const result = buildMovimentoClasseVm(
+    base,
+    { nomeCompleto: 'Verdi Anna', email: 'anna@scuola.it' },
+    scope
+  );
   expect(result.direzione).toBe(direzione);
   expect(result.isEntrata).toBe(direzione === 'ENTRATA');
   expect(result.isUscita).toBe(direzione === 'USCITA');
@@ -44,7 +67,10 @@ test.each([
 });
 
 test('presence uses the same filtered canonical movement collection', () => {
-  const cambio = buildMovimentoAlunnoVm(movimento(TipoMovimento.CAMBIO, '2026-02-03', '4A', '5A'), resolveClasse);
+  const cambio = buildMovimentoAlunnoVm(
+    movimento(TipoMovimento.CAMBIO, '2026-02-03', '4A', '5A'),
+    resolveClasse
+  );
   expect(buildPresenzaAlunnoVm([cambio], { isCalcolato: true, isPresente: true }, '5A')).toEqual({
     annoPrecedente: { isCalcolato: true, isPresente: true },
     isPresenteTuttoAnno: false,
@@ -60,6 +86,7 @@ test('presence ignores a transfer away from the current class', () => {
     resolveClasse
   );
 
-  expect(buildPresenzaAlunnoVm([cambio], { isCalcolato: true, isPresente: true }, '5A'))
-    .toMatchObject({ isPresenteTuttoAnno: true, hasCambiatoClasse: true });
+  expect(
+    buildPresenzaAlunnoVm([cambio], { isCalcolato: true, isPresente: true }, '5A')
+  ).toMatchObject({ isPresenteTuttoAnno: true, hasCambiatoClasse: true });
 });

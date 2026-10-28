@@ -14,21 +14,21 @@ Questa guida è per chi lavora nel file **Google Sheets** dell'istituto. Non occ
 
 ## Mappa dei fogli
 
-| Foglio | A cosa serve | Cosa fare | Collegamenti principali |
-| --- | --- | --- | --- |
-| `DOCENTI` | Elenco del personale docente | Compilare e aggiornare | Fornisce email a classi, dipartimenti, incarichi, supplenze e cambi docente |
-| `CLASSI` | Classi, indirizzi e docenti assegnati | Compilare e aggiornare | Usa `DOCENTI`, `MATERIE`, `INDIRIZZI`; è usato dagli altri fogli |
-| `ALUNNI` | Elenco studenti e classe frequentata | Compilare e aggiornare | Usa `CLASSI`; alimenta piani, carenze, PCTO e movimenti |
-| `PIANI` | PDP, PEI e altri piani individuali | Compilare solo se incaricati | Usa `ALUNNI` |
-| `MOV_ALUNNI` | Storico di ingressi, uscite e cambi classe | Aggiungere righe, mai cancellarle | Usa `ALUNNI` e `CLASSI`; richiede aggiornamento di `ALUNNI` |
-| `SUPPLENZE` | Sostituzioni temporanee | Compilare quando necessario | Usa docenti, classi e materie |
-| `VARIAZIONI_CATTEDRA` | Cambio definitivo del docente | Compilare quando necessario | Usa docenti, classi e materie |
-| `CARENZE` | Rilevazioni di insufficienze e assenze | Compilare secondo la procedura d'istituto | Usa studenti, classi e materie |
-| `ASL` | Ore PCTO/alternanza | Compilare secondo la procedura d'istituto | Usa gli studenti |
-| `PROGETTI` | Attività extracurriculari e PCTO | Compilare secondo la procedura d'istituto | Collega studenti, docenti e classi |
-| `MATERIE`, `INDIRIZZI`, `DIPART`, `RUOLI` | Elenchi ufficiali di riferimento | Consultare; modificare solo se incaricati | Forniscono codici ed email agli altri fogli |
-| `CONF_DOC`, `CONF_MAIL`, `CONF_IMP`, `CONF_AZIONI` | Impostazioni interne di documenti, email e operazioni | **Non modificare** senza autorizzazione | Leggono i dati degli altri fogli |
-| `LOG_DOCS`, `LOG_FOLD`, `LOG_MAIL`, `LOG_JOB` | Storico di documenti, cartelle, email e operazioni | **Solo consultazione** | Permettono di controllare ciò che è già stato fatto |
+| Foglio                                             | A cosa serve                                          | Cosa fare                                 | Collegamenti principali                                                     |
+| -------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------- |
+| `DOCENTI`                                          | Elenco del personale docente                          | Compilare e aggiornare                    | Fornisce email a classi, dipartimenti, incarichi, supplenze e cambi docente |
+| `CLASSI`                                           | Classi, indirizzi e docenti assegnati                 | Compilare e aggiornare                    | Usa `DOCENTI`, `MATERIE`, `INDIRIZZI`; è usato dagli altri fogli            |
+| `ALUNNI`                                           | Elenco studenti e classe frequentata                  | Compilare e aggiornare                    | Usa `CLASSI`; alimenta piani, carenze, PCTO e movimenti                     |
+| `PIANI`                                            | PDP, PEI e altri piani individuali                    | Compilare solo se incaricati              | Usa `ALUNNI`                                                                |
+| `MOV_ALUNNI`                                       | Storico di ingressi, uscite e cambi classe            | Aggiungere righe, mai cancellarle         | Usa `ALUNNI` e `CLASSI`; richiede aggiornamento di `ALUNNI`                 |
+| `SUPPLENZE`                                        | Sostituzioni temporanee                               | Compilare quando necessario               | Usa docenti, classi e materie                                               |
+| `VARIAZIONI_CATTEDRA`                              | Cambio definitivo del docente                         | Compilare quando necessario               | Usa docenti, classi e materie                                               |
+| `CARENZE`                                          | Rilevazioni di insufficienze e assenze                | Compilare secondo la procedura d'istituto | Usa studenti, classi e materie                                              |
+| `ASL`                                              | Ore PCTO/alternanza                                   | Compilare secondo la procedura d'istituto | Usa gli studenti                                                            |
+| `PROGETTI`                                         | Attività extracurriculari e PCTO                      | Compilare secondo la procedura d'istituto | Collega studenti, docenti e classi                                          |
+| `MATERIE`, `INDIRIZZI`, `DIPART`, `RUOLI`          | Elenchi ufficiali di riferimento                      | Consultare; modificare solo se incaricati | Forniscono codici ed email agli altri fogli                                 |
+| `CONF_DOC`, `CONF_MAIL`, `CONF_IMP`, `CONF_AZIONI` | Impostazioni interne di documenti, email e operazioni | **Non modificare** senza autorizzazione   | Leggono i dati degli altri fogli                                            |
+| `LOG_DOCS`, `LOG_FOLD`, `LOG_MAIL`, `LOG_JOB`      | Storico di documenti, cartelle, email e operazioni    | **Solo consultazione**                    | Permettono di controllare ciò che è già stato fatto                         |
 
 ## Ordine consigliato
 
@@ -45,14 +45,14 @@ Questa guida è per chi lavora nel file **Google Sheets** dell'istituto. Non occ
 
 È la rubrica dei docenti. L'email identifica una persona: non possono esserci due righe con la stessa email.
 
-| Colonna | Cosa inserire | Esempio |
-| --- | --- | --- |
-| `EMAIL` | Email istituzionale completa | `maria.rossi@istituto.it` |
-| `COGNOME`, `NOME` | Dati anagrafici | `Rossi`, `Maria` |
-| `GENERE` | `M` oppure `F`, per l'appellativo nei documenti | `F` |
-| `DIPART` | Codice preso da `DIPART` | `LETTERE` |
-| `ITP` | `VERO` solo per insegnante tecnico-pratico | `FALSO` |
-| `ORE_POT` | Numero di ore settimanali di potenziamento | `2` |
+| Colonna           | Cosa inserire                                   | Esempio                   |
+| ----------------- | ----------------------------------------------- | ------------------------- |
+| `EMAIL`           | Email istituzionale completa                    | `maria.rossi@istituto.it` |
+| `COGNOME`, `NOME` | Dati anagrafici                                 | `Rossi`, `Maria`          |
+| `GENERE`          | `M` oppure `F`, per l'appellativo nei documenti | `F`                       |
+| `DIPART`          | Codice preso da `DIPART`                        | `LETTERE`                 |
+| `ITP`             | `VERO` solo per insegnante tecnico-pratico      | `FALSO`                   |
+| `ORE_POT`         | Numero di ore settimanali di potenziamento      | `2`                       |
 
 **Collegamenti.** Prima di assegnare un docente a una classe, dipartimento, incarico, supplenza o cambio di cattedra, inserirlo qui. Se compare in una colonna che termina con `itp` in `CLASSI`, deve avere `ITP = VERO`.
 
@@ -60,18 +60,18 @@ Questa guida è per chi lavora nel file **Google Sheets** dell'istituto. Non occ
 
 Ogni riga descrive una classe. `ID` è il codice da copiare negli altri fogli, per esempio `3B` o `5ALC`.
 
-| Colonna | Cosa inserire | Esempio |
-| --- | --- | --- |
-| `ID` | Codice unico della classe, senza spazi | `5ALC` |
-| `ANNO`, `SEZ` | Anno di corso e sezione | `5`, `A` |
-| `TERMINALE` | `VERO` per la classe conclusiva del percorso | `VERO` |
-| `INDIRIZZO` | Codice preso da `INDIRIZZI` | `LC` |
-| `COORD` | Email del coordinatore; più persone separate da virgola | `luigi.verdi@istituto.it` |
-| `ATTIVA` | `VERO` se la classe è attiva nell'anno | `VERO` |
-| `STORICO` | Eventuali codici usati negli anni precedenti | `4ALC` |
-| Colonne delle materie | Email del docente assegnato | `maria.rossi@istituto.it` |
-| Colonne che terminano con `itp` | Email del docente di laboratorio | `carlo.bianchi@istituto.it` |
-| `IRC`, `ALT` | Email del docente di religione o attività alternativa | `d.curia@istituto.it` |
+| Colonna                         | Cosa inserire                                           | Esempio                     |
+| ------------------------------- | ------------------------------------------------------- | --------------------------- |
+| `ID`                            | Codice unico della classe, senza spazi                  | `5ALC`                      |
+| `ANNO`, `SEZ`                   | Anno di corso e sezione                                 | `5`, `A`                    |
+| `TERMINALE`                     | `VERO` per la classe conclusiva del percorso            | `VERO`                      |
+| `INDIRIZZO`                     | Codice preso da `INDIRIZZI`                             | `LC`                        |
+| `COORD`                         | Email del coordinatore; più persone separate da virgola | `luigi.verdi@istituto.it`   |
+| `ATTIVA`                        | `VERO` se la classe è attiva nell'anno                  | `VERO`                      |
+| `STORICO`                       | Eventuali codici usati negli anni precedenti            | `4ALC`                      |
+| Colonne delle materie           | Email del docente assegnato                             | `maria.rossi@istituto.it`   |
+| Colonne che terminano con `itp` | Email del docente di laboratorio                        | `carlo.bianchi@istituto.it` |
+| `IRC`, `ALT`                    | Email del docente di religione o attività alternativa   | `d.curia@istituto.it`       |
 
 Ogni colonna con un codice come `ITA`, `MAT` o `INTERPRET.CHITARRA` corrisponde a una materia già presente in `MATERIE`. Non creare nuove colonne. Per più docenti nella stessa materia, separare le email con virgola.
 
@@ -83,18 +83,18 @@ I campi `RUOLI`, `ARTICOLAZIONE` e le classi articolate richiedono una struttura
 
 È la rubrica degli studenti. L'email identifica lo studente e deve essere unica.
 
-| Colonna | Cosa inserire | Esempio |
-| --- | --- | --- |
-| `EMAIL` | Email istituzionale dello studente | `giulia.rossi@istituto.it` |
-| `COGNOMENOME` | Cognome e nome | `Rossi Giulia` |
-| `CLASSE` | Codice esatto preso da `CLASSI` | `3B` |
-| `RELIGIONE` | `IRC`, `ALT` oppure `NO` | `IRC` |
-| `ATTIVO` | `VERO` se frequenta; `FALSO` se non frequenta più | `VERO` |
-| `RIPETENTE` | `VERO` se ripete l'anno | `FALSO` |
-| `RAPPR_STUD` | `VERO` se rappresentante degli studenti | `FALSO` |
-| `RAPPR_GEN` | Nome del genitore rappresentante, se presente | `Bianchi Mario` |
-| `TUTOR_1`, `TUTOR_2` | Email del primo e dell'eventuale secondo tutore | `mario.bianchi@email.it` |
-| `NOTE` | Annotazioni interne autorizzate | `DSA certificato` |
+| Colonna              | Cosa inserire                                     | Esempio                    |
+| -------------------- | ------------------------------------------------- | -------------------------- |
+| `EMAIL`              | Email istituzionale dello studente                | `giulia.rossi@istituto.it` |
+| `COGNOMENOME`        | Cognome e nome                                    | `Rossi Giulia`             |
+| `CLASSE`             | Codice esatto preso da `CLASSI`                   | `3B`                       |
+| `RELIGIONE`          | `IRC`, `ALT` oppure `NO`                          | `IRC`                      |
+| `ATTIVO`             | `VERO` se frequenta; `FALSO` se non frequenta più | `VERO`                     |
+| `RIPETENTE`          | `VERO` se ripete l'anno                           | `FALSO`                    |
+| `RAPPR_STUD`         | `VERO` se rappresentante degli studenti           | `FALSO`                    |
+| `RAPPR_GEN`          | Nome del genitore rappresentante, se presente     | `Bianchi Mario`            |
+| `TUTOR_1`, `TUTOR_2` | Email del primo e dell'eventuale secondo tutore   | `mario.bianchi@email.it`   |
+| `NOTE`               | Annotazioni interne autorizzate                   | `DSA certificato`          |
 
 `CURRICULUM` è solo per percorsi con scelte particolari, come lo strumento musicale: non compilarlo senza il modello fornito dall'amministratore.
 
@@ -106,11 +106,11 @@ I campi `RUOLI`, `ARTICOLAZIONE` e le classi articolate richiedono una struttura
 
 Una riga indica un piano assegnato a uno studente. Serve a conservare l'informazione e, quando previsto, a preparare documenti dedicati.
 
-| Colonna | Cosa inserire | Esempio |
-| --- | --- | --- |
-| `STUDENTE` | Email già presente in `ALUNNI` | `giulia.rossi@istituto.it` |
-| `TIPO` | `PDP_DSA`, `PDP_BES`, `PDP_STRANIERI`, `PEI` o `PFP` | `PDP_DSA` |
-| `PARAMETRI` | Solo il modello predisposto dall'amministratore | lasciare vuoto se non richiesto |
+| Colonna     | Cosa inserire                                        | Esempio                         |
+| ----------- | ---------------------------------------------------- | ------------------------------- |
+| `STUDENTE`  | Email già presente in `ALUNNI`                       | `giulia.rossi@istituto.it`      |
+| `TIPO`      | `PDP_DSA`, `PDP_BES`, `PDP_STRANIERI`, `PEI` o `PFP` | `PDP_DSA`                       |
+| `PARAMETRI` | Solo il modello predisposto dall'amministratore      | lasciare vuoto se non richiesto |
 
 Per lo stesso studente e lo stesso tipo di piano deve esserci una sola riga. Se cambia, aggiornare la riga esistente invece di duplicarla. Lo studente deve essere presente e attivo in `ALUNNI`.
 
@@ -118,13 +118,13 @@ Per lo stesso studente e lo stesso tipo di piano deve esserci una sola riga. Se 
 
 È un archivio: aggiungere una riga per ogni evento, senza cancellare o riscrivere quelle già registrate.
 
-| Colonna | Cosa inserire | Esempio |
-| --- | --- | --- |
-| `STUDENTE` | Email presente in `ALUNNI` | `giulia.rossi@istituto.it` |
-| `TIPO` | `IN`, `OUT`, `RITIRATO` o `CAMBIO` | `CAMBIO` |
-| `DATA` | Giorno effettivo dell'evento | `2026-02-10` |
-| `DA` | Classe/scuola di provenienza | `3B` o `ALTRO ISTITUTO` |
-| `A` | Nuova classe o destinazione | `3C` o `ALTRO ISTITUTO` |
+| Colonna    | Cosa inserire                      | Esempio                    |
+| ---------- | ---------------------------------- | -------------------------- |
+| `STUDENTE` | Email presente in `ALUNNI`         | `giulia.rossi@istituto.it` |
+| `TIPO`     | `IN`, `OUT`, `RITIRATO` o `CAMBIO` | `CAMBIO`                   |
+| `DATA`     | Giorno effettivo dell'evento       | `2026-02-10`               |
+| `DA`       | Classe/scuola di provenienza       | `3B` o `ALTRO ISTITUTO`    |
+| `A`        | Nuova classe o destinazione        | `3C` o `ALTRO ISTITUTO`    |
 
 `IN` è un ingresso; `OUT` è un trasferimento a un altro istituto; `RITIRATO` è il ritiro dagli studi; `CAMBIO` è il passaggio interno a un'altra classe.
 
@@ -134,14 +134,14 @@ Per lo stesso studente e lo stesso tipo di piano deve esserci una sola riga. Se 
 
 Ogni riga registra una rilevazione per uno studente, per esempio un pagellino. Le colonne con il codice di una materia contengono il voto o una breve nota relativa a quella materia.
 
-| Colonna | Cosa contiene |
-| --- | --- |
-| `STUDENTE` | Email dello studente in `ALUNNI` |
-| `PROGRESSIVO` | Numero della rilevazione per quello studente; usare la procedura indicata dalla scuola |
-| `CLASSE`, `DATA` | Classe e data della rilevazione |
-| `ASSENZE` | `VERO` se occorre segnalare assenze elevate |
-| `NOTE` | Nota generale del consiglio di classe |
-| Colonne delle materie | Voto o nota di carenza per la materia |
+| Colonna               | Cosa contiene                                                                          |
+| --------------------- | -------------------------------------------------------------------------------------- |
+| `STUDENTE`            | Email dello studente in `ALUNNI`                                                       |
+| `PROGRESSIVO`         | Numero della rilevazione per quello studente; usare la procedura indicata dalla scuola |
+| `CLASSE`, `DATA`      | Classe e data della rilevazione                                                        |
+| `ASSENZE`             | `VERO` se occorre segnalare assenze elevate                                            |
+| `NOTE`                | Nota generale del consiglio di classe                                                  |
+| Colonne delle materie | Voto o nota di carenza per la materia                                                  |
 
 Studente, classe e materie devono esistere già nei rispettivi fogli. Il foglio può preparare comunicazioni alle famiglie: compilarlo solo con la procedura concordata e senza creare nuove colonne.
 
@@ -159,13 +159,13 @@ Raccoglie progetti dell'istituto, compresi quelli PCTO/alternanza. Ogni riga des
 
 Una riga indica che un docente sostituisce temporaneamente un altro in determinate classi e materie.
 
-| Colonna | Cosa inserire | Esempio |
-| --- | --- | --- |
-| `TITOLARE` | Email del docente assente | `maria.rossi@istituto.it` |
-| `SUPPLENTE` | Email del docente che lo sostituisce | `luigi.verdi@istituto.it` |
-| `DAL`, `AL` | Inizio e fine; `AL` vuoto significa ancora in corso | `2026-03-01`, `2026-03-15` |
-| `CLASSI` | Codici classe separati da virgola, oppure `*` per tutte | `3B,3C` |
-| `MATERIE` | Codici materia separati da virgola, oppure `*` per tutte | `ITA,STO` |
+| Colonna     | Cosa inserire                                            | Esempio                    |
+| ----------- | -------------------------------------------------------- | -------------------------- |
+| `TITOLARE`  | Email del docente assente                                | `maria.rossi@istituto.it`  |
+| `SUPPLENTE` | Email del docente che lo sostituisce                     | `luigi.verdi@istituto.it`  |
+| `DAL`, `AL` | Inizio e fine; `AL` vuoto significa ancora in corso      | `2026-03-01`, `2026-03-15` |
+| `CLASSI`    | Codici classe separati da virgola, oppure `*` per tutte  | `3B,3C`                    |
+| `MATERIE`   | Codici materia separati da virgola, oppure `*` per tutte | `ITA,STO`                  |
 
 L'asterisco `*` va scritto da solo nella cella. Mantenere sempre lo stesso ordine per più classi o materie: sempre `3B,3C`, non a volte `3C,3B`.
 
@@ -175,12 +175,12 @@ L'asterisco `*` va scritto da solo nella cella. Mantenere sempre lo stesso ordin
 
 Usare questo foglio quando il cambio di docente è definitivo, non per una sostituzione di pochi giorni.
 
-| Colonna | Cosa inserire | Esempio |
-| --- | --- | --- |
-| `TITOLARE` | Email del docente che lascia la cattedra | `maria.rossi@istituto.it` |
-| `NUOVO_TITOLARE` | Email del docente che la assume | `luigi.verdi@istituto.it` |
-| `DAL` | Data da cui il cambio vale | `2026-01-07` |
-| `CLASSI`, `MATERIE` | Codici separati da virgola, oppure `*` per tutte | `5A`, `MAT` |
+| Colonna             | Cosa inserire                                    | Esempio                   |
+| ------------------- | ------------------------------------------------ | ------------------------- |
+| `TITOLARE`          | Email del docente che lascia la cattedra         | `maria.rossi@istituto.it` |
+| `NUOVO_TITOLARE`    | Email del docente che la assume                  | `luigi.verdi@istituto.it` |
+| `DAL`               | Data da cui il cambio vale                       | `2026-01-07`              |
+| `CLASSI`, `MATERIE` | Codici separati da virgola, oppure `*` per tutte | `5A`, `MAT`               |
 
 Il cambio resta valido fino a una riga successiva che lo modifica. Anche qui l'asterisco deve essere da solo e l'ordine dei codici deve rimanere coerente.
 
@@ -206,23 +206,23 @@ Elenca incarichi speciali di istituto. `ID` è il codice dell'incarico, `NOME` l
 
 ## Fogli da non modificare senza autorizzazione
 
-| Foglio | Contenuto e scopo | Interazioni |
-| --- | --- | --- |
-| `CONF_DOC` | Tipi di documenti, modelli, cartelle e regole di creazione | Legge dati di studenti, classi, docenti, piani, carenze e progetti; registra il risultato in `LOG_DOCS` e `LOG_FOLD` |
-| `CONF_MAIL` | Oggetto, destinatari, testo e allegati delle comunicazioni | Legge dati scolastici e documenti; registra l'invio in `LOG_MAIL` |
-| `CONF_IMP` | Istruzioni per importare dati da altre fonti | Aggiorna il foglio indicato dalla riga |
-| `CONF_AZIONI` | Istruzioni per verifiche e operazioni di manutenzione | Può controllare o aggiornare dati e registrare l'esito in `LOG_JOB` |
+| Foglio        | Contenuto e scopo                                          | Interazioni                                                                                                          |
+| ------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `CONF_DOC`    | Tipi di documenti, modelli, cartelle e regole di creazione | Legge dati di studenti, classi, docenti, piani, carenze e progetti; registra il risultato in `LOG_DOCS` e `LOG_FOLD` |
+| `CONF_MAIL`   | Oggetto, destinatari, testo e allegati delle comunicazioni | Legge dati scolastici e documenti; registra l'invio in `LOG_MAIL`                                                    |
+| `CONF_IMP`    | Istruzioni per importare dati da altre fonti               | Aggiorna il foglio indicato dalla riga                                                                               |
+| `CONF_AZIONI` | Istruzioni per verifiche e operazioni di manutenzione      | Può controllare o aggiornare dati e registrare l'esito in `LOG_JOB`                                                  |
 
 Se serve un nuovo documento, una nuova email o una nuova importazione, chiedere all'amministratore invece di aggiungere righe o colonne autonomamente.
 
 ## Fogli di storico: solo consultazione
 
-| Foglio | Che cosa conserva | Quando consultarlo |
-| --- | --- | --- |
-| `LOG_DOCS` | Un record per documento creato: nome, collegamento, classe, persone e data | Per vedere se un documento è già stato generato |
-| `LOG_FOLD` | Cartelle create su Google Drive | Per ritrovare una cartella generata |
-| `LOG_MAIL` | Email inviate, destinatari, esito ed eventuali errori | Per controllare se una comunicazione è partita |
-| `LOG_JOB` | Riepilogo delle operazioni svolte e problemi | Per fornire all'amministratore dettagli su un'anomalia |
+| Foglio     | Che cosa conserva                                                          | Quando consultarlo                                     |
+| ---------- | -------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `LOG_DOCS` | Un record per documento creato: nome, collegamento, classe, persone e data | Per vedere se un documento è già stato generato        |
+| `LOG_FOLD` | Cartelle create su Google Drive                                            | Per ritrovare una cartella generata                    |
+| `LOG_MAIL` | Email inviate, destinatari, esito ed eventuali errori                      | Per controllare se una comunicazione è partita         |
+| `LOG_JOB`  | Riepilogo delle operazioni svolte e problemi                               | Per fornire all'amministratore dettagli su un'anomalia |
 
 Non correggere a mano questi fogli: sono una cronologia. In caso di errore, comunicare all'amministratore il link o la riga interessata.
 

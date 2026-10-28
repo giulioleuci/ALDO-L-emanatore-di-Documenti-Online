@@ -32,6 +32,7 @@ Everything else in this plan was confirmed against real files (cited per task).
 ### Task 1: Quota-aware email batching
 
 **Files:**
+
 - Modify: `src/infrastructure/facades/GmailServiceFacade.ts`
 - Modify: `src/application/services/EmailBatchService.ts`
 - Modify: `src/config/Bootstrap.ts` (only if wiring needs it — see Step 6)
@@ -41,6 +42,7 @@ Everything else in this plan was confirmed against real files (cited per task).
 **Verified:** `GoogleApiWrapper/src/services/MailService.js:42` already has `getQuotaUsage()` → `MailApp.getRemainingDailyQuota()`. `GmailServiceFacade.ts` (read in full) has no quota method. `EmailBatchService.ts` chunks by a fixed `EMAIL_CHUNK_SIZE = 100` regardless of actual remaining quota — a large pattern's checkpoint can attempt to send more than the daily quota allows and fail mid-chunk.
 
 **Interfaces:**
+
 - Consumes: `MailService.getQuotaUsage(): number` (GLF, already exists, no GLF change).
 - Produces: `IGmailFacade.getRemainingQuota(): number`; `EmailBatchService.batchSendHandler` now caps each chunk to `min(chunkSize, remainingQuota)` and stops cleanly (no resume-trigger churn) when quota is 0.
 
@@ -92,7 +94,9 @@ test('zero remaining quota suspends cleanly without sending (no resume-trigger c
   );
   expect(gmail.sent).toHaveLength(0);
   expect(checkpoints).toHaveLength(1);
-  expect(checkpoints[0]!.errors).toContain('quota Gmail esaurita — sospeso, richiede riavvio esplicito');
+  expect(checkpoints[0]!.errors).toContain(
+    'quota Gmail esaurita — sospeso, richiede riavvio esplicito'
+  );
   expect(result.errors).toContain('quota Gmail esaurita — sospeso, richiede riavvio esplicito');
 });
 ```
@@ -225,6 +229,7 @@ git commit -m "feat: cap email batch chunks to remaining Gmail quota"
 ### Task 2: Wire `EmailRetryService` into `JobRunnerLib`
 
 **Files:**
+
 - Modify: `src/application/services/EmailRetryService.ts`
 - Modify: `src/config/Bootstrap.ts`
 - Modify: `src/index.ts`
@@ -235,6 +240,7 @@ git commit -m "feat: cap email batch chunks to remaining Gmail quota"
 **Verified:** `EmailRetryService.retryFailed()` (`src/application/services/EmailRetryService.ts:41`) is registered in `Bootstrap.ts:266-275` but has zero callers in `src/index.ts` or `src/entrypoints/EntryPoints.ts` — confirmed by grep, no hits. It runs synchronously today (no generator, no `JobRunnerService`), so a pattern with many failed/grouped emails has no execution-window protection.
 
 **Interfaces:**
+
 - Consumes: `EmailRetryService.retryFailed(): RetryResult` (existing, unchanged signature — becomes the per-chunk unit of work).
 - Produces: `EmailRetryService.retryHandler(params): Generator<RetryCheckpoint, RetryResult, void>`; `JOB_TYPE_RETRY_EMAIL` constant; `menu_avvioRetryEmail()` global in `EntryPoints.ts`/`index.ts` following the exact pattern `menu_avvioComunicazioniEmail` already uses.
 
@@ -299,7 +305,8 @@ export class EmailRetryService {
     const jobId = String(params.jobId ?? 'retry_email');
     const resume = (params.resumeState ?? null) as { groupIndex: number } | null;
     const groups = this.groupFailed();
-    if (resume === null) this.logger.info(`EmailRetry: avviato job ${jobId}, ${groups.length} gruppi`);
+    if (resume === null)
+      this.logger.info(`EmailRetry: avviato job ${jobId}, ${groups.length} gruppi`);
 
     let result: RetryResult = { retried: 0, permanent: 0 };
     const startIndex = resume?.groupIndex ?? 0;
@@ -429,6 +436,7 @@ git commit -m "feat: run EmailRetryService through JobRunnerLib with a real laun
 ### Task 3: Wire `ImportService` to `GasProcessMonitorLib` (no GLF change)
 
 **Files:**
+
 - Modify: `src/application/services/ImportService.ts`
 - Modify: `src/config/Bootstrap.ts`
 - Test: `test/unit/application/import-service.test.ts`
@@ -436,12 +444,13 @@ git commit -m "feat: run EmailRetryService through JobRunnerLib with a real laun
 **Verified:** `Bootstrap.ts:390-395` constructs `new ImportEngine(logger, driveService, spreadsheetService, db.getDatabaseService())` — 4 args, no `monitor` (5th arg is `expressionEngine`, 7th is `monitor`). `ImportService.executeImport` calls `this.engine.runImport(recipe, { postTransform })` — no `jobId`. But `GasDataImporter/src/pipeline/ImportPipelineExecutor.js:68-129` (`_executePipeline`) already drives `monitor.registerJob/startJob/logStepStart('Extract'|'Transform'|'Load')/logStepComplete/updateProgress(5|33|40|66|70|100)/completeJob/setError` whenever both are present. `Menu.ts:76` already expects `imp_<configId>` monitor jobs to exist for its sidebar. This is pure wiring on the ALDO side.
 
 **Interfaces:**
+
 - Consumes: `ImportEngine` constructor's existing 7th positional `monitor` param; `runImport(recipe, { postTransform, jobId })`'s existing `jobId` option — both already implemented in GLF, confirmed above.
 - Produces: `ImportService` constructor gains an optional `monitor?: IProcessMonitor` param; `executeImport` now passes `jobId: 'imp_' + configId`.
 
 - [ ] **Step 1: Write the failing test — monitor receives job lifecycle calls**
 
-Add to `test/unit/application/import-service.test.ts`, using the existing `fakeEngine` helper (extend it to accept and forward a `jobId`/call the monitor the way the real engine does — since `fakeEngine` is a hand-rolled double standing in for `ImportEngine.runImport`, the test should assert `ImportService` *passes* `jobId` to `runImport`, not that GLF's internal monitor calls happen — that's GLF's own test suite's job):
+Add to `test/unit/application/import-service.test.ts`, using the existing `fakeEngine` helper (extend it to accept and forward a `jobId`/call the monitor the way the real engine does — since `fakeEngine` is a hand-rolled double standing in for `ImportEngine.runImport`, the test should assert `ImportService` _passes_ `jobId` to `runImport`, not that GLF's internal monitor calls happen — that's GLF's own test suite's job):
 
 ```ts
 test('executeImport passes a stable imp_<configId> jobId to runImport (15 §9)', () => {
@@ -456,7 +465,15 @@ test('executeImport passes a stable imp_<configId> jobId to runImport (15 §9)',
         durationMs: 0,
         extract: { rowsExtracted: 0, rowCount: 0 },
         transform: { rowsTransformed: 0, recordsProcessed: 0 },
-        load: { inserted: 0, updated: 0, skipped: 0, deleted: 0, total: 0, recordsProcessed: 0, failed: 0 }
+        load: {
+          inserted: 0,
+          updated: 0,
+          skipped: 0,
+          deleted: 0,
+          total: 0,
+          recordsProcessed: 0,
+          failed: 0
+        }
       };
     }
   } as unknown as ImportEngine;
@@ -541,6 +558,7 @@ git commit -m "feat: surface import job progress on the GasProcessMonitorLib das
 **Repo:** `GasLibraryFactory/` (separate git repo, own `npm test`/`npm run lint`).
 
 **Files:**
+
 - Create: `GasLibraryFactory/GasDataImporter/src/ImportCheckpoint.js`
 - Modify: `GasLibraryFactory/GasDataImporter/src/internal/extract-strategies/SourceStrategy.js`
 - Modify: `GasLibraryFactory/GasDataImporter/src/internal/extract-strategies/SheetByIdStrategy.js`
@@ -554,11 +572,12 @@ git commit -m "feat: surface import job progress on the GasProcessMonitorLib das
 - Test: `GasLibraryFactory/GasDataImporter/src/internal/load/__tests__/Loader.test.js`
 - Test: `GasLibraryFactory/GasDataImporter/src/pipeline/__tests__/ImportPipelineExecutor.test.js`
 
-**Verified:** `ImportPipelineExecutor.runImport` (read in full) does one synchronous `_executeExtract` → `_executeTransform` → `_executeLoad` per call — nothing checkpoints mid-recipe. `SourceStrategy` (`SourceStrategy.js`) has no cursor concept; `SheetByIdStrategy._resolveValues` always fetches the entire sheet range in one `getRanges` call. `Loader.load` (read in full) always re-reads `table.getAllRows()` and recomputes existing keys before insert/update/upsert — which means `INSERT_ONLY`/`UPDATE_ONLY`/`UPSERT` are *already naturally idempotent* if the same chunk is re-applied (a previously-inserted row shows up as "existing" the second time and is skipped/updated, never duplicated). `OVERWRITE` is the only strategy that isn't idempotent across chunks — it purges the whole table every call, so it must only purge on the first chunk of a run.
+**Verified:** `ImportPipelineExecutor.runImport` (read in full) does one synchronous `_executeExtract` → `_executeTransform` → `_executeLoad` per call — nothing checkpoints mid-recipe. `SourceStrategy` (`SourceStrategy.js`) has no cursor concept; `SheetByIdStrategy._resolveValues` always fetches the entire sheet range in one `getRanges` call. `Loader.load` (read in full) always re-reads `table.getAllRows()` and recomputes existing keys before insert/update/upsert — which means `INSERT_ONLY`/`UPDATE_ONLY`/`UPSERT` are _already naturally idempotent_ if the same chunk is re-applied (a previously-inserted row shows up as "existing" the second time and is skipped/updated, never duplicated). `OVERWRITE` is the only strategy that isn't idempotent across chunks — it purges the whole table every call, so it must only purge on the first chunk of a run.
 
 **Scope (deliberately narrower than a fully general resumable importer, per the report's own recommendation to keep changes contained):** cursor-aware chunking for `SheetByIdStrategy` only (the source type ALDO's `FILE_SINGOLO` recipes use). Any other extract strategy (`FolderStrategy`, custom-registered strategies like ALDO's `CERCA_CARTELLE_CLASSE`/`CERCA_DOCUMENTI`) runs through a compatibility path: the first chunk extracts everything at once (`exhausted: true` immediately), so `startImport`/`runImportChunk` work for every recipe today, but only `SheetById` sources actually spread extraction across multiple chunks.
 
 **Interfaces:**
+
 - Produces (new public API other GLF consumers and ALDO Task 5 rely on):
   - `ImportCheckpoint` shape: `{ stage: 'EXTRACT'|'TRANSFORM'|'LOAD'|'DONE', recipeName: string, sourceCursor: unknown, rowOffset: number, loadOffset: number, counters: { extracted: number, transformed: number, inserted: number, updated: number, skipped: number, deleted: number }, buffer: object[] | null, done: boolean }`
   - `ImportEngine.startImport(recipe, options = {}): ImportCheckpoint`
@@ -580,7 +599,14 @@ test('creates an initial checkpoint at EXTRACT stage with zeroed counters', () =
   expect(cp.recipeName).toBe('IMPORT_ALUNNI');
   expect(cp.rowOffset).toBe(0);
   expect(cp.done).toBe(false);
-  expect(cp.counters).toEqual({ extracted: 0, transformed: 0, inserted: 0, updated: 0, skipped: 0, deleted: 0 });
+  expect(cp.counters).toEqual({
+    extracted: 0,
+    transformed: 0,
+    inserted: 0,
+    updated: 0,
+    skipped: 0,
+    deleted: 0
+  });
 });
 
 test('serializes and restores via plain JSON (JobRunnerLib ScriptProperties contract)', () => {
@@ -815,7 +841,11 @@ test('loadChunk re-applies the same UPSERT chunk without duplicating rows (idemp
 test('loadChunk only purges the table on the first chunk of an OVERWRITE run', () => {
   const { loader, table } = wireLoader();
   table.insertRows([{ ID: 'r1', EMAIL: 'old@x.it' }]);
-  const loadConfig = { targetTable: 'ALUNNI', conflictResolution: 'OVERWRITE', conflictKey: 'EMAIL' };
+  const loadConfig = {
+    targetTable: 'ALUNNI',
+    conflictResolution: 'OVERWRITE',
+    conflictKey: 'EMAIL'
+  };
 
   loader.loadChunk([{ EMAIL: 'new1@x.it' }], loadConfig, { isFirstChunk: true });
   loader.loadChunk([{ EMAIL: 'new2@x.it' }], loadConfig, { isFirstChunk: false });
@@ -1048,6 +1078,7 @@ git commit -m "feat(GasDataImporter): add startImport/runImportChunk resumable A
 ### Task 5: ALDO — resumable import launcher on top of Task 4
 
 **Files:**
+
 - Modify: `src/application/services/ImportService.ts`
 - Modify: `src/config/Bootstrap.ts`
 - Modify: `src/index.ts`
@@ -1056,6 +1087,7 @@ git commit -m "feat(GasDataImporter): add startImport/runImportChunk resumable A
 - Run: `npm run refresh:vendor && npm run verify:vendor` (must be done first, after Task 4 lands in `GasLibraryFactory`)
 
 **Interfaces:**
+
 - Consumes: `ImportEngine.startImport(recipe)`, `ImportEngine.runImportChunk(recipe, checkpoint, budget)` (Task 4).
 - Produces: `ImportService.executeImportChunked(configId): Generator<ImportCheckpoint, ImportResult, void>`; `JOB_TYPE_IMPORT_CHUNKED` constant; `menu_avvioImportazioneChunked()` launcher, mirroring `EmailBatchService`'s `start()`/`registerJobHandlers()` pattern from Task 1/2.
 
@@ -1073,12 +1105,34 @@ test('executeImportChunked yields one checkpoint per stage transition and resolv
   const database = db([confImpRow()]);
   let calls = 0;
   const engine = {
-    startImport: (recipe: ImportRecipe) => ({ recipeName: recipe.name, stage: 'EXTRACT', sourceCursor: null, rowOffset: 0, loadOffset: 0, counters: { extracted: 0, transformed: 0, inserted: 0, updated: 0, skipped: 0, deleted: 0 }, buffer: null, done: false }),
+    startImport: (recipe: ImportRecipe) => ({
+      recipeName: recipe.name,
+      stage: 'EXTRACT',
+      sourceCursor: null,
+      rowOffset: 0,
+      loadOffset: 0,
+      counters: { extracted: 0, transformed: 0, inserted: 0, updated: 0, skipped: 0, deleted: 0 },
+      buffer: null,
+      done: false
+    }),
     runImportChunk: (_recipe: ImportRecipe, checkpoint: ImportCheckpoint) => {
       calls++;
-      if (checkpoint.stage === 'EXTRACT') return { checkpoint: { ...checkpoint, stage: 'TRANSFORM', buffer: [{ EMAIL: 'a@x.it' }] }, done: false };
-      if (checkpoint.stage === 'TRANSFORM') return { checkpoint: { ...checkpoint, stage: 'LOAD' }, done: false };
-      return { checkpoint: { ...checkpoint, stage: 'DONE', done: true, counters: { ...checkpoint.counters, inserted: 1 } }, done: true };
+      if (checkpoint.stage === 'EXTRACT')
+        return {
+          checkpoint: { ...checkpoint, stage: 'TRANSFORM', buffer: [{ EMAIL: 'a@x.it' }] },
+          done: false
+        };
+      if (checkpoint.stage === 'TRANSFORM')
+        return { checkpoint: { ...checkpoint, stage: 'LOAD' }, done: false };
+      return {
+        checkpoint: {
+          ...checkpoint,
+          stage: 'DONE',
+          done: true,
+          counters: { ...checkpoint.counters, inserted: 1 }
+        },
+        done: true
+      };
     }
   } as unknown as ImportEngine;
   const service = new ImportService(engine, new ConfigurazioneImportRepository(database));
@@ -1143,7 +1197,12 @@ export class ImportService {
     );
   }
 
-  start(runner: JobRunnerService, jobName: string, configId: string, forceRestart = false): unknown {
+  start(
+    runner: JobRunnerService,
+    jobName: string,
+    configId: string,
+    forceRestart = false
+  ): unknown {
     return runner.run(
       jobName,
       JOB_TYPE_IMPORT_CHUNKED,
@@ -1197,6 +1256,7 @@ git commit -m "feat: add chunked/resumable import launcher on GasDataImporter's 
 **Repo:** `GasLibraryFactory/` for the extraction; ALDO for the import swap.
 
 **Files:**
+
 - Create: `GasLibraryFactory/CoreUtilsLib/src/utils/LazyRef.js`
 - Modify: `GasLibraryFactory/CoreUtilsLib/index.js` (export)
 - Modify: `GasLibraryFactory/DOCS_LIBS/CoreUtilsLib.md`
@@ -1207,6 +1267,7 @@ git commit -m "feat: add chunked/resumable import launcher on GasDataImporter's 
 **Verified:** `src/application/storico/LazyRef.ts` (read in full) is a dependency-free generic class (`resolved`/`value`/`loader`, `get()`/`isResolved()`). `grep -rln LazyRef src/` found exactly these 9 files (the class itself + 8 callers). `CoreUtilsLib/index.js` and `DOCS_LIBS/CoreUtilsLib.md` were checked — `LazyServiceContainer` exists but is DI-container-shaped, not a generic lazy value; there is no equivalent.
 
 **Interfaces:**
+
 - Produces: `LazyRef` class exported from `@CoreUtilsLib`, identical public API (`constructor(loader: () => T)`, `get(): T`, `isResolved(): boolean`) to what ALDO already uses — this is a pure move, no signature change, so no caller's logic changes, only its import line.
 
 - [ ] **Step 1: Write the failing test in `GasLibraryFactory`**
@@ -1340,6 +1401,7 @@ git commit -m "refactor: use CoreUtilsLib's LazyRef instead of the ALDO-local co
 **Repo:** `GasLibraryFactory/` for the extraction; ALDO for the import swap.
 
 **Files:**
+
 - Create: `GasLibraryFactory/RoleResolutionLib/src/utils/MateriaSlotParsing.js`
 - Modify: `GasLibraryFactory/RoleResolutionLib/index.js` (export)
 - Modify: `GasLibraryFactory/DOCS_LIBS/RoleResolutionLib.md`
@@ -1349,6 +1411,7 @@ git commit -m "refactor: use CoreUtilsLib's LazyRef instead of the ALDO-local co
 **Verified:** Read `RowScopeExpansion.ts` in full. `splitCsvList` and `groupMateriaEntriesBySlot` (lines 30-60) have zero ALDO dependencies beyond the local `ANY` constant and locally-declared types — pure string/array logic. `slotCompatible`/`pairsOverlap` (referenced at lines 190-201) close over no ALDO types either, per the report's own analysis. `nominalPairsForAnchor`/`expandRowScope`/`expandRowToPairs` depend on `IClasseRepository` (ALDO-specific interface with `findByDocenteAssegnato`/`getTeachingSlots`) — **do not extract these**; extracting them would need a new generic "class-with-teaching-slots" abstraction in GLF, which is out of scope here (report's own "Level 2 — requires new GLF interface, separate decision").
 
 **Interfaces:**
+
 - Produces: `RoleResolutionLib` exports `splitCsvList(raw: string): string[]`, `groupMateriaEntriesBySlot(materieRaw: string): MateriaSlotGroup[]`, `slotCompatible(a, b): boolean`, `pairsOverlap(a, b): boolean` — same signatures ALDO already uses, confirmed against the read source.
 
 - [ ] **Step 1: Write the failing test in `GasLibraryFactory`**
@@ -1356,7 +1419,12 @@ git commit -m "refactor: use CoreUtilsLib's LazyRef instead of the ALDO-local co
 Read `RowScopeExpansion.ts` lines 30-70 and the `slotCompatible`/`pairsOverlap` bodies (lines ~190-211, not shown above — read them before writing this test) to port their exact behavior, then write `GasLibraryFactory/RoleResolutionLib/src/utils/__tests__/MateriaSlotParsing.test.js`:
 
 ```js
-import { splitCsvList, groupMateriaEntriesBySlot, slotCompatible, pairsOverlap } from '../MateriaSlotParsing.js';
+import {
+  splitCsvList,
+  groupMateriaEntriesBySlot,
+  slotCompatible,
+  pairsOverlap
+} from '../MateriaSlotParsing.js';
 
 test('splitCsvList trims and drops empty entries', () => {
   expect(splitCsvList('A, B ,,C')).toEqual(['A', 'B', 'C']);
@@ -1408,7 +1476,12 @@ Run: `npm run refresh:vendor && npm run verify:vendor`
 In `src/infrastructure/role-resolution/RowScopeExpansion.ts`, remove the bodies of `splitCsvList`, `groupMateriaEntriesBySlot`, `slotCompatible`, `pairsOverlap`, replacing them with:
 
 ```ts
-export { splitCsvList, groupMateriaEntriesBySlot, slotCompatible, pairsOverlap } from '@RoleResolutionLib';
+export {
+  splitCsvList,
+  groupMateriaEntriesBySlot,
+  slotCompatible,
+  pairsOverlap
+} from '@RoleResolutionLib';
 ```
 
 (again matching whatever ALDO's actual vendor-import alias convention is for `RoleResolutionLib` symbols — check an existing ALDO file that already imports something from `RoleResolutionLib`, e.g. `AldoTeachingResolutionConfig.ts`, and copy its import style exactly). Keep `nominalPairsForAnchor`, `expandRowScope`, `expandRowToPairs`, and the `ANY`/`MateriaSlotGroup`/`ScopeFragment`/`ConcretePair` type exports in this file unchanged — they still depend on `IClasseRepository` and stay ALDO-local.
@@ -1430,12 +1503,14 @@ git commit -m "refactor: delegate materia-slot CSV parsing to RoleResolutionLib"
 ### Task 8: Cosmetic — align ALDO's `Specification` interface to GLF's contract
 
 **Files:**
+
 - Modify: `src/domain/specifications/Specification.ts`
 - Modify (imports only, no logic changes): all 14 files under `src/domain/specifications/` implementing it (`PianoSpecs.ts`, `RuoliPerDocenteSpec.ts`, `IndirizziPerTipoSpec.ts`, `ClasseSpecs.ts`, `DocenteSpecs.ts`, `MovimentoAlunnoSpecs.ts`, `OreASLSpecs.ts`, `AlunniAttiviSpec.ts`, `MaterieEsameSpec.ts`, `CarenzaSpecs.ts`, `AlunnoSpecs.ts`, `ProgettoSpecs.ts`, `MateriePerDipartimentoSpec.ts`, `VariazioneCattedraSpecs.ts`)
 
 **Verified:** No behavior bug exists — `DomainRepositoryLib.Repository.find(specification)` already pushes down via `queryTranslator.translate` with an `isSatisfiedBy` fallback, and 20+ ALDO repository call sites already pass `Specification` instances through `this.find(spec)`/`this.findOne(spec)`. This task removes contract duplication only; **zero behavior change is the pass/fail bar** — if any test needs to change beyond import lines, stop and reassess, since that would mean this "cosmetic" task accidentally touched behavior.
 
 **Interfaces:**
+
 - Produces: the 14 concrete spec classes extend GLF's `Specification` base class (which provides `and()`/`or()`/`not()` composition for free) instead of implementing ALDO's local structural interface. `isSatisfiedBy`/`toQueryObject` signatures are unchanged.
 
 - [ ] **Step 1: Confirm GLF's `Specification` base class shape before touching anything**
@@ -1494,6 +1569,7 @@ git commit -m "refactor: align ALDO specifications with DomainRepositoryLib's Sp
 ## Self-Review
 
 **Spec coverage:**
+
 - 001 finding 1 (quota-aware batching) → Task 1.
 - 001 finding 2 (EmailRetryService) → Task 2, "keep and wire" branch per user decision.
 - 001 finding 3 (coarse import monitoring) → Task 3.

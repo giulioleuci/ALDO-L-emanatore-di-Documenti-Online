@@ -78,10 +78,7 @@ interface JobResumeDetails {
   percentage?: number;
 }
 
-type LogDetails =
-  | string
-  | string[]
-  | Record<string, string | number | boolean | null | undefined>;
+type LogDetails = string | string[] | Record<string, string | number | boolean | null | undefined>;
 
 class LoggerService {
   logJobStart(jobName: string, jobType: string): this;
@@ -97,11 +94,7 @@ class LoggerService {
     kind?: LogItemKind
   ): this;
   logStep(message: string, position: TreePosition): this;
-  logPipelineStart(
-    pipelineName: string,
-    totalSteps: number,
-    position: TreePosition
-  ): this;
+  logPipelineStart(pipelineName: string, totalSteps: number, position: TreePosition): this;
   logPipelineStep(
     stepName: string,
     status: PipelineStepStatus,

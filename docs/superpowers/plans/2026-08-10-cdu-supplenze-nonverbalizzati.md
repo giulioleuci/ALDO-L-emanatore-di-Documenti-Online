@@ -22,9 +22,11 @@
 ### Task 1: CDU contract types (`Cdu.ts`)
 
 **Files:**
+
 - Modify: `src/application/context-engine/Cdu.ts`
 
 **Interfaces:**
+
 - Produces: exported interface `SupplenzaAggregataVM`; `CduClasse.supplenze?: SupplenzaAggregataVM[]`; `CduClasse.didattica.pianiPersonalizzati.nonVerbalizzati?` — later tasks and tests import these.
 
 - [ ] **Step 1: Add the `SupplenzaAggregataVM` interface**
@@ -91,9 +93,11 @@ Expected: PASS (no unused-import errors; no consumers yet).
 ### Task 2: Extract the shared slot→SubjectVM mapper
 
 **Files:**
+
 - Modify: `src/application/context-engine/TeachingCouncilProjection.ts:215-234`
 
 **Interfaces:**
+
 - Produces: module-scoped `materiaVmFromSlot(materie: IMateriaRepository, classe: Classe, slot: { materia: string; kind: string; specifica: string | null }): SubjectVM | null` — reused by `materiaVm` (unchanged behavior) and by Task 3.
 
 - [ ] **Step 1: Refactor `materiaVm` to delegate to a slot-level helper**
@@ -143,11 +147,13 @@ Expected: PASS (pure extraction, no behavior change).
 ### Task 3: `buildSupplenzeAggregate` + wiring + tests
 
 **Files:**
+
 - Modify: `src/application/context-engine/TeachingCouncilProjection.ts`
 - Modify: `src/application/context-engine/providers/ConsiglioClasseProvider.ts`
 - Test: `test/unit/application/context-engine/swap-supplenti.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 1 `SupplenzaAggregataVM`; Task 2 `materiaVmFromSlot`; existing `dedupeMaterie`, `buildPersonVmFromDocente` (`mappers/personVmMapper.ts`), `buildSubjectVm`.
 - Produces: exported `buildSupplenzeAggregate(assignments: TeachingAssignment[], materie: IMateriaRepository, classe: Classe): SupplenzaAggregataVM[]`; `focus.classe.supplenze` populated by the `consiglio` provider token.
 
@@ -191,7 +197,9 @@ test('supplenze merges every covered slot into one (supplente, titolare) item wi
   const item = cdu.focus.classe!.supplenze![0]!;
   expect(cdu.focus.classe!.supplenze).toHaveLength(1);
   expect(item.dettaglioMaterie.map((m) => m.sigla).sort()).toEqual(['FISI', 'MATE']);
-  expect(item.dettaglioMaterie).not.toContainEqual(expect.objectContaining({ docenti: expect.anything() }));
+  expect(item.dettaglioMaterie).not.toContainEqual(
+    expect.objectContaining({ docenti: expect.anything() })
+  );
 });
 
 test('supplenze is [] when no delegation is active', () => {
@@ -219,6 +227,7 @@ Expected: FAIL — `cdu.focus.classe!.supplenze` is `undefined` (property not ye
 - [ ] **Step 3: Add the `buildSupplenzeAggregate` helper**
 
 In `TeachingCouncilProjection.ts`:
+
 - Extend the import from `./mappers/personVmMapper` (line 15) to also import `buildPersonVmFromDocente`.
 - Add `import type { SupplenzaAggregataVM } from './Cdu';`
 - After the `materiaVm` function (end of Task 2 refactor), add:
@@ -271,7 +280,9 @@ export function buildSupplenzeAggregate(
     )
   }));
   items.sort((a, b) => {
-    const bySupplente = (a.supplente.nomeCompleto ?? '').localeCompare(b.supplente.nomeCompleto ?? '');
+    const bySupplente = (a.supplente.nomeCompleto ?? '').localeCompare(
+      b.supplente.nomeCompleto ?? ''
+    );
     return bySupplente !== 0
       ? bySupplente
       : (a.titolare.nomeCompleto ?? '').localeCompare(b.titolare.nomeCompleto ?? '');
@@ -285,12 +296,13 @@ Note: `Docente` and `TeachingAssignment` types are already imported in this file
 - [ ] **Step 4: Wire the provider**
 
 In `ConsiglioClasseProvider.ts`:
+
 - Change the constructor param `materie: IMateriaRepository` to `private readonly materie: IMateriaRepository`.
 - Add `import { attachCouncilProjectionMetadata, buildSupplenzeAggregate, createTeachingCouncilProjection, prepareCouncilAssignments, resolveCouncilForProjection } from '../TeachingCouncilProjection';` (add `buildSupplenzeAggregate` to the existing import list).
 - In `provide()`, right after `focusClasse.consiglioDiClasse = prepareCouncilAssignments(assignments) as never;` (line 43), add:
 
 ```ts
-    focusClasse.supplenze = buildSupplenzeAggregate(assignments, this.materie, classe);
+focusClasse.supplenze = buildSupplenzeAggregate(assignments, this.materie, classe);
 ```
 
 - [ ] **Step 5: Run tests to verify they pass**
@@ -303,10 +315,12 @@ Expected: PASS (4 new + all existing).
 ### Task 4: `nonVerbalizzati` partition + tests
 
 **Files:**
+
 - Modify: `src/application/context-engine/providers/PianiPersClasseProvider.ts`
 - Test: `test/unit/application/context-engine/piani-pers-classe-provider.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 1 `nonVerbalizzati` type; existing `StatoDocumento` enum, `PianoPersonalizzatoItem`.
 - Produces: `focus.classe.didattica.pianiPersonalizzati.nonVerbalizzati` populated whenever `pianiPersClasse` runs.
 
@@ -399,22 +413,23 @@ Expected: FAIL — `nonVerbalizzati` is `undefined`.
 - [ ] **Step 3: Implement the partition**
 
 In `PianiPersClasseProvider.ts`:
+
 - Change the enum import (line 8) to `import { StatoDocumento, TipoPiano } from '../../../domain/value-objects/enums';`
 - After the `items` const (line 55), before the write block, add:
 
 ```ts
-    const nonVerbalizzati = {
-      isPresenteLista: items.some((item) => item.stato !== StatoDocumento.VERBALIZZATO),
-      elenco: items
-        .filter((item) => item.stato !== StatoDocumento.VERBALIZZATO)
-        .map((item) => ({
-          studente: {
-            nomeCompleto: item.studente?.nomeCompleto ?? '',
-            email: item.studente?.email ?? ''
-          },
-          tipoLabel: item.tipoLabel
-        }))
-    };
+const nonVerbalizzati = {
+  isPresenteLista: items.some((item) => item.stato !== StatoDocumento.VERBALIZZATO),
+  elenco: items
+    .filter((item) => item.stato !== StatoDocumento.VERBALIZZATO)
+    .map((item) => ({
+      studente: {
+        nomeCompleto: item.studente?.nomeCompleto ?? '',
+        email: item.studente?.email ?? ''
+      },
+      tipoLabel: item.tipoLabel
+    }))
+};
 ```
 
 (`item.studente` is always set here — this provider tags every item — so the `?.`/`??` are type-safety only.)
@@ -422,11 +437,11 @@ In `PianiPersClasseProvider.ts`:
 - Replace the write block (lines 56-60) with:
 
 ```ts
-    if (cdu.focus.classe.didattica === undefined) {
-      cdu.focus.classe.didattica = { pianiPersonalizzati: { items, nonVerbalizzati } };
-    } else {
-      cdu.focus.classe.didattica.pianiPersonalizzati = { items, nonVerbalizzati };
-    }
+if (cdu.focus.classe.didattica === undefined) {
+  cdu.focus.classe.didattica = { pianiPersonalizzati: { items, nonVerbalizzati } };
+} else {
+  cdu.focus.classe.didattica.pianiPersonalizzati = { items, nonVerbalizzati };
+}
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -475,6 +490,7 @@ Expected: PASS.
 ### Task 5: SPECS_ALDO documentation
 
 **Files:**
+
 - Modify: `SPECS_ALDO/02_CDU_STRUTTURA.md`
 - Modify: `SPECS_ALDO/GUIDA_USO_PLACEHOLDER.md`
 
@@ -483,11 +499,11 @@ Expected: PASS.
 In `02_CDU_STRUTTURA.md`, after the `consiglioDiClasseComune`/`consiglioDiClasseSeparato` block (lines 236-241), insert:
 
 ```yaml
-  # SUPPLENZE ATTIVE DI CLASSE (aggregate per coppia supplente/titolare — §8.12)
-  # Sempre presente quando il provider `consiglio` gira; [] se nessuna supplenza attiva.
-  # Riflette le delegazioni reali (docenteEffettivo != titolare) anche con
-  # gestioneSupplenti = SOLO_TITOLARI, dove consiglioDiClasse[].stato.isSupplente resta false.
-  supplenze: SupplenzaAggregataVM[]
+# SUPPLENZE ATTIVE DI CLASSE (aggregate per coppia supplente/titolare — §8.12)
+# Sempre presente quando il provider `consiglio` gira; [] se nessuna supplenza attiva.
+# Riflette le delegazioni reali (docenteEffettivo != titolare) anche con
+# gestioneSupplenti = SOLO_TITOLARI, dove consiglioDiClasse[].stato.isSupplente resta false.
+supplenze: SupplenzaAggregataVM[]
 ```
 
 - [ ] **Step 2: Document `nonVerbalizzati` in §4.1**
@@ -495,23 +511,23 @@ In `02_CDU_STRUTTURA.md`, after the `consiglioDiClasseComune`/`consiglioDiClasse
 In the `didattica.pianiPersonalizzati` block (lines 331-334), extend to:
 
 ```yaml
-  didattica:
-    pianiPersonalizzati:
-      items: PianoPersonalizzatoItem[]   # §8.11 — ogni item porta `studente: {nomeCompleto, email}`
-      nonVerbalizzati:                   # Partizione precalcolata (Principio 3): stato != VERBALIZZATO.
-                                         #   Vietato filtrare su `stato` nei template (where:'stato',...).
-        isPresenteLista: boolean         # true sse elenco non vuoto (per {{#isPresenteLista}}/{{^}})
-        elenco:
-          - studente: { nomeCompleto: string, email: string }  # stesso shape di PianoPersonalizzatoItem.studente
-            tipoLabel: string            # es. "PDP (DSA)" — da tipoPianoLabel()
-      storico: LazyRef<DocumentoStoricoConTipo[]>  # opzionale, solo se opzioni.includiStorico = true
+didattica:
+  pianiPersonalizzati:
+    items: PianoPersonalizzatoItem[] # §8.11 — ogni item porta `studente: {nomeCompleto, email}`
+    nonVerbalizzati: # Partizione precalcolata (Principio 3): stato != VERBALIZZATO.
+      #   Vietato filtrare su `stato` nei template (where:'stato',...).
+      isPresenteLista: boolean # true sse elenco non vuoto (per {{#isPresenteLista}}/{{^}})
+      elenco:
+        - studente: { nomeCompleto: string, email: string } # stesso shape di PianoPersonalizzatoItem.studente
+          tipoLabel: string # es. "PDP (DSA)" — da tipoPianoLabel()
+    storico: LazyRef<DocumentoStoricoConTipo[]> # opzionale, solo se opzioni.includiStorico = true
 ```
 
 - [ ] **Step 3: Add §8.12 `SupplenzaAggregataVM`**
 
 After §8.11 (line 868), insert:
 
-```markdown
+````markdown
 ### 8.12 Supplenza aggregata di classe (`SupplenzaAggregataVM`)
 
 Riga di `focus.classe.supplenze[]` (§4.1), costruita da `ConsiglioClasseProvider`
@@ -522,15 +538,17 @@ SOLO_TITOLARI`): riflette le delegazioni reali, non il routing email.
 
 ```yaml
 SupplenzaAggregataVM:
-  supplente: PersonVM            # §8.1 — docente effettivamente attivo (docenteEffettivo)
-  titolare: PersonVM             # §8.1 — titolare sostituito (assignment.titolare)
-  dettaglioMaterie: SubjectVM[]  # §8.2 — materie coperte; forma BASE (niente docenti/continuita)
+  supplente: PersonVM # §8.1 — docente effettivamente attivo (docenteEffettivo)
+  titolare: PersonVM # §8.1 — titolare sostituito (assignment.titolare)
+  dettaglioMaterie: SubjectVM[] # §8.2 — materie coperte; forma BASE (niente docenti/continuita)
 ```
+````
 
 > In una catena di supplenze A→B→C il supplente è C (ultimo effettivo); gli
 > intermedi sono omessi. L'ordinamento è per `supplente.nomeCompleto`, poi
 > `titolare.nomeCompleto`.
-```
+
+````
 
 - [ ] **Step 4: Add catalog + conditions entries (§9)**
 
@@ -539,7 +557,7 @@ In §9.2 table (line 904), add rows:
 ```markdown
 | Supplenze attive della classe | `{{#bullet_list:focus.classe.supplenze}}{{supplente.appellativoCompleto}} sostituisce {{titolare.appellativoCompleto}} ({{#dettaglioMaterie}}{{nomeSintetico}}{{^isNotLast}}, {{/isNotLast}}{{/dettaglioMaterie}}){{/bullet_list}}` |
 | Piani non verbalizzati | `{{#bullet_list:focus.classe.didattica.pianiPersonalizzati.nonVerbalizzati.elenco}}{{studente.nomeCompleto}} — {{tipoLabel}}{{/bullet_list}}` |
-```
+````
 
 In §9.4 table (line 920), add rows:
 
@@ -609,27 +627,31 @@ Append to §11 (after rule 9, line 1436):
 
 In §4.4 (loop strutturali, after line 189's bullet_list example), add:
 
-```markdown
+````markdown
 **Elenco puntato delle supplenze attive:**
+
 ```mustache
 {{#bullet_list:focus.classe.supplenze}}
 {{supplente.appellativoCompleto}} sostituisce {{titolare.appellativoCompleto}} ({{#dettaglioMaterie}}{{nomeSintetico}}{{#flags.isNotLast}}, {{/flags.isNotLast}}{{/dettaglioMaterie}})
 {{/bullet_list}}
 ```
+````
 
 **Elenco puntato dei piani non verbalizzati:**
+
 ```mustache
 {{#bullet_list:focus.classe.didattica.pianiPersonalizzati.nonVerbalizzati.elenco}}
 {{studente.nomeCompleto}} — {{tipoLabel}}
 {{/bullet_list}}
 ```
-```
+
+````
 
 In §7.1 (regole di progettazione, after line 352's example), append a bullet:
 
 ```markdown
    - La partizione `pianiPersonalizzati.nonVerbalizzati` (stato ≠ verbalizzato) è precalcolata nel CDU: i template non devono filtrare su `stato`.
-```
+````
 
 - [ ] **Step 8: Verify docs consistency**
 
@@ -640,6 +662,7 @@ Read the edited sections of both files and confirm the YAML/JSON/markdown blocks
 ### Task 6: Full verification
 
 **Files:**
+
 - None (verification + optional commit)
 
 - [ ] **Step 1: Typecheck + lint**

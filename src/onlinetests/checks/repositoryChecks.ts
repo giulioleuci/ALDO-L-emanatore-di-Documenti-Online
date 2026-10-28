@@ -157,7 +157,7 @@ export function registerEffectiveAssignmentMatrixChecks(
   );
 
   runner.add(
-    'Effective assignment matrix: restriction-by-omission SUPPLENZE (empty CLASSI, valued MATERIE) resolves both of the anchor\'s own STO cattedre',
+    "Effective assignment matrix: restriction-by-omission SUPPLENZE (empty CLASSI, valued MATERIE) resolves both of the anchor's own STO cattedre",
     sample.sampleSpreadsheetUrl,
     () => {
       const materiaSto = MateriaId.of('STO');
@@ -168,7 +168,12 @@ export function registerEffectiveAssignmentMatrixChecks(
         // slots (AldoTeachingResolutionConfig.resolutionClasses), so pick the
         // entry actually owned by this classeId rather than assuming index 0.
         const actor = resolver
-          .resolveMateria(classe, materiaSto, ASSIGNMENT_MATRIX_DATE_E2E, RoutingPolicy.DELEGATE_OR_PRINCIPAL)
+          .resolveMateria(
+            classe,
+            materiaSto,
+            ASSIGNMENT_MATRIX_DATE_E2E,
+            RoutingPolicy.DELEGATE_OR_PRINCIPAL
+          )
           .find((candidate) => candidate.classeId.value === classeId)?.docenteEffettivo.id;
         if (actor !== e2eDocenteEmail(17)) {
           throw new ValidationError(
@@ -194,7 +199,8 @@ export function registerEffectiveAssignmentMatrixChecks(
         )
         .find(
           (candidate) =>
-            candidate.slot.kind === 'SPECIFICA' && candidate.slot.specifica === 'SEMINARIO_POMERIDIANO'
+            candidate.slot.kind === 'SPECIFICA' &&
+            candidate.slot.specifica === 'SEMINARIO_POMERIDIANO'
         );
       if (assignment?.docenteEffettivo.id !== e2eDocenteEmail(18)) {
         throw new ValidationError(

@@ -5,7 +5,10 @@ import { TipoPiano } from '../../../domain/value-objects/enums';
 import type { StatisticheAlunniVM } from '../Cdu';
 
 /** Shared aggregate-count formula (02 §4.1/§8.6) — used for both the current year (StatisticheProvider) and each historical year (StoricoClasseProvider). */
-export function computeStatisticheAlunni(attivi: Alunno[], alunni: IAlunnoRepository): StatisticheAlunniVM {
+export function computeStatisticheAlunni(
+  attivi: Alunno[],
+  alunni: IAlunnoRepository
+): StatisticheAlunniVM {
   let conPiani = 0,
     conBes = 0,
     conDsa = 0,

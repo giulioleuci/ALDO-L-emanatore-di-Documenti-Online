@@ -25,12 +25,12 @@ standalone orchestrate da `CONF_AZIONI`.
 Ridenominazioni nel codice ALDO (solo codice, la colonna fisica `POST_PROCESSO`
 resta):
 
-| Ora | Nuovo |
-|---|---|
+| Ora                                               | Nuovo                                            |
+| ------------------------------------------------- | ------------------------------------------------ |
 | `src/application/pipelines/postProcessActions.ts` | `src/application/pipelines/standaloneActions.ts` |
-| `executePostProcess()` | `eseguiAzioni()` / `executeActions()` |
-| `PostProcessAction` / `PostProcessActionHandler` | `Azione` / `AzioneHandler` |
-| concetto "azione post-processo" | "azione" (standalone o inline) |
+| `executePostProcess()`                            | `eseguiAzioni()` / `executeActions()`            |
+| `PostProcessAction` / `PostProcessActionHandler`  | `Azione` / `AzioneHandler`                       |
+| concetto "azione post-processo"                   | "azione" (standalone o inline)                   |
 
 Niente terminologia generica tipo "step/passi": la grammatica si chiama sempre
 **azioni**.
@@ -40,15 +40,15 @@ Niente terminologia generica tipo "step/passi": la grammatica si chiama sempre
 Riga = orchestrazione: un record definisce un'azione completa, con asse di
 iterazione, condizione e array di azioni elementari.
 
-| Colonna | Tipo | PK | Descrizione |
-|---|---|---|---|
-| `ID` | String | ✅ | Codice identificativo, es. `ALLINEA_PERMESSI_CATTEDRE`, `SANIFICA_TRIM` |
-| `TIPO` | String | — | Etichetta libera di categoria, scritta in `LOG_JOB.NOME_CONFIG` |
-| `ASSE` | String | — | Asse di iterazione del batch e driver della recipe CDU: stesso dizionario di `CONF_DOC.GENERATORE` (`CLASSE`, `DOCENTE`, `PIANO_PERSONALIZZATO`, `CLASSE_MATERIA`, `CLASSE_DOCENTE`, `CLASSE_DOCENTE_MATERIA`, `DIPARTIMENTO`, `ALUNNO`) + valore riservato `SINGOLA` per esecuzione unica. Il costruttore valida il valore e solleva `ConfigurationError` altrimenti |
-| `CONDIZIONE` | String | — | Espressione logica sull'esecuzione dell'azione nel suo insieme (stesso motore GasExpressionEngineLib di `CONF_DOC.CONDIZIONE`). Se falsa o vuota l'azione è saltata. Se falsa per tutte le azioni di una run, nessuna riga `LOG_JOB` viene prodotta per quelle azioni |
-| `ATTIVO` | Boolean | — | Abilita/disabilita l'azione (default `true`); specchia `CONF_IMP.ATTIVO`. In v1 decide solo se l'azione compare nel menu |
-| `AZIONI` | JSON | — | Array di azioni elementari (la grammatica condivisa: i 4 tipi esistenti di POST_PROCESSO + i nuovi tipi standalone, §Catalogo) |
-| `PERIODICITA` | String | — | **Riservata per lo scheduling futuro** (es. `DAILY`, `WEEKLY`); presente nella struttura fin da subito, ignorata in v1 |
+| Colonna       | Tipo    | PK  | Descrizione                                                                                                                                                                                                                                                                                                                                                           |
+| ------------- | ------- | --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ID`          | String  | ✅  | Codice identificativo, es. `ALLINEA_PERMESSI_CATTEDRE`, `SANIFICA_TRIM`                                                                                                                                                                                                                                                                                               |
+| `TIPO`        | String  | —   | Etichetta libera di categoria, scritta in `LOG_JOB.NOME_CONFIG`                                                                                                                                                                                                                                                                                                       |
+| `ASSE`        | String  | —   | Asse di iterazione del batch e driver della recipe CDU: stesso dizionario di `CONF_DOC.GENERATORE` (`CLASSE`, `DOCENTE`, `PIANO_PERSONALIZZATO`, `CLASSE_MATERIA`, `CLASSE_DOCENTE`, `CLASSE_DOCENTE_MATERIA`, `DIPARTIMENTO`, `ALUNNO`) + valore riservato `SINGOLA` per esecuzione unica. Il costruttore valida il valore e solleva `ConfigurationError` altrimenti |
+| `CONDIZIONE`  | String  | —   | Espressione logica sull'esecuzione dell'azione nel suo insieme (stesso motore GasExpressionEngineLib di `CONF_DOC.CONDIZIONE`). Se falsa o vuota l'azione è saltata. Se falsa per tutte le azioni di una run, nessuna riga `LOG_JOB` viene prodotta per quelle azioni                                                                                                 |
+| `ATTIVO`      | Boolean | —   | Abilita/disabilita l'azione (default `true`); specchia `CONF_IMP.ATTIVO`. In v1 decide solo se l'azione compare nel menu                                                                                                                                                                                                                                              |
+| `AZIONI`      | JSON    | —   | Array di azioni elementari (la grammatica condivisa: i 4 tipi esistenti di POST_PROCESSO + i nuovi tipi standalone, §Catalogo)                                                                                                                                                                                                                                        |
+| `PERIODICITA` | String  | —   | **Riservata per lo scheduling futuro** (es. `DAILY`, `WEEKLY`); presente nella struttura fin da subito, ignorata in v1                                                                                                                                                                                                                                                |
 
 Dettagli di coercizione: i valori `AZIONI` sono risolti come JSON; cella vuota o
 `''` (round-trip Sheets) equivale a "nessun array" e l'azione resta configurabile
@@ -58,21 +58,21 @@ ma senza effetti — stesso patto di `hasJsonValue`.
 
 ### Riuso da POST_PROCESSO (semantica identica, compat retroattiva)
 
-| Tipo | Effetto |
-|---|---|
-| `INSERISCI_TIMESTAMP` | Scrive `now` in `tab.col` dove i criteri corrispondono, solo se la cella è vuota |
-| `AGGIORNA_CAMPO` | Imposta `tab.col = val` dove i criteri corrispondono (`val` con placeholder risolti sul CDU) |
-| `AGGIORNA_STATO_DOC` | Cambia `LOG_DOCS.STATO` dove i criteri corrispondono |
+| Tipo                        | Effetto                                                                                         |
+| --------------------------- | ----------------------------------------------------------------------------------------------- |
+| `INSERISCI_TIMESTAMP`       | Scrive `now` in `tab.col` dove i criteri corrispondono, solo se la cella è vuota                |
+| `AGGIORNA_CAMPO`            | Imposta `tab.col = val` dove i criteri corrispondono (`val` con placeholder risolti sul CDU)    |
+| `AGGIORNA_STATO_DOC`        | Cambia `LOG_DOCS.STATO` dove i criteri corrispondono                                            |
 | `AGGIORNA_PERMESSI_STORICI` | Alias di compatibilità dell'azione storica: target implicito `ID_GEN=CONF_DOC.ID` su `LOG_DOCS` |
 
 ### Nuovi tipi (standalone)
 
-| Tipo | Effetto |
-|---|---|
+| Tipo                | Effetto                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AGGIORNA_PERMESSI` | Applica ACL a **file e cartelle** selezionati da `LOG_DOCS` o `LOG_FOLD`. Criteri: `UTENTI`/`CLASSI`/`MATERIE` per contenimento CSV, `TIPO`/`SOTTOTIPO` per uguaglianza esatta, prefisso `PATH` opzionale. Destinatari: `ruolo` (risolto via `RisolutoreRuoliService`, es. `COORDINATORI`) oppure email dirette. Livello `LETTURA`/`SCRITTURA`/`COMMENTO`. `profondita` per lo storico. Calcola il **delta** tra ACL attese e reali (`listPermissions`) e applica solo grant mancanti / role-change → copre il caso riallineamento a cattedre e supplenze |
-| `RIDUCI_PERMESSI` | Downgrade: porta a una soglia massima (default `LETTURA`) ogni ACL sopra soglia sui target selezionati (stessi criteri log-driven). Idempotente: scritto solo il delta tramite `changePermissionRoles` → copre il caso writer→reader |
-| `VALIDA_DB` | Esegue `DatabaseValidationService` (esteso: `esegui(tabelle?)` accetta un sottoinsieme di tabelle). Read-only; esito nel log |
-| `TRASFORMA_CAMPO` | Un unico tipo con `operazione` ∈ `TRIM` \| `UPPER` \| `LOWER` \| `CAPITALIZE` \| `UNCAPITALIZE` su `tab.col`, con `criteri` opzionali → sanificazione e case-transform con un solo ramo di codice |
+| `RIDUCI_PERMESSI`   | Downgrade: porta a una soglia massima (default `LETTURA`) ogni ACL sopra soglia sui target selezionati (stessi criteri log-driven). Idempotente: scritto solo il delta tramite `changePermissionRoles` → copre il caso writer→reader                                                                                                                                                                                                                                                                                                                      |
+| `VALIDA_DB`         | Esegue `DatabaseValidationService` (esteso: `esegui(tabelle?)` accetta un sottoinsieme di tabelle). Read-only; esito nel log                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `TRASFORMA_CAMPO`   | Un unico tipo con `operazione` ∈ `TRIM` \| `UPPER` \| `LOWER` \| `CAPITALIZE` \| `UNCAPITALIZE` su `tab.col`, con `criteri` opzionali → sanificazione e case-transform con un solo ramo di codice                                                                                                                                                                                                                                                                                                                                                         |
 
 ### Struttura comune degli oggetti azione
 

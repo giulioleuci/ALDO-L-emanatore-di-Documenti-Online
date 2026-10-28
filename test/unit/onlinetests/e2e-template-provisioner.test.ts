@@ -373,9 +373,7 @@ test('authors the complex-placeholder template with bullet/number lists, tablero
   );
   const tables = docTables[ids.docComplesso] ?? [];
   const tableText = JSON.stringify(tables);
-  expect(tableText).toContain(
-    "tablerow_loop:focus.classe.studenti.elenco | sortBy:'nomeCompleto'"
-  );
+  expect(tableText).toContain("tablerow_loop:focus.classe.studenti.elenco | sortBy:'nomeCompleto'");
   expect(tableText).toContain('tablecol_loop:focus.classe.consiglio.elenco');
 });
 

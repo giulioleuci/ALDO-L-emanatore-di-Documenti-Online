@@ -42,21 +42,23 @@ function cduRecord(): Record<string, unknown> {
     focus: {
       classe: { nome: '5A' },
       alunno: {
-        nomeCompleto: 'VERDI ANNA', email: 'a1@school.it',
+        nomeCompleto: 'VERDI ANNA',
+        email: 'a1@school.it',
         carenze: { elenco: [{ materiaSigla: 'MATE', voto: '4' }], numero: 1, hasElenco: true },
         documenti: {
-            elenco: [
-              {
-                nome: 'PDP Anna',
-                link: 'https://drive/x',
-                tipo: 'PDP',
-                stato: 'GENERATO',
-                dataCreazione: '01/06/2026'
-              }
-            ],
-            hasElenco: true, numero: 1,
-            storico: { get: () => [] }
-          }
+          elenco: [
+            {
+              nome: 'PDP Anna',
+              link: 'https://drive/x',
+              tipo: 'PDP',
+              stato: 'GENERATO',
+              dataCreazione: '01/06/2026'
+            }
+          ],
+          hasElenco: true,
+          numero: 1,
+          storico: { get: () => [] }
+        }
       },
       carenza: {
         studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
@@ -212,11 +214,27 @@ test('documenti/cartelle boxes fall back to focus.classe.documenti when focus.al
       classe: {
         nome: '5A',
         documenti: {
-            elenco: [
-              { nome: 'Verbale 5A', link: 'https://drive/verbale', tipo: 'VERBALE', idGen: 'VERBALE_CDC', stato: 'GENERATO', dataCreazione: '01/07/2026' },
-              { nome: 'Cartella 5A', link: 'https://drive/cartella', tipo: 'CARTELLA', idGen: 'CARTELLA_5A', stato: 'GENERATO', dataCreazione: '01/07/2026' }
-            ],
-            hasElenco: true, numero: 2, storico: { get: () => [] }
+          elenco: [
+            {
+              nome: 'Verbale 5A',
+              link: 'https://drive/verbale',
+              tipo: 'VERBALE',
+              idGen: 'VERBALE_CDC',
+              stato: 'GENERATO',
+              dataCreazione: '01/07/2026'
+            },
+            {
+              nome: 'Cartella 5A',
+              link: 'https://drive/cartella',
+              tipo: 'CARTELLA',
+              idGen: 'CARTELLA_5A',
+              stato: 'GENERATO',
+              dataCreazione: '01/07/2026'
+            }
+          ],
+          hasElenco: true,
+          numero: 2,
+          storico: { get: () => [] }
         }
       }
     }
@@ -264,16 +282,19 @@ test('documenti_dipartimento box shows items from focus.dipartimento.documenti',
     focus: {
       dipartimento: {
         documenti: {
-            elenco: [
-              {
-                nome: 'Verbale',
-                link: 'https://drive/verbale-dip',
-                tipo: 'VERBALE_DIPARTIMENTO',
-                idGen: 'VD',
-                stato: 'GENERATO',
-                dataCreazione: '01/01/2026'
-              }
-            ], hasElenco: true, numero: 1, storico: { get: () => [] }
+          elenco: [
+            {
+              nome: 'Verbale',
+              link: 'https://drive/verbale-dip',
+              tipo: 'VERBALE_DIPARTIMENTO',
+              idGen: 'VD',
+              stato: 'GENERATO',
+              dataCreazione: '01/01/2026'
+            }
+          ],
+          hasElenco: true,
+          numero: 1,
+          storico: { get: () => [] }
         }
       }
     }
@@ -340,14 +361,33 @@ test('cattedre box renders one row per classe with its materie (design 2026-08-2
   const composer = createBoxComposer(logger, templates);
   const cdu = cduRecord();
   cdu['destinatario'] = {
-      cattedre: { elenco: [
+    cattedre: {
+      elenco: [
         {
-          classe: { nome: '5A', anno: 5, sezione: 'A' }, sezioneEstesa: 'A',
-          materie: [cattedraVm({ nome: 'Matematica' }), cattedraVm({ nome: 'Fisica', sigla: 'FISI', isITP: true })], hasMaterie: true, numeroMaterie: 2, materieDescrizione: 'Matematica, Fisica', materieSigle: 'MATE, FISI'
+          classe: { nome: '5A', anno: 5, sezione: 'A' },
+          sezioneEstesa: 'A',
+          materie: [
+            cattedraVm({ nome: 'Matematica' }),
+            cattedraVm({ nome: 'Fisica', sigla: 'FISI', isITP: true })
+          ],
+          hasMaterie: true,
+          numeroMaterie: 2,
+          materieDescrizione: 'Matematica, Fisica',
+          materieSigle: 'MATE, FISI'
         }
-      ], hasElenco: true, numero: 1, elencoDescrizione: '5A' }
+      ],
+      hasElenco: true,
+      numero: 1,
+      elencoDescrizione: '5A'
+    }
   };
-  const out = renderBoxes(composer, confMail([{ TIPO_BOX: 'cattedre' }]), cdu, materie(), templates);
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'cattedre' }]),
+    cdu,
+    materie(),
+    templates
+  );
   expect(out.boxes.perId['cattedre_0']!.isVisibile).toBe(true);
   expect(out.boxes.perId['cattedre_0']!.html).toContain('5A');
   expect(out.boxes.perId['cattedre_0']!.html).toContain('Matematica');
@@ -365,14 +405,30 @@ test('cattedre box HTML-escapes a hostile materia nome (design 2026-08-22)', () 
   const composer = createBoxComposer(logger, templates);
   const cdu = cduRecord();
   cdu['destinatario'] = {
-      cattedre: { elenco: [
+    cattedre: {
+      elenco: [
         {
-          classe: { nome: '5A', anno: 5, sezione: 'A' }, sezioneEstesa: 'A',
-          materie: [cattedraVm({ nome: '<script>alert(1)</script>' })], hasMaterie: true, numeroMaterie: 1, materieDescrizione: '', materieSigle: 'MATE'
+          classe: { nome: '5A', anno: 5, sezione: 'A' },
+          sezioneEstesa: 'A',
+          materie: [cattedraVm({ nome: '<script>alert(1)</script>' })],
+          hasMaterie: true,
+          numeroMaterie: 1,
+          materieDescrizione: '',
+          materieSigle: 'MATE'
         }
-      ], hasElenco: true, numero: 1, elencoDescrizione: '5A' }
+      ],
+      hasElenco: true,
+      numero: 1,
+      elencoDescrizione: '5A'
+    }
   };
-  const out = renderBoxes(composer, confMail([{ TIPO_BOX: 'cattedre' }]), cdu, materie(), templates);
+  const out = renderBoxes(
+    composer,
+    confMail([{ TIPO_BOX: 'cattedre' }]),
+    cdu,
+    materie(),
+    templates
+  );
   expect(out.boxes.perId['cattedre_0']!.html).not.toContain('<script>');
   expect(out.boxes.perId['cattedre_0']!.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
 });
@@ -472,8 +528,7 @@ test('TESTO_VUOTO fallback HTML-escapes raw CDU string values (REVIEW_ALDO.md #2
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);
   const cdu = cduRecord();
-  (cdu['focus'] as { classe: { anagrafica: { nome: string } } }).classe.nome =
-    '<b>5A</b>';
+  (cdu['focus'] as { classe: { anagrafica: { nome: string } } }).classe.nome = '<b>5A</b>';
   const out = renderBoxes(
     composer,
     confMail([
@@ -535,7 +590,14 @@ test('documenti box neutralises javascript: links and hostile colours', () => {
 });
 
 function cduWithStorico(
-  storico: Array<{ anno: string; nome: string; link: string; tipo: string; sottotipo: string; idGen: string }>
+  storico: Array<{
+    anno: string;
+    nome: string;
+    link: string;
+    tipo: string;
+    sottotipo: string;
+    idGen: string;
+  }>
 ) {
   const cdu = cduRecord();
   const alunno = (
@@ -553,12 +615,20 @@ test('documenti box in arricchisciConStorico mode renders templateRiga, matching
   const composer = createBoxComposer(logger, templates);
   const cdu = cduWithStorico([
     {
-      anno: '2025-2026', nome: 'PDP Anna (vecchio)', link: 'https://drive/old',
-      tipo: 'PIANO_PERS', sottotipo: 'PDP_DSA', idGen: 'CD_PDP'
+      anno: '2025-2026',
+      nome: 'PDP Anna (vecchio)',
+      link: 'https://drive/old',
+      tipo: 'PIANO_PERS',
+      sottotipo: 'PDP_DSA',
+      idGen: 'CD_PDP'
     },
     {
-      anno: '2025-2026', nome: 'Altro doc', link: 'https://drive/altro',
-      tipo: 'VERBALE', sottotipo: '', idGen: 'ALTRO_TIPO'
+      anno: '2025-2026',
+      nome: 'Altro doc',
+      link: 'https://drive/altro',
+      tipo: 'VERBALE',
+      sottotipo: '',
+      idGen: 'ALTRO_TIPO'
     }
   ]);
   const out = renderBoxes(
@@ -568,7 +638,8 @@ test('documenti box in arricchisciConStorico mode renders templateRiga, matching
         TIPO_BOX: 'documenti',
         ARRICCHISCI_CON_STORICO: true,
         CONFIG_ARRICCHIMENTO: {
-          TEMPLATE_RIGA: '<li>{{corrente.nome}} — storico: {{#storico}}{{nome}} ({{anno}}){{/storico}}</li>'
+          TEMPLATE_RIGA:
+            '<li>{{corrente.nome}} — storico: {{#storico}}{{nome}} ({{anno}}){{/storico}}</li>'
         }
       }
     ]),
@@ -584,10 +655,16 @@ test('documenti box in arricchisciConStorico mode renders templateRiga, matching
 test('documenti box falls back to standard rendering when templateRiga is empty (safety net)', () => {
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);
-  const cdu = cduWithStorico([{
-    anno: '2025-2026', nome: 'x', link: 'https://drive/x',
-    tipo: 'PIANO_PERS', sottotipo: 'PDP_DSA', idGen: 'CD_PDP'
-  }]);
+  const cdu = cduWithStorico([
+    {
+      anno: '2025-2026',
+      nome: 'x',
+      link: 'https://drive/x',
+      tipo: 'PIANO_PERS',
+      sottotipo: 'PDP_DSA',
+      idGen: 'CD_PDP'
+    }
+  ]);
   const out = renderBoxes(
     composer,
     confMail([{ TIPO_BOX: 'documenti', ARRICCHISCI_CON_STORICO: true }]),
@@ -623,8 +700,12 @@ test('documenti box arricchisciConStorico templateRiga escapes hostile storico n
   const composer = createBoxComposer(logger, templates);
   const cdu = cduWithStorico([
     {
-      anno: '2025-2026', nome: '<script>alert(1)</script>', link: 'https://drive/old',
-      tipo: 'PIANO_PERS', sottotipo: 'PDP_DSA', idGen: 'CD_PDP'
+      anno: '2025-2026',
+      nome: '<script>alert(1)</script>',
+      link: 'https://drive/old',
+      tipo: 'PIANO_PERS',
+      sottotipo: 'PDP_DSA',
+      idGen: 'CD_PDP'
     }
   ]);
   const out = renderBoxes(
@@ -695,29 +776,63 @@ test('piani_pers_da_inviare: shows only unnotified plans and each plan receives 
   const cdu = pianiPersCduRecord(
     [
       {
-        nome: 'PEI a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PEI', sottotipoLabel: 'PEI',
-        generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', isNotificato: false,
-        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, classe: { nome: '5A' }
+        nome: 'PEI a1',
+        link: 'http://d/1',
+        tipo: 'PIANO_PERS',
+        sottotipo: 'PEI',
+        sottotipoLabel: 'PEI',
+        generatoreId: 'PIANI_PERSONALIZZATI',
+        stato: 'GENERATO',
+        dataCreazione: '2026-03-01',
+        isNotificato: false,
+        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
+        classe: { nome: '5A' }
       },
       {
-        nome: 'PDP a1', link: 'http://d/2', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', sottotipoLabel: 'PDP (BES)',
-        generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-02', isNotificato: true,
-        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, classe: { nome: '5A' }
+        nome: 'PDP a1',
+        link: 'http://d/2',
+        tipo: 'PIANO_PERS',
+        sottotipo: 'PDP_BES',
+        sottotipoLabel: 'PDP (BES)',
+        generatoreId: 'PIANI_PERSONALIZZATI',
+        stato: 'GENERATO',
+        dataCreazione: '2026-03-02',
+        isNotificato: true,
+        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
+        classe: { nome: '5A' }
       },
       {
-        nome: 'PDP a2', link: 'http://d/3', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', sottotipoLabel: 'PDP (BES)',
-        generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-03', isNotificato: false,
-        studente: { nomeCompleto: 'NERI PAOLO', email: 'a2@school.it' }, classe: { nome: '5A' }
+        nome: 'PDP a2',
+        link: 'http://d/3',
+        tipo: 'PIANO_PERS',
+        sottotipo: 'PDP_BES',
+        sottotipoLabel: 'PDP (BES)',
+        generatoreId: 'PIANI_PERSONALIZZATI',
+        stato: 'GENERATO',
+        dataCreazione: '2026-03-03',
+        isNotificato: false,
+        studente: { nomeCompleto: 'NERI PAOLO', email: 'a2@school.it' },
+        classe: { nome: '5A' }
       }
     ],
     new LazyRef(() => [
       {
-        anno: '2025-2026', nome: 'PEI a1 anno scorso', link: 'http://d/old-pei',
-        tipo: 'PIANO_PERS', sottotipo: 'PEI', idGen: 'PIANI_PERSONALIZZATI', studenteEmail: 'a1@school.it'
+        anno: '2025-2026',
+        nome: 'PEI a1 anno scorso',
+        link: 'http://d/old-pei',
+        tipo: 'PIANO_PERS',
+        sottotipo: 'PEI',
+        idGen: 'PIANI_PERSONALIZZATI',
+        studenteEmail: 'a1@school.it'
       },
       {
-        anno: '2025-2026', nome: 'PDP a1 anno scorso', link: 'http://d/old-pdp',
-        tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', idGen: 'PIANI_PERSONALIZZATI', studenteEmail: 'a1@school.it'
+        anno: '2025-2026',
+        nome: 'PDP a1 anno scorso',
+        link: 'http://d/old-pdp',
+        tipo: 'PIANO_PERS',
+        sottotipo: 'PDP_BES',
+        idGen: 'PIANI_PERSONALIZZATI',
+        studenteEmail: 'a1@school.it'
       }
     ])
   );
@@ -729,12 +844,12 @@ test('piani_pers_da_inviare: shows only unnotified plans and each plan receives 
     templates
   );
   const html = out.boxes.perId['piani_pers_da_inviare_0']!.html;
-  expect((html.match(/Piani personalizzati da notificare/g) ?? [])).toHaveLength(1);
+  expect(html.match(/Piani personalizzati da notificare/g) ?? []).toHaveLength(1);
   const [peiRow, pdpRow] = html.split('</li>');
   expect(html).toContain('VERDI ANNA - 5A - PEI');
   expect(html).toContain('NERI PAOLO - 5A - PDP (BES)');
   expect(html).not.toContain('VERDI ANNA - 5A - PDP (BES)'); // NOTIFICATO, excluded
-  expect(out.boxes.perId['piani_pers_da_inviare_0']!.html).toContain('piano dell\'anno precedente');
+  expect(out.boxes.perId['piani_pers_da_inviare_0']!.html).toContain("piano dell'anno precedente");
   expect(peiRow).toContain('http://d/old-pei');
   expect(peiRow).not.toContain('http://d/old-pdp'); // same ID_GEN, wrong subtype
   expect(pdpRow).not.toContain('http://d/old-pdp'); // same subtype, different student
@@ -746,19 +861,37 @@ test('piani_pers_da_inviare: always uses its built-in row and dark-red border, i
   const cdu = pianiPersCduRecord(
     [
       {
-        nome: 'PDP a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES',
-        sottotipoLabel: 'PDP (BES)', generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', isNotificato: false,
-        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, classe: { nome: '5A' }
+        nome: 'PDP a1',
+        link: 'http://d/1',
+        tipo: 'PIANO_PERS',
+        sottotipo: 'PDP_BES',
+        sottotipoLabel: 'PDP (BES)',
+        generatoreId: 'PIANI_PERSONALIZZATI',
+        stato: 'GENERATO',
+        dataCreazione: '2026-03-01',
+        isNotificato: false,
+        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
+        classe: { nome: '5A' }
       }
     ],
     new LazyRef(() => [
       {
-        anno: '2025-2026', nome: 'PDP a1 anno scorso', link: 'http://d/old-pdp',
-        tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', idGen: 'PIANI_PERSONALIZZATI', studenteEmail: 'a1@school.it'
+        anno: '2025-2026',
+        nome: 'PDP a1 anno scorso',
+        link: 'http://d/old-pdp',
+        tipo: 'PIANO_PERS',
+        sottotipo: 'PDP_BES',
+        idGen: 'PIANI_PERSONALIZZATI',
+        studenteEmail: 'a1@school.it'
       },
       {
-        anno: '2025-2026', nome: 'PEI a1 anno scorso', link: 'http://d/old-pei',
-        tipo: 'PIANO_PERS', sottotipo: 'PEI', idGen: 'PIANI_PERSONALIZZATI', studenteEmail: 'a1@school.it'
+        anno: '2025-2026',
+        nome: 'PEI a1 anno scorso',
+        link: 'http://d/old-pei',
+        tipo: 'PIANO_PERS',
+        sottotipo: 'PEI',
+        idGen: 'PIANI_PERSONALIZZATI',
+        studenteEmail: 'a1@school.it'
       }
     ])
   );
@@ -779,7 +912,7 @@ test('piani_pers_da_inviare: always uses its built-in row and dark-red border, i
   expect(html).toContain('VERDI ANNA - 5A - PDP (BES)');
   expect(html).toContain('href="http://d/1"');
   expect(html).toContain('href="http://d/old-pdp"');
-  expect(html).toContain('piano dell\'anno precedente');
+  expect(html).toContain("piano dell'anno precedente");
   expect(html).not.toContain('http://d/old-pei');
   expect(html).toContain('border-left:4px solid #C62828');
 });
@@ -791,9 +924,17 @@ test('piani_pers_da_inviare: keeps current plans visible when historical lookup 
   const cdu = pianiPersCduRecord(
     [
       {
-        nome: 'PDP corrente', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES',
-        sottotipoLabel: 'PDP (BES)', generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', isNotificato: false,
-        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, classe: { nome: '5A' }
+        nome: 'PDP corrente',
+        link: 'http://d/1',
+        tipo: 'PIANO_PERS',
+        sottotipo: 'PDP_BES',
+        sottotipoLabel: 'PDP (BES)',
+        generatoreId: 'PIANI_PERSONALIZZATI',
+        stato: 'GENERATO',
+        dataCreazione: '2026-03-01',
+        isNotificato: false,
+        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
+        classe: { nome: '5A' }
       }
     ],
     new LazyRef(() => {
@@ -822,8 +963,15 @@ test('piani_pers_da_inviare: escapes hostile tipoLabel/studente.nomeCompleto in 
   const cdu = pianiPersCduRecord(
     [
       {
-        nome: 'PDP a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', sottotipoLabel: '<script>alert(1)</script>',
-        generatoreId: 'PDP_BES', stato: 'GENERATO', dataCreazione: '2026-03-01', isNotificato: false,
+        nome: 'PDP a1',
+        link: 'http://d/1',
+        tipo: 'PIANO_PERS',
+        sottotipo: 'PDP_BES',
+        sottotipoLabel: '<script>alert(1)</script>',
+        generatoreId: 'PDP_BES',
+        stato: 'GENERATO',
+        dataCreazione: '2026-03-01',
+        isNotificato: false,
         studente: { nomeCompleto: '<img src=x onerror=alert(1)>', email: 'a1@school.it' }
       }
     ],
@@ -846,25 +994,47 @@ test('piani_pers_da_inviare: escapes hostile tipoLabel/studente.nomeCompleto in 
 test('piani_pers_inviati: lists only NOTIFICATO items across students and subtypes', () => {
   const templates = new FakeTemplateEngine();
   const composer = createBoxComposer(logger, templates);
-  const cdu = pianiPersCduRecord(
-    [
-      {
-        nome: 'PEI a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PEI', sottotipoLabel: 'PEI',
-        generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', isNotificato: false,
-        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, classe: { nome: '5A' }
-      },
-      {
-        nome: 'PDP a1', link: 'http://d/2', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', sottotipoLabel: 'PDP (BES)',
-        generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-02', isNotificato: true,
-        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, classe: { nome: '5A' }
-      },
-      {
-        nome: 'PEI a2', link: 'http://d/3', tipo: 'PIANO_PERS', sottotipo: 'PEI', sottotipoLabel: 'PEI',
-        generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-03', isNotificato: true,
-        studente: { nomeCompleto: 'NERI PAOLO', email: 'a2@school.it' }, classe: { nome: '5A' }
-      }
-    ]
-  );
+  const cdu = pianiPersCduRecord([
+    {
+      nome: 'PEI a1',
+      link: 'http://d/1',
+      tipo: 'PIANO_PERS',
+      sottotipo: 'PEI',
+      sottotipoLabel: 'PEI',
+      generatoreId: 'PIANI_PERSONALIZZATI',
+      stato: 'GENERATO',
+      dataCreazione: '2026-03-01',
+      isNotificato: false,
+      studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
+      classe: { nome: '5A' }
+    },
+    {
+      nome: 'PDP a1',
+      link: 'http://d/2',
+      tipo: 'PIANO_PERS',
+      sottotipo: 'PDP_BES',
+      sottotipoLabel: 'PDP (BES)',
+      generatoreId: 'PIANI_PERSONALIZZATI',
+      stato: 'GENERATO',
+      dataCreazione: '2026-03-02',
+      isNotificato: true,
+      studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
+      classe: { nome: '5A' }
+    },
+    {
+      nome: 'PEI a2',
+      link: 'http://d/3',
+      tipo: 'PIANO_PERS',
+      sottotipo: 'PEI',
+      sottotipoLabel: 'PEI',
+      generatoreId: 'PIANI_PERSONALIZZATI',
+      stato: 'GENERATO',
+      dataCreazione: '2026-03-03',
+      isNotificato: true,
+      studente: { nomeCompleto: 'NERI PAOLO', email: 'a2@school.it' },
+      classe: { nome: '5A' }
+    }
+  ]);
   const out = renderBoxes(
     composer,
     confMail([{ TIPO_BOX: 'piani_pers_inviati' }]),
@@ -885,15 +1055,28 @@ test('piani_pers_inviati: never shows historical plans, even when the box config
   const cdu = pianiPersCduRecord(
     [
       {
-        nome: 'PDP a1', link: 'http://d/1', tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', sottotipoLabel: 'PDP (BES)',
-        generatoreId: 'PIANI_PERSONALIZZATI', stato: 'GENERATO', dataCreazione: '2026-03-01', isNotificato: true,
-        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, classe: { nome: '5A' }
+        nome: 'PDP a1',
+        link: 'http://d/1',
+        tipo: 'PIANO_PERS',
+        sottotipo: 'PDP_BES',
+        sottotipoLabel: 'PDP (BES)',
+        generatoreId: 'PIANI_PERSONALIZZATI',
+        stato: 'GENERATO',
+        dataCreazione: '2026-03-01',
+        isNotificato: true,
+        studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
+        classe: { nome: '5A' }
       }
     ],
     new LazyRef(() => [
       {
-        anno: '2025-2026', nome: 'PDP a1 anno scorso', link: 'http://d/old-pdp',
-        tipo: 'PIANO_PERS', sottotipo: 'PDP_BES', idGen: 'PIANI_PERSONALIZZATI', studenteEmail: 'a1@school.it'
+        anno: '2025-2026',
+        nome: 'PDP a1 anno scorso',
+        link: 'http://d/old-pdp',
+        tipo: 'PIANO_PERS',
+        sottotipo: 'PDP_BES',
+        idGen: 'PIANI_PERSONALIZZATI',
+        studenteEmail: 'a1@school.it'
       }
     ])
   );
@@ -943,19 +1126,43 @@ test('documenti box renders only the valid DATI_SORGENTE.filtri result and retur
   const tables = fixtureTables();
   (tables['LOG_DOCS'] as Record<string, unknown>[]) = [
     {
-      ID: 'doc-ammesso', ID_GEN: 'VERBALE_CDC', TIPO: 'VERBALE', SOTTOTIPO: 'CDC',
-      NOME: 'Verbale CDC', STATO: 'GENERATO', LINK: 'https://drive/doc-ammesso',
-      CLASSI: '5A', UTENTI: '', MATERIE: 'MATE', DATA_CREAZ: '2026-07-01'
+      ID: 'doc-ammesso',
+      ID_GEN: 'VERBALE_CDC',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: 'CDC',
+      NOME: 'Verbale CDC',
+      STATO: 'GENERATO',
+      LINK: 'https://drive/doc-ammesso',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIE: 'MATE',
+      DATA_CREAZ: '2026-07-01'
     },
     {
-      ID: 'doc-archiviato', ID_GEN: 'VERBALE_CDC', TIPO: 'VERBALE', SOTTOTIPO: 'CDC',
-      NOME: 'Verbale archiviato', STATO: 'ARCHIVIATO', LINK: 'https://drive/doc-archiviato',
-      CLASSI: '5A', UTENTI: '', MATERIE: 'MATE', DATA_CREAZ: '2026-07-02'
+      ID: 'doc-archiviato',
+      ID_GEN: 'VERBALE_CDC',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: 'CDC',
+      NOME: 'Verbale archiviato',
+      STATO: 'ARCHIVIATO',
+      LINK: 'https://drive/doc-archiviato',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIE: 'MATE',
+      DATA_CREAZ: '2026-07-02'
     },
     {
-      ID: 'doc-altro', ID_GEN: 'VERBALE_ALTRO', TIPO: 'VERBALE', SOTTOTIPO: 'ALTRO',
-      NOME: 'Verbale altra tipologia', STATO: 'GENERATO', LINK: 'https://drive/doc-altro',
-      CLASSI: '5A', UTENTI: '', MATERIE: 'MATE', DATA_CREAZ: '2026-07-03'
+      ID: 'doc-altro',
+      ID_GEN: 'VERBALE_ALTRO',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: 'ALTRO',
+      NOME: 'Verbale altra tipologia',
+      STATO: 'GENERATO',
+      LINK: 'https://drive/doc-altro',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIE: 'MATE',
+      DATA_CREAZ: '2026-07-03'
     }
   ];
   const templates = new FakeTemplateEngine();
@@ -989,12 +1196,28 @@ test('documenti box with DATI_SORGENTE and no filtri keeps every item in its sco
   const tables = fixtureTables();
   (tables['LOG_DOCS'] as Record<string, unknown>[]) = [
     {
-      ID: 'doc-a', ID_GEN: 'A', TIPO: 'VERBALE', NOME: 'Verbale A', STATO: 'GENERATO',
-      LINK: 'https://drive/doc-a', CLASSI: '5A', UTENTI: '', MATERIE: 'MATE', DATA_CREAZ: '2026-07-01'
+      ID: 'doc-a',
+      ID_GEN: 'A',
+      TIPO: 'VERBALE',
+      NOME: 'Verbale A',
+      STATO: 'GENERATO',
+      LINK: 'https://drive/doc-a',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIE: 'MATE',
+      DATA_CREAZ: '2026-07-01'
     },
     {
-      ID: 'doc-b', ID_GEN: 'B', TIPO: 'PIANO_LAVORO', NOME: 'Piano B', STATO: 'ARCHIVIATO',
-      LINK: 'https://drive/doc-b', CLASSI: '5A', UTENTI: '', MATERIE: 'MATE', DATA_CREAZ: '2026-07-02'
+      ID: 'doc-b',
+      ID_GEN: 'B',
+      TIPO: 'PIANO_LAVORO',
+      NOME: 'Piano B',
+      STATO: 'ARCHIVIATO',
+      LINK: 'https://drive/doc-b',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIE: 'MATE',
+      DATA_CREAZ: '2026-07-02'
     }
   ];
   const templates = new FakeTemplateEngine();
@@ -1019,15 +1242,28 @@ test('source IDs are not recorded when a prerequisite hides source content and T
   const tables = fixtureTables();
   (tables['LOG_DOCS'] as Record<string, unknown>[]) = [
     {
-      ID: 'doc-nascosto', ID_GEN: 'VERBALE', TIPO: 'VERBALE', NOME: 'Documento nascosto',
-      STATO: 'GENERATO', LINK: 'https://drive/doc-nascosto', CLASSI: '5A', UTENTI: '',
-      MATERIE: 'MATE', DATA_CREAZ: '2026-07-01'
+      ID: 'doc-nascosto',
+      ID_GEN: 'VERBALE',
+      TIPO: 'VERBALE',
+      NOME: 'Documento nascosto',
+      STATO: 'GENERATO',
+      LINK: 'https://drive/doc-nascosto',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIE: 'MATE',
+      DATA_CREAZ: '2026-07-01'
     }
   ];
   (tables['LOG_FOLD'] as Record<string, unknown>[]) = [
     {
-      ID: 'folder-nascosta', TIPO: 'VERBALI', NOME: 'Cartella nascosta', PATH: '_ALDO/5A',
-      LINK: 'https://drive/folder-nascosta', CLASSI: '5A', UTENTI: '', MATERIE: 'MATE'
+      ID: 'folder-nascosta',
+      TIPO: 'VERBALI',
+      NOME: 'Cartella nascosta',
+      PATH: '_ALDO/5A',
+      LINK: 'https://drive/folder-nascosta',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIE: 'MATE'
     }
   ];
   const templates = new FakeTemplateEngine();
@@ -1035,18 +1271,26 @@ test('source IDs are not recorded when a prerequisite hides source content and T
     createBoxComposer(logger, templates),
     confMail([
       {
-        TIPO_BOX: 'documenti', PREREQUISITI: 'never', MOSTRA_SE_VUOTO: true,
+        TIPO_BOX: 'documenti',
+        PREREQUISITI: 'never',
+        MOSTRA_SE_VUOTO: true,
         TESTO_VUOTO: 'Documenti non disponibili',
         DATI_SORGENTE: { metodo: 'documentiPerClasse' }
       },
       {
-        TIPO_BOX: 'cartelle', PREREQUISITI: 'never', MOSTRA_SE_VUOTO: true,
+        TIPO_BOX: 'cartelle',
+        PREREQUISITI: 'never',
+        MOSTRA_SE_VUOTO: true,
         TESTO_VUOTO: 'Cartelle non disponibili',
         DATI_SORGENTE: { metodo: 'cartellePerClasse' }
       }
     ]),
-    cduRecord(), materie(), templates, new AggregatoreDati(new FakeDatabase(tables)),
-    { classiCompetenza: ['5A'] }, logger
+    cduRecord(),
+    materie(),
+    templates,
+    new AggregatoreDati(new FakeDatabase(tables)),
+    { classiCompetenza: ['5A'] },
+    logger
   );
 
   expect(out.boxes.perId['documenti_0']!.html).toContain('Documenti non disponibili');
@@ -1061,14 +1305,16 @@ test('a per-classe source without competence or focus class warns and skips its 
   const out = renderBoxes(
     createBoxComposer(logger, templates),
     confMail([{ TIPO_BOX: 'documenti', DATI_SORGENTE: { metodo: 'documentiPerClasse' } }]),
-    cduRecord(), materie(), templates, new AggregatoreDati(new FakeDatabase(fixtureTables())),
-    {}, logger
+    cduRecord(),
+    materie(),
+    templates,
+    new AggregatoreDati(new FakeDatabase(fixtureTables())),
+    {},
+    logger
   );
 
   expect(out.boxes.perId['documenti_0']).toBeUndefined();
-  expect(warn).toHaveBeenCalledWith(
-    expect.stringContaining('classeId mancante o non risolvibile')
-  );
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('classeId mancante o non risolvibile'));
   warn.mockRestore();
 });
 
@@ -1087,15 +1333,9 @@ test('legacy document filters make only that box invisible and log a CONF_MAIL c
 
   expect(out.boxes.perId['documenti_0']).toBeUndefined();
   expect(out.documentIds).toEqual([]);
-  expect(error).toHaveBeenCalledWith(
-    expect.stringContaining('CONF_MAIL P1')
-  );
-  expect(error).toHaveBeenCalledWith(
-    expect.stringContaining('FILTRO_TIPO')
-  );
-  expect(error).toHaveBeenCalledWith(
-    expect.stringContaining('FILTRO_STATO')
-  );
+  expect(error).toHaveBeenCalledWith(expect.stringContaining('CONF_MAIL P1'));
+  expect(error).toHaveBeenCalledWith(expect.stringContaining('FILTRO_TIPO'));
+  expect(error).toHaveBeenCalledWith(expect.stringContaining('FILTRO_STATO'));
   error.mockRestore();
 });
 
@@ -1128,7 +1368,9 @@ test('cartelle box with DATI_SORGENTE.metodo=cartellePerClasse renders real LOG_
     { classiCompetenza: ['5A'] }
   );
 
-  expect(out.boxes.perId['cartelle_0']!.html).toContain('https://drive.google.com/drive/folders/folder1');
+  expect(out.boxes.perId['cartelle_0']!.html).toContain(
+    'https://drive.google.com/drive/folders/folder1'
+  );
   expect(out.boxes.perId['cartelle_0']!.html).toContain('Verbali 5A');
   expect(out.folderIds).toEqual(['folder1']);
 });
@@ -1190,20 +1432,44 @@ test('cartelle boxes use validated class, user, and department sources with filt
   const tables = fixtureTables();
   (tables['LOG_FOLD'] as Record<string, unknown>[]) = [
     {
-      ID: 'folder-classe', TIPO: 'VERBALI', NOME: 'Verbali consiglio', PATH: '_ALDO/5A',
-      LINK: 'https://drive/folder-classe', CLASSI: '5A,3B', UTENTI: '', MATERIE: 'MATE,FISI'
+      ID: 'folder-classe',
+      TIPO: 'VERBALI',
+      NOME: 'Verbali consiglio',
+      PATH: '_ALDO/5A',
+      LINK: 'https://drive/folder-classe',
+      CLASSI: '5A,3B',
+      UTENTI: '',
+      MATERIE: 'MATE,FISI'
     },
     {
-      ID: 'folder-archivio', TIPO: 'VERBALI', NOME: 'Verbali archivio', PATH: '_ALDO/archivio',
-      LINK: 'https://drive/folder-archivio', CLASSI: '5A', UTENTI: '', MATERIE: 'MATE'
+      ID: 'folder-archivio',
+      TIPO: 'VERBALI',
+      NOME: 'Verbali archivio',
+      PATH: '_ALDO/archivio',
+      LINK: 'https://drive/folder-archivio',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIE: 'MATE'
     },
     {
-      ID: 'folder-utente', TIPO: 'AREA', NOME: 'Area studente', PATH: '_ALDO/studenti/a1',
-      LINK: 'https://drive/folder-utente', CLASSI: '', UTENTI: 'a1@school.it', MATERIE: ''
+      ID: 'folder-utente',
+      TIPO: 'AREA',
+      NOME: 'Area studente',
+      PATH: '_ALDO/studenti/a1',
+      LINK: 'https://drive/folder-utente',
+      CLASSI: '',
+      UTENTI: 'a1@school.it',
+      MATERIE: ''
     },
     {
-      ID: 'folder-dipartimento', TIPO: 'DIPART', NOME: 'Materiali scientifici', PATH: '_ALDO/dipartimenti/scienze',
-      LINK: 'https://drive/folder-dipartimento', CLASSI: '', UTENTI: '', MATERIE: 'MATE'
+      ID: 'folder-dipartimento',
+      TIPO: 'DIPART',
+      NOME: 'Materiali scientifici',
+      PATH: '_ALDO/dipartimenti/scienze',
+      LINK: 'https://drive/folder-dipartimento',
+      CLASSI: '',
+      UTENTI: '',
+      MATERIE: 'MATE'
     }
   ];
   const templates = new FakeTemplateEngine();
@@ -1219,20 +1485,45 @@ test('cartelle boxes use validated class, user, and department sources with filt
         }
       }
     ]),
-    cduRecord(), materie(), templates, new AggregatoreDati(new FakeDatabase(tables)),
-    { classiCompetenza: ['5A', '3B'] }, logger
+    cduRecord(),
+    materie(),
+    templates,
+    new AggregatoreDati(new FakeDatabase(tables)),
+    { classiCompetenza: ['5A', '3B'] },
+    logger
   );
   const perUtente = renderBoxes(
     composer,
-    confMail([{ TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerUtente', filtri: { nome: 'Area' } } }]),
-    cduRecord(), materie(), templates, new AggregatoreDati(new FakeDatabase(tables)),
-    { utenteEmail: 'a1@school.it' }, logger
+    confMail([
+      {
+        TIPO_BOX: 'cartelle',
+        DATI_SORGENTE: { metodo: 'cartellePerUtente', filtri: { nome: 'Area' } }
+      }
+    ]),
+    cduRecord(),
+    materie(),
+    templates,
+    new AggregatoreDati(new FakeDatabase(tables)),
+    { utenteEmail: 'a1@school.it' },
+    logger
   );
   const perDipartimento = renderBoxes(
     composer,
-    confMail([{ TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerDipartimento', filtri: { nome: 'Materiali', materie: ['MATE'] } } }]),
-    cduRecord(), materie(), templates, new AggregatoreDati(new FakeDatabase(tables)),
-    { dipartimentoId: 'SCIENTIFICO_DIP' }, logger
+    confMail([
+      {
+        TIPO_BOX: 'cartelle',
+        DATI_SORGENTE: {
+          metodo: 'cartellePerDipartimento',
+          filtri: { nome: 'Materiali', materie: ['MATE'] }
+        }
+      }
+    ]),
+    cduRecord(),
+    materie(),
+    templates,
+    new AggregatoreDati(new FakeDatabase(tables)),
+    { dipartimentoId: 'SCIENTIFICO_DIP' },
+    logger
   );
 
   expect(perClasse.boxes.perId['cartelle_0']!.html).toContain('Verbali consiglio');
@@ -1249,10 +1540,17 @@ test('a cartelle box with a document-only filter is skipped without suppressing 
     createBoxComposer(logger, templates),
     confMail([
       { TIPO_BOX: 'carenze' },
-      { TIPO_BOX: 'cartelle', DATI_SORGENTE: { metodo: 'cartellePerClasse', filtri: { sottotipo: 'CDC' } } }
+      {
+        TIPO_BOX: 'cartelle',
+        DATI_SORGENTE: { metodo: 'cartellePerClasse', filtri: { sottotipo: 'CDC' } }
+      }
     ]),
-    cduRecord(), materie(), templates, new AggregatoreDati(new FakeDatabase(fixtureTables())),
-    { classiCompetenza: ['5A'] }, logger
+    cduRecord(),
+    materie(),
+    templates,
+    new AggregatoreDati(new FakeDatabase(fixtureTables())),
+    { classiCompetenza: ['5A'] },
+    logger
   );
 
   expect(out.boxes.perId['carenze_0']!.isVisibile).toBe(true);
@@ -1280,7 +1578,9 @@ test('BOX_CFG.TITOLO is interpolated against the CDU (11 §5)', () => {
   const cdu = cduRecord();
   (cdu['focus'] as Record<string, unknown>)['carenza'] = { note: 'Testo libero' };
 
-  const { boxes: { perId: boxes } } = renderBoxes(composer, conf, cdu, materie(), templates);
+  const {
+    boxes: { perId: boxes }
+  } = renderBoxes(composer, conf, cdu, materie(), templates);
 
   expect(boxes['note_0']!.titolo).toBe('Note per 5A');
   expect(boxes['note_0']!.html).toContain('Note per 5A');

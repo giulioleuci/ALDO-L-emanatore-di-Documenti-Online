@@ -61,11 +61,7 @@ test('salutoPerTarget: genitori_alunno greets both parents and the student by na
     CLASSE: '5A',
     ATTIVO: true
   });
-  const saluto = salutoPerTarget(
-    target('genitori_alunno', ['g@x.it', 'a1@school.it']),
-    null,
-    a
-  );
+  const saluto = salutoPerTarget(target('genitori_alunno', ['g@x.it', 'a1@school.it']), null, a);
   expect(saluto).toBe('Gentili Genitori e VERDI ANNA');
 });
 

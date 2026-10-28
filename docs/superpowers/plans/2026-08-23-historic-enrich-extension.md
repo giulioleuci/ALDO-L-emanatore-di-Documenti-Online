@@ -4,7 +4,7 @@
 
 **Goal:** Rewrite the student-year outcome (`esito`) algorithm to use `ALUNNI.RIPETENTE` instead of the (structurally incapable) `CAMBIO` comparison, split `MOV_ALUNNI.TIPO=OUT` into `OUT` (trasferimento) / `RITIRATO` (ritiro), and add two new booleans — `presenteAnnoPrecedente` and `presenteTuttoAnno` — to the current-year and historical student context.
 
-**Architecture:** `StoricoAlunniService.perAlunno` already opens every historical year's database in one pass; the new algorithm reuses that same pass to look at *neighboring* years' `ALUNNI.RIPETENTE` (no extra DB reads). The two new booleans are computed identically in three places — `AlunnoProvider` (current year, `focus.alunno.status`), `StudentiProvider` (current year, per roster student), and `StoricoAlunniService`/`storicoMapper` (each historical year) — via one shared pure helper (`presenteTuttoAnno`) plus a same-pattern "does a record exist in the neighboring year's DB" check. `AlunnoProvider`/`StudentiProvider` gain a `StoricoDatabaseProvider` dependency (already constructed once in `ContextEngineFactory` and cheaply cached there) to look one year back.
+**Architecture:** `StoricoAlunniService.perAlunno` already opens every historical year's database in one pass; the new algorithm reuses that same pass to look at _neighboring_ years' `ALUNNI.RIPETENTE` (no extra DB reads). The two new booleans are computed identically in three places — `AlunnoProvider` (current year, `focus.alunno.status`), `StudentiProvider` (current year, per roster student), and `StoricoAlunniService`/`storicoMapper` (each historical year) — via one shared pure helper (`presenteTuttoAnno`) plus a same-pattern "does a record exist in the neighboring year's DB" check. `AlunnoProvider`/`StudentiProvider` gain a `StoricoDatabaseProvider` dependency (already constructed once in `ContextEngineFactory` and cheaply cached there) to look one year back.
 
 **Tech Stack:** TypeScript, Jest (`ts-jest`), GAS V8 target. No new libraries.
 
@@ -17,13 +17,14 @@
 - No circular dependencies across the domain→application→infrastructure layers; historical lookups keep importing concrete infra repos from `application/storico`/`application/context-engine/providers` exactly as the existing code already does (this is an established pattern here, not a new violation).
 - New/changed public methods and interfaces must stay wired through `ContextEngineFactory` — no ad-hoc construction inside providers.
 - Per user decision (recorded in `ANALYSIS_HISTORIC_ENRICH_EXTENSION.md` §7): `SCONOSCIUTO` remains an acceptable terminal outcome (no fallback needed); pre-existing `MOV_ALUNNI.TIPO=OUT` rows are **not** touched by this plan (user reclassifies manually); `presenteAnnoPrecedente=false` for anno-1 classes is returned as-is (`false`), not omitted.
-- **Out of scope for this plan:** `src/onlinetests/data/SharedTestDatabaseBuilder.ts`, `src/onlinetests/data/Seeders.ts` (`seedStorico`) and `src/onlinetests/checks/storicoChecks.ts`. These E2E fixtures currently encode the *old* CAMBIO-based algorithm (see `seedStorico`'s `MOV_ALUNNI` rows and `storicoChecks.ts`'s `PROMOSSO`/`NON_PROMOSSO`/`RITIRATO` assertions) and need their own follow-up pass once the new algorithm's actual current-year `RIPETENTE` wiring for `e2eAlunnoEmail(138)`/`(139)` is designed — that requires re-deriving which current-year class those synthetic emails land in, which this plan's research did not chase down. Flag this to the user as follow-up work; do not silently skip touching esito semantics there without telling them.
+- **Out of scope for this plan:** `src/onlinetests/data/SharedTestDatabaseBuilder.ts`, `src/onlinetests/data/Seeders.ts` (`seedStorico`) and `src/onlinetests/checks/storicoChecks.ts`. These E2E fixtures currently encode the _old_ CAMBIO-based algorithm (see `seedStorico`'s `MOV_ALUNNI` rows and `storicoChecks.ts`'s `PROMOSSO`/`NON_PROMOSSO`/`RITIRATO` assertions) and need their own follow-up pass once the new algorithm's actual current-year `RIPETENTE` wiring for `e2eAlunnoEmail(138)`/`(139)` is designed — that requires re-deriving which current-year class those synthetic emails land in, which this plan's research did not chase down. Flag this to the user as follow-up work; do not silently skip touching esito semantics there without telling them.
 
 ---
 
 ## Task 1: Spec docs — TipoMovimento split, CDU fields (no code)
 
 **Files:**
+
 - Modify: `SPECS_ALDO/03_VALUE_OBJECTS_ED_ENUM.md:151-159`
 - Modify: `SPECS_ALDO/01_SCHEMA_DATABASE.md` (after the `MOV_ALUNNI` table, currently ending line 298)
 - Modify: `SPECS_ALDO/02_CDU_STRUTTURA.md` (three sites: `focus.alunno.status` ~line 370-376, `StudentStoricoVM.anni[]` ~line 753-761, `StudentVM.status` ~line 789-794; plus the JSON example ~line 1462-1468)
@@ -33,17 +34,20 @@ This task has no tests (it is documentation only) — just make the edits and mo
 - [ ] **Step 1: Update `TipoMovimento` table in `03_VALUE_OBJECTS_ED_ENUM.md`**
 
 Replace:
+
 ```markdown
 | Valore   | Descrizione                            |
-| -------- | --------------------------------------- |
+| -------- | -------------------------------------- |
 | `IN`     | Ingresso da altra scuola o classe      |
 | `OUT`    | Uscita (ritiro, trasferimento esterno) |
 | `CAMBIO` | Cambio di classe interno all'istituto  |
 ```
+
 with:
+
 ```markdown
-| Valore     | Descrizione                                          |
-| ---------- | ----------------------------------------------------- |
+| Valore     | Descrizione                                            |
+| ---------- | ------------------------------------------------------ |
 | `IN`       | Ingresso da altra scuola o classe                      |
 | `OUT`      | Uscita per trasferimento verso altro istituto          |
 | `RITIRATO` | Uscita per ritiro dagli studi (non verso altra scuola) |
@@ -53,87 +57,97 @@ with:
 - [ ] **Step 2: Add a note under `MOV_ALUNNI` in `01_SCHEMA_DATABASE.md`**
 
 Immediately after the `MOV_ALUNNI` table (the row ending `| A | ... |`) and before the next `---`, insert:
-```markdown
 
+```markdown
 **Nota OUT/RITIRATO:** `TIPO=OUT` copre esclusivamente il trasferimento verso un altro istituto; `TIPO=RITIRATO` copre l'uscita per ritiro dagli studi. Vedi `03_VALUE_OBJECTS_ED_ENUM.md` per l'enumerazione completa.
 ```
 
 - [ ] **Step 3: Update `focus.alunno.status` in `02_CDU_STRUTTURA.md`**
 
 Replace:
+
 ```yaml
-  status:
-    religione: string            # "IRC" | "ALT" | "NO" (ReligioneScelta)
-    religioneLabel: string       # "Religione cattolica" | "Attività alternativa" | "Non si avvale"
-    isBes: boolean
-    isRipetente: boolean
-    isRappresentante: boolean
+status:
+  religione: string # "IRC" | "ALT" | "NO" (ReligioneScelta)
+  religioneLabel: string # "Religione cattolica" | "Attività alternativa" | "Non si avvale"
+  isBes: boolean
+  isRipetente: boolean
+  isRappresentante: boolean
 ```
+
 with:
+
 ```yaml
-  status:
-    religione: string            # "IRC" | "ALT" | "NO" (ReligioneScelta)
-    religioneLabel: string       # "Religione cattolica" | "Attività alternativa" | "Non si avvale"
-    isBes: boolean
-    isRipetente: boolean
-    isRappresentante: boolean
-    presenteAnnoPrecedente: boolean  # false anche per classi di anno 1 (iscrizione ordinaria, non trasferimento)
-    presenteTuttoAnno: boolean       # false se un IN/CAMBIO è datato entro l'anno corrente
+status:
+  religione: string # "IRC" | "ALT" | "NO" (ReligioneScelta)
+  religioneLabel: string # "Religione cattolica" | "Attività alternativa" | "Non si avvale"
+  isBes: boolean
+  isRipetente: boolean
+  isRappresentante: boolean
+  presenteAnnoPrecedente: boolean # false anche per classi di anno 1 (iscrizione ordinaria, non trasferimento)
+  presenteTuttoAnno: boolean # false se un IN/CAMBIO è datato entro l'anno corrente
 ```
 
 - [ ] **Step 4: Update `StudentStoricoVM.anni[]` in `02_CDU_STRUTTURA.md`**
 
 Replace:
+
 ```yaml
 StudentStoricoVM:
   anni:
-    - annoScolastico: string     # es. "2024-2025"
-      classe: string             # Classe frequentata nell'anno
-      esito: string              # "PROMOSSO" | "NON_PROMOSSO" | "RITIRATO" | "SCONOSCIUTO"
-      carenze:                   # Sigle già riconciliate alla materia canonica corrente (es. GST → STO)
+    - annoScolastico: string # es. "2024-2025"
+      classe: string # Classe frequentata nell'anno
+      esito: string # "PROMOSSO" | "NON_PROMOSSO" | "RITIRATO" | "SCONOSCIUTO"
+      carenze: # Sigle già riconciliate alla materia canonica corrente (es. GST → STO)
         - materiaSigla: string
           valore: string
 ```
+
 with:
+
 ```yaml
 StudentStoricoVM:
   anni:
-    - annoScolastico: string     # es. "2024-2025"
-      classe: string             # Classe frequentata nell'anno
-      esito: string              # "PROMOSSO" | "NON_PROMOSSO" | "TRASFERITO" | "RITIRATO" | "SCONOSCIUTO"
-      carenze:                   # Sigle già riconciliate alla materia canonica corrente (es. GST → STO)
+    - annoScolastico: string # es. "2024-2025"
+      classe: string # Classe frequentata nell'anno
+      esito: string # "PROMOSSO" | "NON_PROMOSSO" | "TRASFERITO" | "RITIRATO" | "SCONOSCIUTO"
+      carenze: # Sigle già riconciliate alla materia canonica corrente (es. GST → STO)
         - materiaSigla: string
           valore: string
-      presenteAnnoPrecedente: boolean  # Era già iscritto in questa scuola nell'anno precedente a questo?
-      presenteTuttoAnno: boolean       # Nessun IN/CAMBIO datato entro questo anno?
+      presenteAnnoPrecedente: boolean # Era già iscritto in questa scuola nell'anno precedente a questo?
+      presenteTuttoAnno: boolean # Nessun IN/CAMBIO datato entro questo anno?
 ```
 
 - [ ] **Step 5: Update `StudentVM.status` (§8.7) in `02_CDU_STRUTTURA.md`**
 
 Replace:
+
 ```yaml
-  status:
-    isBes: boolean
-    isRipetente: boolean
-    isRappresentante: boolean
-    religione: string            # "IRC" | "ALT" | "NO"
-    religioneLabel: string       # "Religione cattolica" | "Attività alternativa" | "Non si avvale"
+status:
+  isBes: boolean
+  isRipetente: boolean
+  isRappresentante: boolean
+  religione: string # "IRC" | "ALT" | "NO"
+  religioneLabel: string # "Religione cattolica" | "Attività alternativa" | "Non si avvale"
 ```
+
 with:
+
 ```yaml
-  status:
-    isBes: boolean
-    isRipetente: boolean
-    isRappresentante: boolean
-    religione: string            # "IRC" | "ALT" | "NO"
-    religioneLabel: string       # "Religione cattolica" | "Attività alternativa" | "Non si avvale"
-    presenteAnnoPrecedente: boolean
-    presenteTuttoAnno: boolean
+status:
+  isBes: boolean
+  isRipetente: boolean
+  isRappresentante: boolean
+  religione: string # "IRC" | "ALT" | "NO"
+  religioneLabel: string # "Religione cattolica" | "Attività alternativa" | "Non si avvale"
+  presenteAnnoPrecedente: boolean
+  presenteTuttoAnno: boolean
 ```
 
 - [ ] **Step 6: Update the JSON example (~line 1462) in `02_CDU_STRUTTURA.md`**
 
 Replace:
+
 ```json
             "status": {
               "isBes": false,
@@ -143,7 +157,9 @@ Replace:
               "religioneLabel": "Religione cattolica"
             },
 ```
+
 with:
+
 ```json
             "status": {
               "isBes": false,
@@ -168,11 +184,13 @@ git commit -m "docs(specs): split MOV_ALUNNI TIPO=OUT into OUT/RITIRATO, add pre
 ## Task 2: `TipoMovimento.RITIRATO` + `MovimentoAlunno.isRitirato()`
 
 **Files:**
+
 - Modify: `src/domain/value-objects/enums.ts:54-58`
 - Modify: `src/domain/entities/MovimentoAlunno.ts:39-47`
 - Test: `test/unit/domain/movimento-alunno-specs.test.ts` (or a new adjoining test file if that one is spec-only — check it first; if it doesn't already test `MovimentoAlunno` methods, add a new small test file `test/unit/domain/movimento-alunno.test.ts`)
 
 **Interfaces:**
+
 - Produces: `TipoMovimento.RITIRATO` enum member; `MovimentoAlunno.isRitirato(): boolean`.
 
 - [ ] **Step 1: Check the existing test file's scope**
@@ -182,6 +200,7 @@ Run: `cat "test/unit/domain/movimento-alunno-specs.test.ts"`. If it only tests `
 - [ ] **Step 2: Write the failing test**
 
 In `test/unit/domain/movimento-alunno.test.ts`:
+
 ```typescript
 import { MovimentoAlunno } from '../../../src/domain/entities/MovimentoAlunno';
 import { COL_MOV_ALUNNI } from '../../../src/config/schema';
@@ -217,6 +236,7 @@ Expected: FAIL — `isRitirato is not a function` (TIPO=RITIRATO also fails TS e
 - [ ] **Step 4: Add `RITIRATO` to `TipoMovimento`**
 
 In `src/domain/value-objects/enums.ts`, replace:
+
 ```typescript
 export enum TipoMovimento {
   IN = 'IN',
@@ -224,7 +244,9 @@ export enum TipoMovimento {
   CAMBIO = 'CAMBIO'
 }
 ```
+
 with:
+
 ```typescript
 export enum TipoMovimento {
   IN = 'IN',
@@ -237,6 +259,7 @@ export enum TipoMovimento {
 - [ ] **Step 5: Add `isRitirato()` to `MovimentoAlunno`**
 
 In `src/domain/entities/MovimentoAlunno.ts`, replace:
+
 ```typescript
   isIngresso(): boolean {
     return this.tipo === TipoMovimento.IN;
@@ -248,7 +271,9 @@ In `src/domain/entities/MovimentoAlunno.ts`, replace:
     return this.tipo === TipoMovimento.CAMBIO;
   }
 ```
+
 with:
+
 ```typescript
   isIngresso(): boolean {
     return this.tipo === TipoMovimento.IN;
@@ -283,15 +308,18 @@ git commit -m "feat(domain): split MOV_ALUNNI.TIPO=OUT into OUT/RITIRATO"
 ## Task 3: Shared `presenteTuttoAnno` helper
 
 **Files:**
+
 - Create: `src/application/storico/presenza.ts`
 - Test: `test/unit/application/storico-presenza.test.ts`
 
 **Interfaces:**
+
 - Produces: `presenteTuttoAnno(movimenti: MovimentoAlunno[]): boolean` — used by Task 5 (`StoricoAlunniService`), Task 7 (`AlunnoProvider`), Task 8 (`StudentiProvider`).
 
 - [ ] **Step 1: Write the failing test**
 
 In `test/unit/application/storico-presenza.test.ts`:
+
 ```typescript
 import { presenteTuttoAnno } from '../../../src/application/storico/presenza';
 import { MovimentoAlunno } from '../../../src/domain/entities/MovimentoAlunno';
@@ -332,6 +360,7 @@ Expected: FAIL — cannot find module `src/application/storico/presenza`
 - [ ] **Step 3: Write the implementation**
 
 In `src/application/storico/presenza.ts`:
+
 ```typescript
 import type { MovimentoAlunno } from '../../domain/entities/MovimentoAlunno';
 
@@ -364,6 +393,7 @@ git commit -m "feat(application): add shared presenteTuttoAnno helper"
 ## Task 4: `IAlunnoRepository.getStoricoMovimenti`
 
 **Files:**
+
 - Modify: `src/domain/repositories/IAlunnoRepository.ts`
 
 `AlunnoRepository` (the only implementer, `src/infrastructure/repositories/AlunnoRepository.ts:79-81`) already has this method; it is just missing from the interface, so `AlunnoProvider`/`StudentiProvider` (which only see the interface) cannot call it yet. This is a mechanical, compile-checked addition — no new test needed (the method is already covered by `test/unit/infrastructure/alunno-repository.test.ts:68`).
@@ -371,6 +401,7 @@ git commit -m "feat(application): add shared presenteTuttoAnno helper"
 - [ ] **Step 1: Add the method to the interface**
 
 In `src/domain/repositories/IAlunnoRepository.ts`, replace:
+
 ```typescript
 import type { Alunno } from '../entities/Alunno';
 import type { Carenza } from '../entities/Carenza';
@@ -392,7 +423,9 @@ export interface IAlunnoRepository {
   getOreASLTotali(alunno: Alunno): number;
 }
 ```
+
 with:
+
 ```typescript
 import type { Alunno } from '../entities/Alunno';
 import type { Carenza } from '../entities/Carenza';
@@ -435,10 +468,12 @@ git commit -m "feat(domain): expose getStoricoMovimenti on IAlunnoRepository"
 ## Task 5: Rewrite `StoricoAlunniService` esito algorithm + presence fields
 
 **Files:**
+
 - Modify: `src/application/storico/StoricoAlunniService.ts` (full rewrite of `Esito`, `AnnoAlunnoStorico`, `perAlunno`, `esito`)
 - Modify: `test/unit/application/storico-services.test.ts` (rewrite the `StoricoAlunniService (13 §3)` describe block, lines 165-220, and the `annoPrecedente()` fixture it depends on, lines 97-161 — other describes in this file use the same fixture and must keep passing)
 
 **Interfaces:**
+
 - Consumes: `presenteTuttoAnno` from `../../application/storico/presenza` (Task 3); `TipoMovimento`/`MovimentoAlunno`/`Alunno` from domain.
 - Produces: `Esito = 'PROMOSSO' | 'NON_PROMOSSO' | 'TRASFERITO' | 'RITIRATO' | 'SCONOSCIUTO'`; `AnnoAlunnoStorico` gains `presenteAnnoPrecedente: boolean` and `presenteTuttoAnno: boolean`; `perAlunno(alunnoEmail: string, profondita = 1, alunnoAnnoSuccessivo: Alunno | null = null): AnnoAlunnoStorico[]` — third param is the student's **current-year** `Alunno` entity (needed only to resolve the most recent historical year's esito; `null` when unknown, e.g. any caller other than `StoricoProvider`).
 
@@ -564,7 +599,9 @@ describe('StoricoAlunniService (13 §3, ANALYSIS_HISTORIC_ENRICH_EXTENSION §2-5
 
   test('esito TRASFERITO when the year has an OUT movement, regardless of next-year RIPETENTE', () => {
     const tables = annoPrecedente({
-      movAlunni: [{ STUDENTE: 'a1@school.it', TIPO: 'OUT', DATA: '2025-03-01', DA: '4A', A: 'ALTRO ISTITUTO' }]
+      movAlunni: [
+        { STUDENTE: 'a1@school.it', TIPO: 'OUT', DATA: '2025-03-01', DA: '4A', A: 'ALTRO ISTITUTO' }
+      ]
     });
     const service = new StoricoAlunniService(fakeProvider([annoStorico('2025-2026', tables)]));
     expect(service.perAlunno('a1@school.it', 1, alunnoAnnoCorrente(false))[0]!.esito).toBe(
@@ -574,7 +611,9 @@ describe('StoricoAlunniService (13 §3, ANALYSIS_HISTORIC_ENRICH_EXTENSION §2-5
 
   test('esito RITIRATO when the year has a RITIRATO movement', () => {
     const tables = annoPrecedente({
-      movAlunni: [{ STUDENTE: 'a1@school.it', TIPO: 'RITIRATO', DATA: '2025-03-01', DA: '4A', A: '' }]
+      movAlunni: [
+        { STUDENTE: 'a1@school.it', TIPO: 'RITIRATO', DATA: '2025-03-01', DA: '4A', A: '' }
+      ]
     });
     const service = new StoricoAlunniService(fakeProvider([annoStorico('2025-2026', tables)]));
     expect(service.perAlunno('a1@school.it', 1, alunnoAnnoCorrente(false))[0]!.esito).toBe(
@@ -584,7 +623,9 @@ describe('StoricoAlunniService (13 §3, ANALYSIS_HISTORIC_ENRICH_EXTENSION §2-5
 
   test('an OUT/RITIRATO movement takes priority over a RIPETENTE-derived esito', () => {
     const tables = annoPrecedente({
-      movAlunni: [{ STUDENTE: 'a1@school.it', TIPO: 'OUT', DATA: '2025-03-01', DA: '4A', A: 'ALTRO ISTITUTO' }]
+      movAlunni: [
+        { STUDENTE: 'a1@school.it', TIPO: 'OUT', DATA: '2025-03-01', DA: '4A', A: 'ALTRO ISTITUTO' }
+      ]
     });
     const service = new StoricoAlunniService(fakeProvider([annoStorico('2025-2026', tables)]));
     // Even though the student is RIPETENTE next year (contradictory data), OUT wins.
@@ -639,10 +680,13 @@ describe('StoricoAlunniService (13 §3, ANALYSIS_HISTORIC_ENRICH_EXTENSION §2-5
 Note this rewrite also removes the old `'esito RITIRATO when the year has an OUT movement'` and `'esito NON_PROMOSSO when CAMBIO does not increase the class year'` tests (both asserted the retired algorithm) and replaces them with the cases above. Also add the missing import at the top of the file (it currently has no `Alunno` import):
 
 Replace:
+
 ```typescript
 import { reconcileSigla } from '../../../src/application/storico/reconcileSigla';
 ```
+
 with:
+
 ```typescript
 import { reconcileSigla } from '../../../src/application/storico/reconcileSigla';
 import { Alunno } from '../../../src/domain/entities/Alunno';
@@ -656,6 +700,7 @@ Expected: FAIL (old `esito` signature/behavior doesn't match yet — e.g. `TRASF
 - [ ] **Step 3: Rewrite `StoricoAlunniService.ts`**
 
 Replace the entire file contents with:
+
 ```typescript
 import type { StoricoDatabaseProvider } from './StoricoDatabaseProvider';
 import { AlunnoRepository } from '../../infrastructure/repositories/AlunnoRepository';
@@ -761,8 +806,7 @@ export class StoricoAlunniService {
         };
       }
 
-      const classe =
-        alunno.classe !== '' ? classi.findById(ClasseId.of(alunno.classe)) : null;
+      const classe = alunno.classe !== '' ? classi.findById(ClasseId.of(alunno.classe)) : null;
       const annoCorso = classe?.anno.value ?? null;
 
       const carenzeStoriche: CarenzaStorica[] = [];
@@ -824,16 +868,19 @@ git commit -m "feat(storico): derive esito from ALUNNI.RIPETENTE on the followin
 ## Task 6: Extend `StudentStoricoVM` in `storicoMapper.ts`
 
 **Files:**
+
 - Modify: `src/application/context-engine/mappers/storicoMapper.ts`
 - Modify: `test/unit/application/context-engine/mappers/storico-mapper.test.ts`
 
 **Interfaces:**
+
 - Consumes: `AnnoAlunnoStorico` (Task 5, now carrying `presenteAnnoPrecedente`/`presenteTuttoAnno`).
 - Produces: `StudentStoricoVM.anni[]` items gain `presenteAnnoPrecedente: boolean` and `presenteTuttoAnno: boolean`.
 
 - [ ] **Step 1: Write the failing test**
 
 In `test/unit/application/context-engine/mappers/storico-mapper.test.ts`, replace the whole file with:
+
 ```typescript
 import { buildStudentStoricoVm } from '../../../../../src/application/context-engine/mappers/storicoMapper';
 import type { AnnoAlunnoStorico } from '../../../../../src/application/storico/StoricoAlunniService';
@@ -906,6 +953,7 @@ Expected: FAIL — `vm.anni` items are missing `presenteAnnoPrecedente`/`present
 - [ ] **Step 3: Update `storicoMapper.ts`**
 
 Replace:
+
 ```typescript
 export interface StudentStoricoVM {
   anni: Array<{
@@ -920,7 +968,9 @@ export interface StudentStoricoVM {
   hasBocciature: boolean;
 }
 ```
+
 with:
+
 ```typescript
 export interface StudentStoricoVM {
   anni: Array<{
@@ -939,24 +989,27 @@ export interface StudentStoricoVM {
 ```
 
 Replace:
+
 ```typescript
-  const mapped = anni.map((a) => ({
-    annoScolastico: a.anno,
-    classe: a.classe ?? '',
-    esito: a.esito,
-    carenze: a.carenze.map((carenza) => ({ ...carenza }))
-  }));
+const mapped = anni.map((a) => ({
+  annoScolastico: a.anno,
+  classe: a.classe ?? '',
+  esito: a.esito,
+  carenze: a.carenze.map((carenza) => ({ ...carenza }))
+}));
 ```
+
 with:
+
 ```typescript
-  const mapped = anni.map((a) => ({
-    annoScolastico: a.anno,
-    classe: a.classe ?? '',
-    esito: a.esito,
-    carenze: a.carenze.map((carenza) => ({ ...carenza })),
-    presenteAnnoPrecedente: a.presenteAnnoPrecedente,
-    presenteTuttoAnno: a.presenteTuttoAnno
-  }));
+const mapped = anni.map((a) => ({
+  annoScolastico: a.anno,
+  classe: a.classe ?? '',
+  esito: a.esito,
+  carenze: a.carenze.map((carenza) => ({ ...carenza })),
+  presenteAnnoPrecedente: a.presenteAnnoPrecedente,
+  presenteTuttoAnno: a.presenteTuttoAnno
+}));
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -969,6 +1022,7 @@ Expected: PASS
 `StoricoProvider` runs after `AlunnoProvider` in every recipe that includes it (it reads `cdu.focus.alunno`, which only `AlunnoProvider` sets), so `getAlunnoEntity(cdu)` is always safe here.
 
 Replace `src/application/context-engine/providers/StoricoProvider.ts` in full with:
+
 ```typescript
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu } from '../Cdu';
@@ -1023,6 +1077,7 @@ git commit -m "feat(context-engine): thread presence fields through StudentStori
 ## Task 7: `Cdu.ts` type additions
 
 **Files:**
+
 - Modify: `src/application/context-engine/Cdu.ts` (two sites: `AlunnoContestoVM.status` ~line 57-63, `CduAlunno['status']` ~line 294-298 — re-check exact line numbers with `grep -n "status: {" src/application/context-engine/Cdu.ts` since Task 5/6 edits don't touch this file)
 - Modify: `test/unit/application/generator-strategies.test.ts` (literal `Cdu` object at line ~38)
 - Modify: `test/unit/application/context-engine/mappers/specificita-alunni-mapper.test.ts` (literal `AlunnoContestoVM`-returning helper at line ~13-19)
@@ -1032,52 +1087,59 @@ This task is purely mechanical (type additions + fixing the two hand-written lit
 - [ ] **Step 1: Add the two fields to `AlunnoContestoVM.status`**
 
 In `src/application/context-engine/Cdu.ts`, replace:
+
 ```typescript
-  status: {
-    isBes: boolean;
-    isRipetente: boolean;
-    isRappresentante: boolean;
-    religione: string;
-    religioneLabel: string;
-  };
+status: {
+  isBes: boolean;
+  isRipetente: boolean;
+  isRappresentante: boolean;
+  religione: string;
+  religioneLabel: string;
+}
 ```
+
 with:
+
 ```typescript
-  status: {
-    isBes: boolean;
-    isRipetente: boolean;
-    isRappresentante: boolean;
-    religione: string;
-    religioneLabel: string;
-    presenteAnnoPrecedente: boolean;
-    presenteTuttoAnno: boolean;
-  };
+status: {
+  isBes: boolean;
+  isRipetente: boolean;
+  isRappresentante: boolean;
+  religione: string;
+  religioneLabel: string;
+  presenteAnnoPrecedente: boolean;
+  presenteTuttoAnno: boolean;
+}
 ```
+
 (This is the `AlunnoContestoVM` interface — verify by context: it is the block directly under `export interface AlunnoContestoVM {`.)
 
 - [ ] **Step 2: Add the two fields to `CduAlunno['status']`**
 
 In the same file, find the `CduAlunno` interface's `status` block (the one with `isBes: false` mentioned in `AlunnoProvider.ts`'s docstring — i.e. the block that does NOT have `isBes` before `isRipetente`/`isRappresentante` in the same order as step 1, since `CduAlunno.status` lists `religione`/`religioneLabel` first per `02_CDU_STRUTTURA.md:370-376`). Replace:
+
 ```typescript
-  status: {
-    religione: string;
-    religioneLabel: string;
-    isBes: boolean;
-    isRipetente: boolean;
-    isRappresentante: boolean;
-  };
+status: {
+  religione: string;
+  religioneLabel: string;
+  isBes: boolean;
+  isRipetente: boolean;
+  isRappresentante: boolean;
+}
 ```
+
 with:
+
 ```typescript
-  status: {
-    religione: string;
-    religioneLabel: string;
-    isBes: boolean;
-    isRipetente: boolean;
-    isRappresentante: boolean;
-    presenteAnnoPrecedente: boolean;
-    presenteTuttoAnno: boolean;
-  };
+status: {
+  religione: string;
+  religioneLabel: string;
+  isBes: boolean;
+  isRipetente: boolean;
+  isRappresentante: boolean;
+  presenteAnnoPrecedente: boolean;
+  presenteTuttoAnno: boolean;
+}
 ```
 
 - [ ] **Step 3: Run typecheck to find every literal that now fails**
@@ -1088,10 +1150,13 @@ Expected: errors in `test/unit/application/generator-strategies.test.ts` and `te
 - [ ] **Step 4: Fix `generator-strategies.test.ts`**
 
 Replace:
+
 ```typescript
         status: { religione: 'SI', isBes: true, isRipetente: false, isRappresentante: false },
 ```
+
 with:
+
 ```typescript
         status: {
           religione: 'SI',
@@ -1106,6 +1171,7 @@ with:
 - [ ] **Step 5: Fix `specificita-alunni-mapper.test.ts`**
 
 Replace:
+
 ```typescript
     status: {
       isBes: false,
@@ -1115,7 +1181,9 @@ Replace:
       religioneLabel: 'x'
     },
 ```
+
 with:
+
 ```typescript
     status: {
       isBes: false,
@@ -1145,6 +1213,7 @@ git commit -m "feat(context-engine): add presenteAnnoPrecedente/presenteTuttoAnn
 ## Task 8: `AlunnoProvider` — current-year presence fields
 
 **Files:**
+
 - Modify: `src/application/context-engine/providers/AlunnoProvider.ts`
 - Modify: `test/unit/application/context-engine/alunno-provider.test.ts`
 - Modify: `test/unit/application/context-engine/documenti-storico-provider.test.ts:49`
@@ -1154,12 +1223,14 @@ git commit -m "feat(context-engine): add presenteAnnoPrecedente/presenteTuttoAnn
 - Modify: `src/application/context-engine/ContextEngineFactory.ts` (constructor call site, ~line 99)
 
 **Interfaces:**
+
 - Consumes: `presenteTuttoAnno` (Task 3), `IAlunnoRepository.getStoricoMovimenti` (Task 4), `StoricoDatabaseProvider` (existing).
 - Produces: `AlunnoProvider` constructor gains a required `storicoDb: StoricoDatabaseProvider` 5th parameter, inserted **before** the existing optional `teachingAssignments` (TypeScript forbids a required parameter after an optional one): `constructor(alunni, classi, oreAsl, materie, storicoDb, teachingAssignments?)`.
 
 - [ ] **Step 1: Write the failing test in `alunno-provider.test.ts`**
 
 Add a fake `StoricoDatabaseProvider` and thread it through `build()`. Replace:
+
 ```typescript
 import { OreASLRepository } from '../../../../src/infrastructure/repositories/OreASLRepository';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
@@ -1184,7 +1255,9 @@ function build(target: string, tables = fixtureTables()): Cdu {
   b.registerProvider('class', new ClasseProvider(classi, alunni));
   b.registerProvider('student', new AlunnoProvider(alunni, classi, oreAsl, materie));
 ```
+
 with:
+
 ```typescript
 import { OreASLRepository } from '../../../../src/infrastructure/repositories/OreASLRepository';
 import type { AnnoStorico, StoricoDatabaseProvider } from '../../../../src/application/storico/StoricoDatabaseProvider';
@@ -1220,38 +1293,40 @@ function build(
 ```
 
 Then update the first assertion (line ~55-61) — replace:
+
 ```typescript
-  expect(a.status).toEqual({
-    religione: 'IRC',
-    religioneLabel: 'Religione cattolica',
-    isBes: true,
-    isRipetente: false,
-    isRappresentante: true
-  });
+expect(a.status).toEqual({
+  religione: 'IRC',
+  religioneLabel: 'Religione cattolica',
+  isBes: true,
+  isRipetente: false,
+  isRappresentante: true
+});
 ```
+
 with:
+
 ```typescript
-  expect(a.status).toEqual({
-    religione: 'IRC',
-    religioneLabel: 'Religione cattolica',
-    isBes: true,
-    isRipetente: false,
-    isRappresentante: true,
-    presenteAnnoPrecedente: false, // no historical database wired in this fixture
-    presenteTuttoAnno: true // a1@school.it has no MOV_ALUNNI row in fixtureTables()
-  });
+expect(a.status).toEqual({
+  religione: 'IRC',
+  religioneLabel: 'Religione cattolica',
+  isBes: true,
+  isRipetente: false,
+  isRappresentante: true,
+  presenteAnnoPrecedente: false, // no historical database wired in this fixture
+  presenteTuttoAnno: true // a1@school.it has no MOV_ALUNNI row in fixtureTables()
+});
 ```
 
 Finally, append two new tests at the end of the file (after the last existing `test(...)`):
+
 ```typescript
 test('AlunnoProvider: presenteAnnoPrecedente true when a previous-year ALUNNI record exists (ANALYSIS_HISTORIC_ENRICH_EXTENSION §4)', () => {
   const priorTables = fixtureTables();
   const priorDb = new FakeDatabase(priorTables);
   const storicoDb: StoricoDatabaseProvider = {
     anniStorici: (profondita: number): AnnoStorico[] =>
-      profondita > 0
-        ? [{ anno: '2025-2026', db: priorDb, logDocs: {} as never }]
-        : []
+      profondita > 0 ? [{ anno: '2025-2026', db: priorDb, logDocs: {} as never }] : []
   };
   const a = build('a1@school.it', fixtureTables(), storicoDb).focus.alunno!;
   expect(a.status.presenteAnnoPrecedente).toBe(true); // a1@school.it exists in fixtureTables() ALUNNI both times
@@ -1279,6 +1354,7 @@ Expected: FAIL — constructor arity mismatch (TS) and/or missing `status` field
 - [ ] **Step 3: Update `AlunnoProvider.ts`**
 
 Replace the whole file with:
+
 ```typescript
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu, CduAlunno } from '../Cdu';
@@ -1407,39 +1483,51 @@ export class AlunnoProvider implements ContextProvider {
 - [ ] **Step 4: Fix the four other test files' `AlunnoProvider` construction**
 
 In each of `test/unit/application/context-engine/documenti-storico-provider.test.ts`, `piani-pers-alunno-provider.test.ts`, `documenti-carenzafocus.test.ts`, `piano-focus-provider.test.ts` — these all just need a `noHistory()`-style fake threaded through. `documenti-storico-provider.test.ts` already builds a `StoricoDatabaseProvider` named `databases` in scope for its own `DocumentiStoricoProvider` — reuse it. Replace:
+
 ```typescript
-    new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db))
+new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db));
 ```
+
 with (in `documenti-storico-provider.test.ts` only, since `databases` is already a parameter there):
+
 ```typescript
-    new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db), databases)
+new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db), databases);
 ```
 
 For the other three files (`piani-pers-alunno-provider.test.ts`, `documenti-carenzafocus.test.ts`, `piano-focus-provider.test.ts`), first check whether each already imports `StoricoDatabaseProvider`/has one in scope (`grep -n "StoricoDatabaseProvider" <file>`). If not, add a local no-op right above the `AlunnoProvider` construction:
+
 ```typescript
-const storicoDb: import('../../../../src/application/storico/StoricoDatabaseProvider').StoricoDatabaseProvider = {
-  anniStorici: () => []
-};
+const storicoDb: import('../../../../src/application/storico/StoricoDatabaseProvider').StoricoDatabaseProvider =
+  {
+    anniStorici: () => []
+  };
 ```
+
 (or a proper top-of-file `import type` if the file's style prefers that — match the file's existing import style) and then replace:
+
 ```typescript
-    new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db))
+new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db));
 ```
+
 with:
+
 ```typescript
-    new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db), storicoDb)
+new AlunnoProvider(alunni, classi, new OreASLRepository(db), new MateriaRepository(db), storicoDb);
 ```
 
 - [ ] **Step 5: Update `ContextEngineFactory.ts`**
 
 Replace:
+
 ```typescript
       .registerProvider(
         'student',
         new AlunnoProvider(alunni, classi, oreAsl, materie, teachingAssignments)
       )
 ```
+
 with:
+
 ```typescript
       .registerProvider(
         'student',
@@ -1469,18 +1557,21 @@ git commit -m "feat(context-engine): compute presenteAnnoPrecedente/presenteTutt
 ## Task 9: `StudentiProvider` — current-year presence fields for the roster
 
 **Files:**
+
 - Modify: `src/application/context-engine/providers/StudentiProvider.ts`
 - Modify: `test/unit/application/context-engine/studenti-provider.test.ts`
 - Modify: `test/unit/application/context-engine/providers/partner-projection-provider.test.ts:58`
 - Modify: `src/application/context-engine/ContextEngineFactory.ts` (constructor call site, ~line 89)
 
 **Interfaces:**
+
 - Consumes: `presenteTuttoAnno` (Task 3), `IAlunnoRepository.getStoricoMovimenti` (Task 4).
 - Produces: `StudentiProvider` constructor gains a required 4th parameter `storicoDb: StoricoDatabaseProvider`.
 
 - [ ] **Step 1: Write the failing test in `studenti-provider.test.ts`**
 
 Replace:
+
 ```typescript
 import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
 import { FakeDatabase } from '../../../fakes/FakeDatabase';
@@ -1500,7 +1591,9 @@ function build(
   b.registerProvider('class', new ClasseProvider(classi));
   b.registerProvider('students', new StudentiProvider(classi, alunni, materie));
 ```
+
 with:
+
 ```typescript
 import { MateriaRepository } from '../../../../src/infrastructure/repositories/MateriaRepository';
 import type { StoricoDatabaseProvider } from '../../../../src/application/storico/StoricoDatabaseProvider';
@@ -1528,6 +1621,7 @@ function build(
 ```
 
 Then update the `'StudentiProvider: full alunno-in-context VM (status/curriculum/didattica)'` test's `status` block — replace:
+
 ```typescript
     status: {
       isBes: true,
@@ -1537,7 +1631,9 @@ Then update the `'StudentiProvider: full alunno-in-context VM (status/curriculum
       religioneLabel: 'Religione cattolica'
     },
 ```
+
 with:
+
 ```typescript
     status: {
       isBes: true,
@@ -1551,6 +1647,7 @@ with:
 ```
 
 Then append a new test at the end of the file:
+
 ```typescript
 test('StudentiProvider: presenteAnnoPrecedente/presenteTuttoAnno computed per roster student (ANALYSIS_HISTORIC_ENRICH_EXTENSION §4/§5)', () => {
   const priorDb = new FakeDatabase(fixtureTables());
@@ -1577,6 +1674,7 @@ Expected: FAIL — constructor arity mismatch and missing status fields.
 - [ ] **Step 3: Update `StudentiProvider.ts`**
 
 Replace the whole file with:
+
 ```typescript
 import type { ContextProvider } from '../ContextProvider';
 import type { Cdu, AlunnoContestoVM } from '../Cdu';
@@ -1621,7 +1719,8 @@ export class StudentiProvider implements ContextProvider {
       annoPrecedente !== undefined ? new AlunnoRepository(annoPrecedente.db) : null;
 
     const config = this.classi.getArticolazione(classe);
-    const sourceClassi = config?.isParent() === true ? this.classi.getClassiPartner(classe) : [classe];
+    const sourceClassi =
+      config?.isParent() === true ? this.classi.getClassiPartner(classe) : [classe];
     const listaCompleta = sourceClassi.flatMap((source) =>
       this.classi
         .getStudenti(source)
@@ -1676,33 +1775,41 @@ export class StudentiProvider implements ContextProvider {
 ```
 
 Note the `alunniAnnoPrecedente?.findById(alunno.email.value) !== null` line: when `alunniAnnoPrecedente` is `null` (no previous year at all), `alunniAnnoPrecedente?.findById(...)` evaluates to `undefined`, and `undefined !== null` is `true` — which would incorrectly report presence. Guard explicitly instead:
+
 ```typescript
         presenteAnnoPrecedente:
           alunniAnnoPrecedente !== null && alunniAnnoPrecedente.findById(alunno.email.value) !== null,
 ```
+
 Use this corrected line in the file, not the shorthand above.
 
 - [ ] **Step 4: Fix `partner-projection-provider.test.ts`**
 
 Add `noHistory()` and thread it through. Replace:
+
 ```typescript
-  const studentiProvider = new StudentiProvider(classi, alunni, materie);
+const studentiProvider = new StudentiProvider(classi, alunni, materie);
 ```
+
 with (adding a local fake right above it, matching the file's existing style of inline setup):
+
 ```typescript
-  const storicoDb = { anniStorici: () => [] };
-  const studentiProvider = new StudentiProvider(classi, alunni, materie, storicoDb);
+const storicoDb = { anniStorici: () => [] };
+const studentiProvider = new StudentiProvider(classi, alunni, materie, storicoDb);
 ```
 
 - [ ] **Step 5: Update `ContextEngineFactory.ts`**
 
 Replace:
+
 ```typescript
-    const studentiProvider = new StudentiProvider(classi, alunni, materie);
+const studentiProvider = new StudentiProvider(classi, alunni, materie);
 ```
+
 with:
+
 ```typescript
-    const studentiProvider = new StudentiProvider(classi, alunni, materie, storicoDb);
+const studentiProvider = new StudentiProvider(classi, alunni, materie, storicoDb);
 ```
 
 - [ ] **Step 6: Run tests to verify they pass**

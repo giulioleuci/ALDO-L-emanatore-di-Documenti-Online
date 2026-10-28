@@ -140,7 +140,9 @@ test('menuEsecuzioneAzioni lists the active actions and delegates the chosen id'
   const ui = new FakeUiFacade();
   ui.risposteInput.push('SANIFICA_TRIM');
   const avviati: string[][] = [];
-  menuEsecuzioneAzioni(ui, [{ id: 'SANIFICA_TRIM', tipo: 'MANUTENZIONE' }], (ids) => avviati.push(ids));
+  menuEsecuzioneAzioni(ui, [{ id: 'SANIFICA_TRIM', tipo: 'MANUTENZIONE' }], (ids) =>
+    avviati.push(ids)
+  );
   expect(avviati).toEqual([['SANIFICA_TRIM']]);
   expect(ui.sidebars).toEqual([
     { jobId: 'azioni_SANIFICA_TRIM', titolo: 'Monitoraggio — ESEGUI AZIONI' }

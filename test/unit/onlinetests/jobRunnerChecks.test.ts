@@ -12,10 +12,7 @@ import {
   registerJobRunnerEmailChecks,
   registerJobRunnerTriggerRealeCheck
 } from '../../../src/onlinetests/checks/jobRunnerChecks';
-import {
-  CONF_DOC_JOBRUNNER,
-  CONF_MAIL_JOBRUNNER
-} from '../../../src/onlinetests/data/fixtures';
+import { CONF_DOC_JOBRUNNER, CONF_MAIL_JOBRUNNER } from '../../../src/onlinetests/data/fixtures';
 
 const AUTHENTICATED_OPERATOR = 'operator@example.test';
 
@@ -231,9 +228,11 @@ describe('JobRunner online checks', () => {
   it('records all three doc checks and cancels a still-suspended job when reset itself fails', () => {
     // The first check now resets stale state before starting (registerJobRunnerDocGenChecks) —
     // that call must succeed; only the deliberate reset in the third check should fail.
-    docRunner.resetJob.mockImplementationOnce(() => undefined).mockImplementation(() => {
-      throw new Error('reset unavailable');
-    });
+    docRunner.resetJob
+      .mockImplementationOnce(() => undefined)
+      .mockImplementation(() => {
+        throw new Error('reset unavailable');
+      });
     jest.mocked(riprendiJobSospeso).mockImplementation(() => {
       throw new Error('resume unavailable');
     });
@@ -273,7 +272,12 @@ describe('JobRunner online checks', () => {
     });
     const runner = new ImmediateRunner();
 
-    registerJobRunnerEmailChecks(runner as never, container, sample as never, AUTHENTICATED_OPERATOR);
+    registerJobRunnerEmailChecks(
+      runner as never,
+      container,
+      sample as never,
+      AUTHENTICATED_OPERATOR
+    );
 
     expect(runner.checks[1]?.error?.message).toContain('duplicati non allineati');
   });
@@ -292,7 +296,10 @@ describe('JobRunner online checks', () => {
   });
 
   it('polls the isolated real-trigger check until completion and verifies trigger context cleanup', () => {
-    jest.mocked(creaJobRunner).mockReset().mockReturnValue(docRunner as never);
+    jest
+      .mocked(creaJobRunner)
+      .mockReset()
+      .mockReturnValue(docRunner as never);
     const runner = new ImmediateRunner();
     let now = 0;
     const sleep = jest.fn((milliseconds: number) => {
@@ -326,7 +333,10 @@ describe('JobRunner online checks', () => {
   });
 
   it('uses the typed utilities service when the real-trigger poller has no injected sleep seam', () => {
-    jest.mocked(creaJobRunner).mockReset().mockReturnValue(docRunner as never);
+    jest
+      .mocked(creaJobRunner)
+      .mockReset()
+      .mockReturnValue(docRunner as never);
     const runner = new ImmediateRunner();
     let now = 0;
     const sleep = jest.fn((milliseconds: number) => {
@@ -365,7 +375,10 @@ describe('JobRunner online checks', () => {
   });
 
   it('cancels the isolated real-trigger job when polling reaches the timeout', () => {
-    jest.mocked(creaJobRunner).mockReset().mockReturnValue(docRunner as never);
+    jest
+      .mocked(creaJobRunner)
+      .mockReset()
+      .mockReturnValue(docRunner as never);
     const runner = new ImmediateRunner();
     let now = 0;
     docRunner.cancelJob.mockImplementation(() => {

@@ -28,7 +28,7 @@ const COLUMNS = [
   'ID_CARTELLA_GOOGLE',
   'DIRIGENTE_SCOLASTICO',
   'SUPERVISORE_EMAIL',
-  'TEST_MODE',
+  'TEST_MODE'
 ];
 
 const skipColumns = process.argv.includes('--skip-columns');
@@ -42,7 +42,7 @@ function loadCredentials() {
   return {
     clientId: t.client_id,
     clientSecret: t.client_secret,
-    refreshToken: t.refresh_token,
+    refreshToken: t.refresh_token
   };
 }
 
@@ -54,8 +54,8 @@ async function getAccessToken(creds) {
       client_id: creds.clientId,
       client_secret: creds.clientSecret,
       refresh_token: creds.refreshToken,
-      grant_type: 'refresh_token',
-    }),
+      grant_type: 'refresh_token'
+    })
   });
   if (!res.ok) {
     const body = await res.text();
@@ -76,10 +76,10 @@ async function writeHeaders(token, spreadsheetId, columns) {
       method: 'PUT',
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ values: [columns] }),
-    },
+      body: JSON.stringify({ values: [columns] })
+    }
   );
   if (!res.ok) {
     const body = await res.text();
@@ -92,7 +92,7 @@ async function createSpreadsheet(token, title, columns) {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({
       properties: { title },
@@ -100,11 +100,11 @@ async function createSpreadsheet(token, title, columns) {
         {
           properties: {
             title: 'Foglio1',
-            gridProperties: { rowCount: 1000, columnCount: columns.length },
-          },
-        },
-      ],
-    }),
+            gridProperties: { rowCount: 1000, columnCount: columns.length }
+          }
+        }
+      ]
+    })
   });
   if (!res.ok) {
     const body = await res.text();
@@ -118,12 +118,12 @@ async function createAppsScriptProject(token, spreadsheetId, title) {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({
       title: `${title} — Apps Script`,
-      parentId: { spreadsheetId, type: 'SPREADSHEET' },
-    }),
+      parentId: { spreadsheetId, type: 'SPREADSHEET' }
+    })
   });
   if (!res.ok) {
     const body = await res.text();
@@ -135,10 +135,7 @@ async function createAppsScriptProject(token, spreadsheetId, title) {
 // ── Clasp helpers ──────────────────────────────────────────────────────
 
 function claspCreate(tempDir, title) {
-  execSync(
-    `npx clasp create --type sheets --title "${title}"`,
-    { cwd: tempDir, stdio: 'pipe' },
-  );
+  execSync(`npx clasp create --type sheets --title "${title}"`, { cwd: tempDir, stdio: 'pipe' });
   const raw = readFileSync(resolve(tempDir, '.clasp.json'), 'utf8');
   return JSON.parse(raw).scriptId;
 }
@@ -178,10 +175,9 @@ async function main() {
       console.log(`  Script ID: ${scriptId}`);
 
       // Extract spreadsheet ID from the script's parent
-      const propsRes = await fetch(
-        `https://script.googleapis.com/v1/projects/${scriptId}`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const propsRes = await fetch(`https://script.googleapis.com/v1/projects/${scriptId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (propsRes.ok) {
         const props = await propsRes.json();
         const parent = props.parentId;
@@ -205,7 +201,9 @@ async function main() {
     } catch (headerErr) {
       console.warn(`\n  ⚠ Could not write headers: ${headerErr.message}`);
       console.warn('  You may need to enable the Sheets API in your Google Cloud project:');
-      console.warn('  https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=1072944905499');
+      console.warn(
+        '  https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=1072944905499'
+      );
       console.warn('  Columns must be added manually.');
     }
   }

@@ -1,6 +1,9 @@
 import type { Azione, AzioneHandler, PostProcessDb } from './standaloneActions';
 import { csvValues } from './standaloneActions';
-import type { IDriveFacade, PermissionGrant } from '../../infrastructure/facades/DriveServiceFacade';
+import type {
+  IDriveFacade,
+  PermissionGrant
+} from '../../infrastructure/facades/DriveServiceFacade';
 import { DRIVE_ROLE_BY_PERMESSO } from '../../infrastructure/facades/DriveServiceFacade';
 import type { IRoleResolver } from './documentSteps';
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
@@ -71,7 +74,10 @@ export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneH
   const { db, drive, roles, cdu, storico, validator, bounces, engine, logger } = deps;
 
   /** Rows of `tab` matching `criteri`: CSV columns by containment, PATH by prefix, everything else by equality. */
-  function righeCorrispondenti(tab: string, criteri: Record<string, string>): Array<Record<string, unknown>> {
+  function righeCorrispondenti(
+    tab: string,
+    criteri: Record<string, string>
+  ): Array<Record<string, unknown>> {
     const table = db.tables[tab];
     if (table === undefined) return [];
     const entries = Object.entries(criteri);
@@ -89,8 +95,9 @@ export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneH
     );
   }
 
-  const idsDi = (rows: Array<Record<string, unknown>>): string[] =>
-    [...new Set(rows.map((row) => cellString(row['ID'])).filter((id) => id !== ''))];
+  const idsDi = (rows: Array<Record<string, unknown>>): string[] => [
+    ...new Set(rows.map((row) => cellString(row['ID'])).filter((id) => id !== ''))
+  ];
 
   /**
    * Targets of an infra action. Without `target`, `criteri` filter the chosen log
@@ -104,27 +111,42 @@ export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneH
   function selezionaId(azione: Azione, criteri: Record<string, string>): string[] {
     const tab = azione.su ?? TABLE.LOG_DOCS;
     if (tab !== TABLE.LOG_DOCS && tab !== TABLE.LOG_FOLD) {
-      throw new ConfigurationError(`AZIONE ${azione.tipo}: "su" deve essere LOG_DOCS o LOG_FOLD, non ${tab}`);
+      throw new ConfigurationError(
+        `AZIONE ${azione.tipo}: "su" deve essere LOG_DOCS o LOG_FOLD, non ${tab}`
+      );
     }
     const target = azione.target?.trim() ?? '';
     if (target === '') return idsDi(righeCorrispondenti(tab, criteri));
     const documenti = righeCorrispondenti(TABLE.LOG_DOCS, { ...criteri, ID_GEN: target });
     if (tab === TABLE.LOG_DOCS) return idsDi(documenti);
-    const percorsi = new Set(documenti.map((doc) => cellString(doc['PATH'])).filter((p) => p !== ''));
-    return idsDi((db.tables[TABLE.LOG_FOLD]?.getAllRows() ?? []).filter((row) => percorsi.has(cellString(row['PATH']))));
+    const percorsi = new Set(
+      documenti.map((doc) => cellString(doc['PATH'])).filter((p) => p !== '')
+    );
+    return idsDi(
+      (db.tables[TABLE.LOG_FOLD]?.getAllRows() ?? []).filter((row) =>
+        percorsi.has(cellString(row['PATH']))
+      )
+    );
   }
 
   /** Current-year targets plus, when `profondita` > 0, the matching historical LOG_DOCS ids (documents only: a folder selection never gets document ids). */
   function targetIds(azione: Azione, criteri: Record<string, string>): string[] {
     const correnti = selezionaId(azione, criteri);
     const profondita = azione.profondita ?? 0;
-    if (profondita <= 0 || storico === undefined || (azione.su ?? TABLE.LOG_DOCS) !== TABLE.LOG_DOCS) {
+    if (
+      profondita <= 0 ||
+      storico === undefined ||
+      (azione.su ?? TABLE.LOG_DOCS) !== TABLE.LOG_DOCS
+    ) {
       return correnti;
     }
     // StoricoDocumentiService only understands LOG_DOCS metadata criteria; PATH
     // is a current-year folder-tree concept and is dropped for the history scan.
-    const storiciCriteri = Object.fromEntries(Object.entries(criteri).filter(([col]) => col !== 'PATH'));
-    if (azione.target !== undefined && azione.target.trim() !== '') storiciCriteri['ID_GEN'] = azione.target.trim();
+    const storiciCriteri = Object.fromEntries(
+      Object.entries(criteri).filter(([col]) => col !== 'PATH')
+    );
+    if (azione.target !== undefined && azione.target.trim() !== '')
+      storiciCriteri['ID_GEN'] = azione.target.trim();
     return [...new Set([...correnti, ...storico.idsMatching(storiciCriteri, profondita)])];
   }
 
@@ -231,7 +253,9 @@ export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneH
      */
     RIALLINEA_PERMESSI_DA_CONF: (azione, criteri) => {
       if (engine === undefined) {
-        logger.warn('AZIONE RIALLINEA_PERMESSI_DA_CONF: motore espressioni non disponibile — saltata');
+        logger.warn(
+          'AZIONE RIALLINEA_PERMESSI_DA_CONF: motore espressioni non disponibile — saltata'
+        );
         return 0;
       }
       const target = azione.target?.trim() ?? '';
@@ -248,13 +272,18 @@ export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneH
           cartellePerPercorso.set(percorso, id);
         }
       }
-      const rango = (permesso: string): number => RANK[DRIVE_ROLE_BY_PERMESSO[permesso] ?? 'reader'] ?? 1;
+      const rango = (permesso: string): number =>
+        RANK[DRIVE_ROLE_BY_PERMESSO[permesso] ?? 'reader'] ?? 1;
       const desiderati = new Map<string, Map<string, string>>();
-      const accumula = (targetId: string, acl: Array<{ email: string; permesso: string }>): void => {
+      const accumula = (
+        targetId: string,
+        acl: Array<{ email: string; permesso: string }>
+      ): void => {
         const perTarget = desiderati.get(targetId) ?? new Map<string, string>();
         for (const { email, permesso } of acl) {
           const attuale = perTarget.get(email);
-          if (attuale === undefined || rango(permesso) > rango(attuale)) perTarget.set(email, permesso);
+          if (attuale === undefined || rango(permesso) > rango(attuale))
+            perTarget.set(email, permesso);
         }
         desiderati.set(targetId, perTarget);
       };
@@ -263,28 +292,56 @@ export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneH
         const conf = confRows.find((row) => cellString(row[COL_CONF_DOC.ID]) === idGen);
         const raw = conf?.[COL_CONF_DOC.PERMESSI];
         if (conf === undefined || !hasJsonValue(raw)) {
-          logger.warn(`RIALLINEA_PERMESSI_DA_CONF: ${cellString(doc['ID'])} — CONF_DOC "${idGen}" assente o senza PERMESSI, saltato`);
+          logger.warn(
+            `RIALLINEA_PERMESSI_DA_CONF: ${cellString(doc['ID'])} — CONF_DOC "${idGen}" assente o senza PERMESSI, saltato`
+          );
           continue;
         }
         try {
           const perms = JSON.parse(String(raw)) as PermessiConfig;
           const fileId = cellString(doc['ID']);
           if (fileId !== '') {
-            accumula(fileId, risolviAcl(perms.file ?? [], cdu, parseRegola(perms.regolaSupplente?.file), roles, engine));
+            accumula(
+              fileId,
+              risolviAcl(
+                perms.file ?? [],
+                cdu,
+                parseRegola(perms.regolaSupplente?.file),
+                roles,
+                engine
+              )
+            );
           }
           const folderId = cartellePerPercorso.get(cellString(doc[COL_LOG_DOCS.PATH]));
           if (folderId !== undefined) {
-            accumula(folderId, risolviAcl(perms.folder ?? [], cdu, parseRegola(perms.regolaSupplente?.folder), roles, engine));
+            accumula(
+              folderId,
+              risolviAcl(
+                perms.folder ?? [],
+                cdu,
+                parseRegola(perms.regolaSupplente?.folder),
+                roles,
+                engine
+              )
+            );
           }
         } catch (error) {
           const messaggio = error instanceof Error ? error.message : String(error);
-          logger.warn(`RIALLINEA_PERMESSI_DA_CONF: ${cellString(doc['ID'])} non elaborato — ${messaggio}`);
+          logger.warn(
+            `RIALLINEA_PERMESSI_DA_CONF: ${cellString(doc['ID'])} non elaborato — ${messaggio}`
+          );
         }
       }
       const grants: PermissionGrant[] = [];
       let cambiati = 0;
       for (const [targetId, attesi] of desiderati) {
-        cambiati += allineaTarget('RIALLINEA_PERMESSI_DA_CONF', targetId, attesi, grants, azione.revoca === true);
+        cambiati += allineaTarget(
+          'RIALLINEA_PERMESSI_DA_CONF',
+          targetId,
+          attesi,
+          grants,
+          azione.revoca === true
+        );
       }
       if (grants.length > 0) drive.setPermissions(grants);
       return grants.length + cambiati;
@@ -369,7 +426,8 @@ export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneH
         return 0;
       }
       const f: BounceFilters = {};
-      if (azione.daTimestamp !== undefined) f.da = parseTimestampIt('daTimestamp', azione.daTimestamp);
+      if (azione.daTimestamp !== undefined)
+        f.da = parseTimestampIt('daTimestamp', azione.daTimestamp);
       if (azione.aTimestamp !== undefined) f.a = parseTimestampIt('aTimestamp', azione.aTimestamp);
       if (azione.lookbackGiorni !== undefined) f.lookbackGiorni = azione.lookbackGiorni;
       if (azione.pattern !== undefined) {

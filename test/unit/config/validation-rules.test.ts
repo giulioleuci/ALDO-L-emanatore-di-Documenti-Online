@@ -1,4 +1,8 @@
-import { regoleValidazione, messaggioErrore, VALIDATION_TABLES } from '../../../src/config/validationRules';
+import {
+  regoleValidazione,
+  messaggioErrore,
+  VALIDATION_TABLES
+} from '../../../src/config/validationRules';
 import { TABLE, COL_CLASSI, COL_DOCENTI, COL_MATERIE } from '../../../src/config/schema';
 
 /** Minimal DatasetRuleContext: the 3 rowPredicate checks in this file only ever read ctx.datasets. */
@@ -7,7 +11,9 @@ function makeCtx(datasets: Record<string, Array<Record<string, unknown>>>): Data
 }
 
 /** FK_CLASSI_CATTEDRE reads ctx.index(table, column); this mirrors DatasetValidator's real semantics. */
-function makeIndexedCtx(datasets: Record<string, Array<Record<string, unknown>>>): DatasetRuleContext {
+function makeIndexedCtx(
+  datasets: Record<string, Array<Record<string, unknown>>>
+): DatasetRuleContext {
   return {
     datasets,
     index: (table, column) =>
@@ -19,7 +25,9 @@ function makeIndexedCtx(datasets: Record<string, Array<Record<string, unknown>>>
   };
 }
 
-function findRowPredicate(id: string): (
+function findRowPredicate(
+  id: string
+): (
   row: Record<string, unknown>,
   ctx: DatasetRuleContext
 ) => null | { column: string; value: unknown; details?: Record<string, unknown> } {
@@ -69,35 +77,85 @@ test('SUPPLENZE/VARIAZIONI class and subject lists accept the * wildcard', () =>
 
 test('ENUM rules use the domain enums', () => {
   const genere = regoleValidazione().find((r) => r.id === 'ENUM_DOCENTI_GENERE');
-  expect(genere).toMatchObject({ type: 'enum', table: TABLE.DOCENTI, column: 'GENERE', values: ['M', 'F'] });
+  expect(genere).toMatchObject({
+    type: 'enum',
+    table: TABLE.DOCENTI,
+    column: 'GENERE',
+    values: ['M', 'F']
+  });
 });
 
 test('messaggioErrore renders Italian text per violation type', () => {
   expect(
     messaggioErrore({
-      ruleId: 'FK', type: 'foreignKey', table: 'ALUNNI', rowIndex: 3, column: 'CLASSE', value: '99X',
+      ruleId: 'FK',
+      type: 'foreignKey',
+      table: 'ALUNNI',
+      rowIndex: 3,
+      column: 'CLASSE',
+      value: '99X',
       details: { targetTable: 'CLASSI', targetColumn: 'ID' }
     })
   ).toBe('FK violata: CLASSE "99X" non esiste in CLASSI.ID');
 
   expect(
-    messaggioErrore({ ruleId: 'J', type: 'json', table: 'CONF_DOC', rowIndex: 0, column: 'MODELLI', value: '{', details: {} })
+    messaggioErrore({
+      ruleId: 'J',
+      type: 'json',
+      table: 'CONF_DOC',
+      rowIndex: 0,
+      column: 'MODELLI',
+      value: '{',
+      details: {}
+    })
   ).toBe('JSON non valido nel campo MODELLI');
 
   expect(
-    messaggioErrore({ ruleId: 'R', type: 'required', table: 'DOCENTI', rowIndex: 0, column: 'NOME', value: '', details: {} })
+    messaggioErrore({
+      ruleId: 'R',
+      type: 'required',
+      table: 'DOCENTI',
+      rowIndex: 0,
+      column: 'NOME',
+      value: '',
+      details: {}
+    })
   ).toBe('Campo obbligatorio vuoto: NOME');
 
   expect(
-    messaggioErrore({ ruleId: 'E', type: 'enum', table: 'DOCENTI', rowIndex: 0, column: 'GENERE', value: 'X', details: { values: ['M', 'F'] } })
+    messaggioErrore({
+      ruleId: 'E',
+      type: 'enum',
+      table: 'DOCENTI',
+      rowIndex: 0,
+      column: 'GENERE',
+      value: 'X',
+      details: { values: ['M', 'F'] }
+    })
   ).toBe('Valore non ammesso per GENERE: "X" (ammessi: M, F)');
 
   expect(
-    messaggioErrore({ ruleId: 'ITP_CLASSI', type: 'rowPredicate', table: 'CLASSI', rowIndex: 0, column: 'INF.itp', value: 'x@y.it', details: {} })
+    messaggioErrore({
+      ruleId: 'ITP_CLASSI',
+      type: 'rowPredicate',
+      table: 'CLASSI',
+      rowIndex: 0,
+      column: 'INF.itp',
+      value: 'x@y.it',
+      details: {}
+    })
   ).toBe('Colonna ITP INF.itp: il docente "x@y.it" non ha DOCENTI.ITP = true');
 
   expect(
-    messaggioErrore({ ruleId: 'FK_CLASSI_CATTEDRE', type: 'rowPredicate', table: 'CLASSI', rowIndex: 0, column: 'MAT', value: 'ghost@x.it', details: {} })
+    messaggioErrore({
+      ruleId: 'FK_CLASSI_CATTEDRE',
+      type: 'rowPredicate',
+      table: 'CLASSI',
+      rowIndex: 0,
+      column: 'MAT',
+      value: 'ghost@x.it',
+      details: {}
+    })
   ).toBe('FK violata: colonna dinamica MAT "ghost@x.it" non esiste in DOCENTI.EMAIL');
 });
 
@@ -150,9 +208,7 @@ test('FK_CLASSI_CATTEDRE.check: static columns (COORD/IRC/ALT/etc.) are skipped,
 
   // COORD/IRC/ALT already have their own fk() rules; FK_CLASSI_CATTEDRE must not
   // also flag them (would double-report the same email).
-  expect(
-    check({ [COL_CLASSI.ID]: '1A', [COL_CLASSI.COORD]: 'ghost@x.it' }, ctx)
-  ).toBeNull();
+  expect(check({ [COL_CLASSI.ID]: '1A', [COL_CLASSI.COORD]: 'ghost@x.it' }, ctx)).toBeNull();
 });
 
 test('ITP_CLASSI.check: returns null (not a violation) when the .itp email is not in DOCENTI at all', () => {
@@ -172,7 +228,9 @@ test('MATERIE_COMPOSITE_PRINCIPALE.check: composite MATERIE.ID rows require a no
   expect(
     check({ [COL_MATERIE.ID]: 'INTERPRET.CHITARRA', [COL_MATERIE.PRINCIPALE]: 'INTERPRET' }, ctx)
   ).toBeNull();
-  expect(check({ [COL_MATERIE.ID]: 'INTERPRET.CHITARRA', [COL_MATERIE.PRINCIPALE]: '' }, ctx)).toEqual({
+  expect(
+    check({ [COL_MATERIE.ID]: 'INTERPRET.CHITARRA', [COL_MATERIE.PRINCIPALE]: '' }, ctx)
+  ).toEqual({
     column: COL_MATERIE.PRINCIPALE,
     value: 'INTERPRET.CHITARRA'
   });
@@ -197,9 +255,7 @@ test('MATERIE_NOME_MANCANTE.check: empty NOME is legal when PRINCIPALE+SPECIFICI
   ).toBeNull();
 
   // NOME set: always fine regardless of PRINCIPALE/SPECIFICITA.
-  expect(
-    check({ [COL_MATERIE.ID]: 'ITA', [COL_MATERIE.NOME]: 'Italiano' }, ctx)
-  ).toBeNull();
+  expect(check({ [COL_MATERIE.ID]: 'ITA', [COL_MATERIE.NOME]: 'Italiano' }, ctx)).toBeNull();
 
   // Empty NOME with no PRINCIPALE/SPECIFICITA fallback: genuine data error.
   expect(check({ [COL_MATERIE.ID]: 'ITA', [COL_MATERIE.NOME]: '' }, ctx)).toEqual({

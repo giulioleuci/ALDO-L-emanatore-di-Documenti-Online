@@ -35,16 +35,16 @@ Gli **Enum** sono insiemi fissi di valori ammissibili per un campo. Un valore fu
 
 **Utilizzo:** `CONF_DOC.GENERATORE` — pilota esclusivamente l'asse di iterazione del batch (`DocumentBatchService.batchGenerateHandler`) e la recipe CDU attiva; non è un nome di strategia/registrazione (vedi nota "Semantica di `GENERATORE`" in `01_SCHEMA_DATABASE.md` §CONF_DOC).
 
-| Valore                   | Asse di iterazione                                                       |
-| ------------------------ | -------------------------------------------------------------------------- |
-| `CLASSE`                 | Una generazione per classe                                                 |
-| `DOCENTE`                | Una generazione per docente                                                |
-| `PIANO_PERSONALIZZATO`   | Una generazione per riga `PIANI` (studente × tipo)                         |
-| `CLASSE_MATERIA`         | Una generazione per coppia classe/materia                                  |
-| `CLASSE_DOCENTE`         | Una generazione per coppia classe/docente                                  |
-| `CLASSE_DOCENTE_MATERIA` | Una generazione per cattedra (classe/docente/materia)                      |
-| `DIPARTIMENTO`           | Una generazione per dipartimento                                           |
-| `ALUNNO`                 | Una generazione per alunno attivo                                          |
+| Valore                   | Asse di iterazione                                    |
+| ------------------------ | ----------------------------------------------------- |
+| `CLASSE`                 | Una generazione per classe                            |
+| `DOCENTE`                | Una generazione per docente                           |
+| `PIANO_PERSONALIZZATO`   | Una generazione per riga `PIANI` (studente × tipo)    |
+| `CLASSE_MATERIA`         | Una generazione per coppia classe/materia             |
+| `CLASSE_DOCENTE`         | Una generazione per coppia classe/docente             |
+| `CLASSE_DOCENTE_MATERIA` | Una generazione per cattedra (classe/docente/materia) |
+| `DIPARTIMENTO`           | Una generazione per dipartimento                      |
+| `ALUNNO`                 | Una generazione per alunno attivo                     |
 
 Nessun valore ammette colonne materie (`PARAMETRI.aggiungiMaterie`/`aggiungiMaterieConPermessi`) sull'asse `DIPARTIMENTO` (nessun consiglio di classe da cui derivarle — vedi validazione costruttore in `01_SCHEMA_DATABASE.md` §CONF_DOC).
 
@@ -52,10 +52,10 @@ Nessun valore ammette colonne materie (`PARAMETRI.aggiungiMaterie`/`aggiungiMate
 
 **Utilizzo:** `CONF_DOC.DUPLICAZIONE`
 
-| Valore     | Significato                                                                                       |
-| ---------- | ------------------------------------------------------------------------------------------------- |
+| Valore     | Significato                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `NEGATA`   | Default. Blocca la generazione se esiste la stessa identità `TIPO`+`SOTTOTIPO`+`ID_GEN`+`PATH`+`NOME_NORMALIZZATO`. Per calcolare `NOME_NORMALIZZATO`, ogni controllo sceglie un marker alfanumerico temporaneo assente dal `FILE_NAME` completo reso con lo stesso CDU e un valore-sonda non vuoto per `progressivo`, sostituisce solo i token esatti `{{progressivo}}`, rende il template completo e tratta solo il marker scelto come sequenza numerica. Il marker non è persistito. |
-| `PERMESSA` | Consente una nuova generazione senza eseguire il controllo dei duplicati.                         |
+| `PERMESSA` | Consente una nuova generazione senza eseguire il controllo dei duplicati.                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 Il controllo è applicato da `CheckDuplicatesStep` (`src/application/pipelines/documentSteps.ts`).
 Per i documenti `PIANO_PERS`, la corrispondenza richiede inoltre lo stesso studente risolto in
@@ -95,18 +95,18 @@ Per i documenti `PIANO_PERS`, la corrispondenza richiede inoltre lo stesso stude
 
 **Utilizzo:** `CONF_MAIL.PROCESSO`
 
-| Valore                          | Destinatari                                                       |
-| ------------------------------- | ----------------------------------------------------------------- |
-| `PER_COORDINATORE`              | Un'email per coordinatore, aggregando tutte le sue classi         |
-| `PER_DOCENTE`                   | Un'email per docente del CdC, aggregando tutte le sue classi      |
-| `PER_CDC`                       | Un'email multi-TO per classe, a tutti i docenti del CdC           |
-| `PER_ALUNNO`                    | Un'email per alunno attivo                                        |
-| `PER_GENITORI_ALUNNO`           | Un'email per famiglia (deduplicata per set di tutori)             |
-| `PER_CARENZA_GENITORI`          | Un'email per riga CARENZE non notificata, ai soli genitori/tutori |
-| `PER_CARENZA_GENITORI_E_ALUNNO` | Come sopra, TO genitori + alunno (un'unica email condivisa)       |
-| `PER_CARENZA_GENITORI_E_COORD`  | Come `PER_CARENZA_GENITORI`, con il coordinatore di classe in CC  |
+| Valore                          | Destinatari                                                                 |
+| ------------------------------- | --------------------------------------------------------------------------- |
+| `PER_COORDINATORE`              | Un'email per coordinatore, aggregando tutte le sue classi                   |
+| `PER_DOCENTE`                   | Un'email per docente del CdC, aggregando tutte le sue classi                |
+| `PER_CDC`                       | Un'email multi-TO per classe, a tutti i docenti del CdC                     |
+| `PER_ALUNNO`                    | Un'email per alunno attivo                                                  |
+| `PER_GENITORI_ALUNNO`           | Un'email per famiglia (deduplicata per set di tutori)                       |
+| `PER_CARENZA_GENITORI`          | Un'email per riga CARENZE non notificata, ai soli genitori/tutori           |
+| `PER_CARENZA_GENITORI_E_ALUNNO` | Come sopra, TO genitori + alunno (un'unica email condivisa)                 |
+| `PER_CARENZA_GENITORI_E_COORD`  | Come `PER_CARENZA_GENITORI`, con il coordinatore di classe in CC            |
 | `PER_CAPO_DIPARTIMENTO`         | Un'email per dipartimento con un `CAPO` assegnato, indirizzata al solo capo |
-| `PER_DIPARTIMENTO`              | Un'email per dipartimento, a tutti i docenti afferenti            |
+| `PER_DIPARTIMENTO`              | Un'email per dipartimento, a tutti i docenti afferenti                      |
 
 Le tre varianti `PER_CARENZA_GENITORI*` condividono la stessa iterazione su `CARENZE` non notificate
 e possono usare solo i box `carenze`/`note`/`assenze`.
@@ -157,8 +157,8 @@ Ogni `TipoPiano`, ECCETTO `PFP`, implica SEMPRE un bisogno educativo speciale (B
 
 **Utilizzo:** `MOV_ALUNNI.TIPO`
 
-| Valore     | Descrizione                                          |
-| ---------- | ----------------------------------------------------- |
+| Valore     | Descrizione                                            |
+| ---------- | ------------------------------------------------------ |
 | `IN`       | Ingresso da altra scuola o classe                      |
 | `OUT`      | Uscita per trasferimento verso altro istituto          |
 | `RITIRATO` | Uscita per ritiro dagli studi (non verso altra scuola) |
@@ -211,13 +211,13 @@ Non esiste un parametro `articolazione?: 'partner' | 'parent'` su un metodo gene
 navigazione tra classe parent e classi partner è esposta da metodi dedicati su
 `IClasseRepository` (ref 06 §3), ciascuno con direzione fissa:
 
-| Metodo                          | Input → Output                                                                             |
-| -------------------------------- | -------------------------------------------------------------------------------------------- |
-| `getClasseParent(classe)`        | Da una classe partner (es. `4A-LC`) → la classe parent (`4A`), o `null` se non articolata    |
-| `getClassiPartner(classe)`       | Da una classe parent → le sue classi partner componenti                                      |
-| `orderedPartners(classe)`        | Da QUALSIASI classe del gruppo → `[primo, secondo]` partner in ordine canonico               |
-| `getGruppoArticolazione(classe)` | Da QUALSIASI classe del gruppo → tutte le classi del gruppo (parent + partner)               |
-| `isArticolata(classe)`           | La classe (parent o partner) appartiene a un gruppo articolato                               |
+| Metodo                           | Input → Output                                                                            |
+| -------------------------------- | ----------------------------------------------------------------------------------------- |
+| `getClasseParent(classe)`        | Da una classe partner (es. `4A-LC`) → la classe parent (`4A`), o `null` se non articolata |
+| `getClassiPartner(classe)`       | Da una classe parent → le sue classi partner componenti                                   |
+| `orderedPartners(classe)`        | Da QUALSIASI classe del gruppo → `[primo, secondo]` partner in ordine canonico            |
+| `getGruppoArticolazione(classe)` | Da QUALSIASI classe del gruppo → tutte le classi del gruppo (parent + partner)            |
+| `isArticolata(classe)`           | La classe (parent o partner) appartiene a un gruppo articolato                            |
 
 `DocenteRepository`/`AlunnoRepository` non replicano questa navigazione: i consumatori applicativi (es. `tipoArticolazione()` in `TeachingCouncilProjection.ts`) usano direttamente `IClasseRepository`.
 
@@ -428,8 +428,8 @@ L'ordine dell'array in `partners` determina PRIMO e SECONDO gruppo (`IClasseRepo
 }
 ```
 
-| Metodo                                                  | Comportamento                              |
-| ------------------------------------------------------- | ------------------------------------------ |
+| Metodo                                                  | Comportamento                             |
+| ------------------------------------------------------- | ----------------------------------------- |
 | `isPrimaProvaPerIndirizzo(ind: IndirizzoId): boolean`   | `true` se l'indirizzo è in `primaProva`   |
 | `isSecondaProvaPerIndirizzo(ind: IndirizzoId): boolean` | `true` se l'indirizzo è in `secondaProva` |
 
@@ -440,11 +440,11 @@ L'ordine dell'array in `partners` determina PRIMO e SECONDO gruppo (`IClasseRepo
 - **Costruzione:** `static of(raw: unknown): CsvScope` — stato interno privato (`wildcard`/`values`), nessuna proprietà pubblica `value`; il raw è una CSV di ID oppure `"*"` (tutte)
 - Unico VO generico che copre sia lo scope-classi sia lo scope-materie (usato in `SUPPLENZE.CLASSI`/`SUPPLENZE.MATERIE` e in `VARIAZIONI_CATTEDRA.CLASSI`/`VARIAZIONI_CATTEDRA.MATERIE`); in precedenza descritto come due VO gemelli (`ClassiScope`, `MaterieScope`), unificati in `src/domain/value-objects/CsvScope.ts`.
 
-| Metodo                                 | Comportamento                                        |
-| --------------------------------------- | ----------------------------------------------------- |
-| `isWildcard(): boolean`                 | `true` se `value === "*"`                             |
-| `applica(id: string): boolean`          | `true` se il valore è `"*"` oppure se `id` è nel CSV  |
-| `overlaps(other: CsvScope): boolean`    | `true` se i due scope si intersecano (o uno dei due è totale) |
+| Metodo                               | Comportamento                                                 |
+| ------------------------------------ | ------------------------------------------------------------- |
+| `isWildcard(): boolean`              | `true` se `value === "*"`                                     |
+| `applica(id: string): boolean`       | `true` se il valore è `"*"` oppure se `id` è nel CSV          |
+| `overlaps(other: CsvScope): boolean` | `true` se i due scope si intersecano (o uno dei due è totale) |
 
 ---
 
@@ -465,11 +465,11 @@ L'ordine dell'array in `partners` determina PRIMO e SECONDO gruppo (`IClasseRepo
 assente per gli invii reali; le preview includono `"testMode":true` e sono escluse
 dal duplicate-history lookup.
 
-| Metodo                           | Comportamento                               |
-| -------------------------------- | ------------------------------------------- |
-| `hasAllegati(): boolean`         | `true` se `docs` o `folders` non sono vuoti |
+| Metodo                           | Comportamento                                |
+| -------------------------------- | -------------------------------------------- |
+| `hasAllegati(): boolean`         | `true` se `docs` o `folders` non sono vuoti  |
 | `getDocumenti(): DriveFileId[]`  | Array degli ID file collegati nel corpo HTML |
-| `getCartelle(): DriveFolderId[]` | Array degli ID cartelle allegate            |
+| `getCartelle(): DriveFolderId[]` | Array degli ID cartelle allegate             |
 
 ---
 
@@ -605,19 +605,19 @@ fonte di verità del formato filtri: design doc
 
 #### Chiavi comuni
 
-| Chiave                 | Descrizione                                                                                                                        |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `TIPO_BOX`             | Selettore del renderer; valore fuori dall'elenco → box scartato                                                                     |
-| `TITOLO`               | Interpolato contro la CDU con `processString` (l'HTML del contenitore fa già l'escape)                                              |
-| `ORDINE`               | Ordine di composizione; in assenza si usa l'indice di array                                                                         |
-| `ALLEGA`               | Solo `documenti`: autorizza l'invio Gmail dei file della sorgente (`cartelle` + `ALLEGA=true` → warning e allegati statici invariati) |
-| `PREREQUISITI`         | Espressione di visibilità per ComposableContentLib; `''` = sempre visibile                                                          |
-| `MOSTRA_SE_VUOTO`      | Se true e il box è vuoto, mostra `TESTO_VUOTO`                                                                                      |
-| `TESTO_VUOTO`          | Mustache valutato sull'intera CDU                                                                                                   |
-| `COLORE`               | Bordo sinistro del contenitore; default `#ddd`                                                                                      |
-| `DISPLAY_MODE`          | Solo documenti/cartelle: `nome \| link \| nome+link \| sololink`; fallback a lista semplice                                          |
-| `ARRICCHISCI_CON_STORICO` / `CONFIG_ARRICCHIMENTO` | Arricchimento storico per riga, configurabile per i tipi box che lo supportano                          |
-| `CONTENUTO`            | Solo `testo_dinamico`                                                                                                               |
+| Chiave                                             | Descrizione                                                                                                                           |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `TIPO_BOX`                                         | Selettore del renderer; valore fuori dall'elenco → box scartato                                                                       |
+| `TITOLO`                                           | Interpolato contro la CDU con `processString` (l'HTML del contenitore fa già l'escape)                                                |
+| `ORDINE`                                           | Ordine di composizione; in assenza si usa l'indice di array                                                                           |
+| `ALLEGA`                                           | Solo `documenti`: autorizza l'invio Gmail dei file della sorgente (`cartelle` + `ALLEGA=true` → warning e allegati statici invariati) |
+| `PREREQUISITI`                                     | Espressione di visibilità per ComposableContentLib; `''` = sempre visibile                                                            |
+| `MOSTRA_SE_VUOTO`                                  | Se true e il box è vuoto, mostra `TESTO_VUOTO`                                                                                        |
+| `TESTO_VUOTO`                                      | Mustache valutato sull'intera CDU                                                                                                     |
+| `COLORE`                                           | Bordo sinistro del contenitore; default `#ddd`                                                                                        |
+| `DISPLAY_MODE`                                     | Solo documenti/cartelle: `nome \| link \| nome+link \| sololink`; fallback a lista semplice                                           |
+| `ARRICCHISCI_CON_STORICO` / `CONFIG_ARRICCHIMENTO` | Arricchimento storico per riga, configurabile per i tipi box che lo supportano                                                        |
+| `CONTENUTO`                                        | Solo `testo_dinamico`                                                                                                                 |
 
 #### Invarianti di `piani_pers_da_inviare`
 
@@ -633,14 +633,14 @@ configurazione restano disponibili per gli altri tipi box.
 Un solo dialetto di filtraggio per link visibili **e** allegati: la stessa config
 produce gli stessi insiemi sia che il box mostri link sia che alleghi file.
 
-| Metodo                     | Entità       | Scope di base (prima dei filtri)                                            |
-| -------------------------- | ------------ | ---------------------------------------------------------------------------- |
-| `documentiPerClasse`       | `LOG_DOCS`   | `findByClasse`, ripetuto su ogni classe di competenza (o `focus.classe`)      |
-| `documentiPerUtente`       | `LOG_DOCS`   | `LOG_DOCS.UTENTI` ∋ email utente (`focus.alunno`/`focus.docente`)             |
-| `documentiPerDipartimento` | `LOG_DOCS`   | `MATERIE` interseca le materie del dipartimento                               |
-| `cartellePerClasse`        | `LOG_FOLD`   | `LOG_FOLD.CLASSI` ∋ classe                                                    |
-| `cartellePerUtente`        | `LOG_FOLD`   | `LOG_FOLD.UTENTI` ∋ email utente                                              |
-| `cartellePerDipartimento`  | `LOG_FOLD`   | `MATERIE` interseca le materie del dipartimento                               |
+| Metodo                     | Entità     | Scope di base (prima dei filtri)                                         |
+| -------------------------- | ---------- | ------------------------------------------------------------------------ |
+| `documentiPerClasse`       | `LOG_DOCS` | `findByClasse`, ripetuto su ogni classe di competenza (o `focus.classe`) |
+| `documentiPerUtente`       | `LOG_DOCS` | `LOG_DOCS.UTENTI` ∋ email utente (`focus.alunno`/`focus.docente`)        |
+| `documentiPerDipartimento` | `LOG_DOCS` | `MATERIE` interseca le materie del dipartimento                          |
+| `cartellePerClasse`        | `LOG_FOLD` | `LOG_FOLD.CLASSI` ∋ classe                                               |
+| `cartellePerUtente`        | `LOG_FOLD` | `LOG_FOLD.UTENTI` ∋ email utente                                         |
+| `cartellePerDipartimento`  | `LOG_FOLD` | `MATERIE` interseca le materie del dipartimento                          |
 
 - `DATI_SORGENTE` assente → fallback legacy sui dati CDU non filtrati.
 - `metodo` mancante/sconosciuto o scope non risolvibile → warning + box saltato.
@@ -650,17 +650,17 @@ produce gli stessi insiemi sia che il box mostri link sia che alleghi file.
 
 Chiavi ammesse, camelCase:
 
-| Entità                | Chiavi                                                                                                    |
-| --------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Entità                 | Chiavi                                                                                                     |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------- |
 | documenti (`LOG_DOCS`) | `tipo`, `stato`, `sottotipo`, `idGen`, `idOrig`, `notificato`, `classi`, `utenti`, `materie`, `csv`, `not` |
-| cartelle (`LOG_FOLD`)  | `idGen`, `tipo`, `nome`, `path`, `classi`, `utenti`, `materie`, `csv`, `not`                                |
+| cartelle (`LOG_FOLD`)  | `idGen`, `tipo`, `nome`, `path`, `classi`, `utenti`, `materie`, `csv`, `not`                               |
 
 Semantica di matching:
 
 - **AND** tra tutti i criteri positivi.
 - Campi scalari (`tipo`, `stato`, `sottotipo`, `idGen`, `idOrig`): uguaglianza esatta case-sensitive.
 - `notificato`: boolean sulla presenza (`true`) / assenza (`false`) del timestamp `NOTIFICATO`.
-- Campi CSV (`classi`, `utenti`, `materie`): stringa singola o array. Con `"csv": "any"` *(default)* basta un
+- Campi CSV (`classi`, `utenti`, `materie`): stringa singola o array. Con `"csv": "any"` _(default)_ basta un
   valore in comune; con `"csv": "all"` tutti i valori del filtro devono essere presenti nell'entità.
 - `nome`, `path` (solo cartelle): sottostringa case-sensitive.
 - Esclusioni: blocco `not` con la stessa forma dei criteri positivi (senza `not` annidato né `csv` dedicato;

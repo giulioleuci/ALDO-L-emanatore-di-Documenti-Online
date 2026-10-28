@@ -38,7 +38,8 @@ function descrizione(
   provenienza: ProvenienzaDestinazioneVM | null,
   destinazione: ProvenienzaDestinazioneVM | null
 ): string {
-  if (tipo === 'IN') return provenienza === null ? 'Ingresso' : `Ingresso da ${provenienza.descrizione}`;
+  if (tipo === 'IN')
+    return provenienza === null ? 'Ingresso' : `Ingresso da ${provenienza.descrizione}`;
   if (tipo === 'OUT') {
     return destinazione === null
       ? 'Trasferimento in uscita'

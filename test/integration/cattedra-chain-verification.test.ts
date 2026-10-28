@@ -288,7 +288,13 @@ test('sheet ACL: a .SPECIFICA-targeted VARIAZIONI_CATTEDRA row reroutes the INTE
     protectCalls: [] as SpreadsheetProtectRequest[],
     getSheetInfo(): SpreadsheetSheetInfo[] {
       return [
-        { name: 'Sheet1', sheetId: 0, index: 0, hidden: false, gridProperties: { rowCount: 10, columnCount: 10 } }
+        {
+          name: 'Sheet1',
+          sheetId: 0,
+          index: 0,
+          hidden: false,
+          gridProperties: { rowCount: 10, columnCount: 10 }
+        }
       ];
     },
     protectRanges(
@@ -297,7 +303,12 @@ test('sheet ACL: a .SPECIFICA-targeted VARIAZIONI_CATTEDRA row reroutes the INTE
     ): SpreadsheetProtectResult {
       const all = Array.isArray(requests) ? requests : [requests];
       this.protectCalls.push(...all);
-      return { spreadsheetId: 'sheet', protectedCount: all.length, protectedRangeIds: all.map((_, i) => i), replies: [] };
+      return {
+        spreadsheetId: 'sheet',
+        protectedCount: all.length,
+        protectedRangeIds: all.map((_, i) => i),
+        replies: []
+      };
     }
   };
   new SheetMaterieConPermessiGeneratorStrategy(

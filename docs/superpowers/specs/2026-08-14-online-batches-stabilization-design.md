@@ -143,7 +143,7 @@ first provision the current template afresh and capture the final document text.
 - If the fresh artifact renders the heading, increment the fixture artifact
   version and cover stale-template replacement.
 - If it still fails, instrument the exact sequence `find table markers -> insert
-  tables -> remove marker text -> generic CDU render`. Add a focused regression
+tables -> remove marker text -> generic CDU render`. Add a focused regression
   proving that `{{focus.classe.anagrafica.nome}}` survives the table operations
   and becomes `1A`.
 - If evidence locates the defect inside a partially matching GasLibraryFactory

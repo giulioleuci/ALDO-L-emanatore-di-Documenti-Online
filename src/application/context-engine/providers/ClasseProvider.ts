@@ -1,5 +1,12 @@
 import type { ContextProvider } from '../ContextProvider';
-import type { ArticolazioneClasseVM, ClasseFocusVM, ClasseParentVM, Cdu, IndirizzoVM, MateriaVM } from '../Cdu';
+import type {
+  ArticolazioneClasseVM,
+  ClasseFocusVM,
+  ClasseParentVM,
+  Cdu,
+  IndirizzoVM,
+  MateriaVM
+} from '../Cdu';
 import type { BuildParams } from '../Recipe';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import type { IAlunnoRepository } from '../../../domain/repositories/IAlunnoRepository';
@@ -12,7 +19,13 @@ import { MateriaId } from '../../../domain/value-objects/MateriaId';
 import { IndirizzoId } from '../../../domain/value-objects/IndirizzoId';
 import { setClasseEntity } from '../techEntities';
 import { EntityNotFoundError, ValidationError } from '../../../domain/errors/DomainError';
-import { buildCollettivoPersone, buildPersonaVm, descriviPersone, descriviPersoneEsteso, minuscolaIniziale } from '../mappers/personVmMapper';
+import {
+  buildCollettivoPersone,
+  buildPersonaVm,
+  descriviPersone,
+  descriviPersoneEsteso,
+  minuscolaIniziale
+} from '../mappers/personVmMapper';
 import { buildMateriaVm } from '../mappers/subjectVmMapper';
 import { elencoVm } from '../mappers/elencoVm';
 import { indirizzoTipoLabel } from '../mappers/labels';
@@ -73,7 +86,8 @@ export class ClasseProvider implements ContextProvider {
 
   private resolveClasse(params: BuildParams): Classe {
     if (params.tipoTarget === 'alunno') {
-      if (this.alunni === undefined) throw new ValidationError('ClasseProvider richiede AlunnoRepository');
+      if (this.alunni === undefined)
+        throw new ValidationError('ClasseProvider richiede AlunnoRepository');
       const alunno = this.alunni.findById(params.target);
       if (alunno === null) throw new EntityNotFoundError(`Alunno ${params.target} non trovato`);
       const classe = this.classi.findById(alunno.classeId);
@@ -91,8 +105,18 @@ export class ClasseProvider implements ContextProvider {
       : [classe];
     const elenco = sorgenti
       .flatMap((sorgente) => this.classi.getCoordinatori(sorgente))
-      .map((docente) => buildPersonaVm({ nome: docente.nome, cognome: docente.cognome, email: docente.id, genere: docente.genere, isEsterno: false }))
-      .filter((persona, index, persone) => persone.findIndex((x) => x.email === persona.email) === index)
+      .map((docente) =>
+        buildPersonaVm({
+          nome: docente.nome,
+          cognome: docente.cognome,
+          email: docente.id,
+          genere: docente.genere,
+          isEsterno: false
+        })
+      )
+      .filter(
+        (persona, index, persone) => persone.findIndex((x) => x.email === persona.email) === index
+      )
       .sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto));
     const collettivo = buildCollettivoPersone(elenco);
     const personeNelRuolo = minuscolaIniziale(descriviPersone(elenco));
@@ -105,8 +129,7 @@ export class ClasseProvider implements ContextProvider {
           index === 0 ? persona.appellativoCompleto : minuscolaIniziale(persona.appellativoCompleto)
         )
         .join(', '),
-      descrizioneRuolo:
-        elenco.length === 0 ? '' : `${collettivo.coordinamento} ${personeNelRuolo}`,
+      descrizioneRuolo: elenco.length === 0 ? '' : `${collettivo.coordinamento} ${personeNelRuolo}`,
       descrizioneRuoloEstesa:
         elenco.length === 0
           ? ''
@@ -145,8 +168,16 @@ export class ClasseProvider implements ContextProvider {
     if (config.parent === null) return null;
     const parent = this.classi.findById(config.parent);
     if (parent === null) return null;
-    const indirizzi = this.classi.orderedPartners(parent).map((partner) => indirizzoVm(partner, this.classi));
-    return { nome: parent.nome, anno: parent.anno.value, indirizzi, hasIndirizzi: indirizzi.length > 0, indirizziDescrizione: indirizzi.map((indirizzo) => indirizzo.nome).join(', ') };
+    const indirizzi = this.classi
+      .orderedPartners(parent)
+      .map((partner) => indirizzoVm(partner, this.classi));
+    return {
+      nome: parent.nome,
+      anno: parent.anno.value,
+      indirizzi,
+      hasIndirizzi: indirizzi.length > 0,
+      indirizziDescrizione: indirizzi.map((indirizzo) => indirizzo.nome).join(', ')
+    };
   }
 
   private materieVm(sigle: string[], classe: Classe): MateriaVM[] {
@@ -154,7 +185,9 @@ export class ClasseProvider implements ContextProvider {
     return sigle
       .map((sigla) => this.materie!.findByIdCached(MateriaId.of(sigla)))
       .filter((materia): materia is Materia => materia !== null)
-      .map((materia) => buildMateriaVm(materia, 'BASE', { indirizzo: IndirizzoId.of(classe.indirizzo) }))
+      .map((materia) =>
+        buildMateriaVm(materia, 'BASE', { indirizzo: IndirizzoId.of(classe.indirizzo) })
+      )
       .sort((a, b) => a.nome.localeCompare(b.nome));
   }
 }

@@ -55,14 +55,28 @@ function buildAlunno(
   }
 ): Cdu {
   return builder.build(
-    { target: email, tipoTarget: 'alunno', now: NOW, configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
+    {
+      target: email,
+      tipoTarget: 'alunno',
+      now: NOW,
+      configurazioneId: 'ONLINE_CHECK',
+      esecuzioneId: 'ONLINE_CHECK',
+      tipoOperazione: 'GENERAZIONE_DOCUMENTO'
+    },
     recipe('ALUNNO_COMPLETO', options)
   );
 }
 
 function buildClasse(builder: ContextBuilder, classe: string, depth: number): Cdu {
   return builder.build(
-    { target: classe, tipoTarget: 'classe', now: NOW, configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
+    {
+      target: classe,
+      tipoTarget: 'classe',
+      now: NOW,
+      configurazioneId: 'ONLINE_CHECK',
+      esecuzioneId: 'ONLINE_CHECK',
+      tipoOperazione: 'GENERAZIONE_DOCUMENTO'
+    },
     recipe('CLASSE_COMPLETA', {
       includiStorico: true,
       profonditaAnniStorico: depth,
@@ -76,7 +90,8 @@ export function assertAlunnoStorico(value: unknown): void {
   const anni = asArray(storico.anni, 'focus.alunno.storico.anni');
   if (anni.length !== 2) fail(`attesi due anni, ricevuti ${anni.length}`);
   const signatures = anni.map(
-    (anno) => `${String(anno.annoScolastico)}:${String(asRecord(anno.classe, 'classe anno').nome)}:${String(anno.esito)}`
+    (anno) =>
+      `${String(anno.annoScolastico)}:${String(asRecord(anno.classe, 'classe anno').nome)}:${String(anno.esito)}`
   );
   if (!signatures.includes('2025-2026:2C:PROMOSSO')) fail('anno promosso 2025-2026/2C mancante');
   if (!signatures.includes('2024-2025:1C:NON_PROMOSSO')) {
@@ -95,12 +110,24 @@ export function assertAlunnoStorico(value: unknown): void {
       fail(`carenza GST non riconciliata in STO per ${annoScolastico}`);
     }
   }
-  const bocciature = asArray(asRecord(storico.bocciature, 'bocciature').elenco, 'focus.alunno.storico.bocciature.elenco');
-  if (!bocciature.some((b) => b.annoScolastico === '2024-2025' && asRecord(b.classe, 'classe bocciatura').nome === '1C')) {
+  const bocciature = asArray(
+    asRecord(storico.bocciature, 'bocciature').elenco,
+    'focus.alunno.storico.bocciature.elenco'
+  );
+  if (
+    !bocciature.some(
+      (b) =>
+        b.annoScolastico === '2024-2025' && asRecord(b.classe, 'classe bocciatura').nome === '1C'
+    )
+  ) {
     fail('bocciatura distintiva 2024-2025/1C mancante');
   }
   for (const anno of anni) {
-    if (!asArray(anno.piani, `piani ${String(anno.annoScolastico)}`).some((piano) => piano.tipo === 'PDP_BES')) {
+    if (
+      !asArray(anno.piani, `piani ${String(anno.annoScolastico)}`).some(
+        (piano) => piano.tipo === 'PDP_BES'
+      )
+    ) {
       fail(`piani ${String(anno.annoScolastico)} non contiene PDP_BES`);
     }
   }
@@ -290,7 +317,7 @@ export function registerStoricoChecks(
           profonditaAnniStorico: 2,
           profonditaAnniDocumenti: 0
         });
-  if (ripetente.focus.alunno?.isRipetente !== true) {
+        if (ripetente.focus.alunno?.isRipetente !== true) {
           fail('flag ripetenza corrente non preservato');
         }
       }
@@ -338,9 +365,7 @@ export function registerStoricoChecks(
           profonditaAnniStorico: 2,
           profonditaAnniDocumenti: 2
         });
-        const pianoHistory = materializeLazyRef(
-          pianoCdu.focus.alunno?.documenti?.storico
-        );
+        const pianoHistory = materializeLazyRef(pianoCdu.focus.alunno?.documenti?.storico);
         assertDocumentiStorici(pianoHistory);
 
         const genericCdu = buildAlunno(builder, ALUNNO_STORICO, {

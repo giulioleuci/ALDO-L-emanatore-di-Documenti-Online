@@ -127,10 +127,7 @@ function persistedArtifactContainer(): {
   };
   const classi = {
     findAttive: () => ALL_CLASSI.map((id) => ({ id })),
-    filterPerGestioneArticolazione: (
-      _classi: Array<{ id: string }>,
-      gestione: string
-    ) =>
+    filterPerGestioneArticolazione: (_classi: Array<{ id: string }>, gestione: string) =>
       (gestione === 'ARTICOLATA' ? ARTICULATED_TARGETS : COMPLETE_TARGETS).map((id) => ({ id }))
   };
   const drive = {
@@ -253,7 +250,10 @@ test('artifact verification is read-only and repeatable over persisted LOG_DOCS 
   if (cdcRow === undefined) throw new Error('Missing CDC fixture row');
   cdcRow[COL_LOG_DOCS.ID] = '';
   expect(() =>
-    runCheck(brokenCdc.container, 'Articolazione CDU: documento CDC include partner ed esclude parent')
+    runCheck(
+      brokenCdc.container,
+      'Articolazione CDU: documento CDC include partner ed esclude parent'
+    )
   ).toThrow(/fileId LOG_DOCS/);
 
   const brokenPiano = persistedArtifactContainer();
@@ -418,20 +418,17 @@ test.each([
   ['restored holder', 'sigla', 'LAB'],
   ['restored holder', 'principale', 'Laboratorio errato'],
   ['restored holder', 'specificita', 'Seminario Pomeridiano']
-])(
-  'role/date check rejects a corrupted %s LAB catalog %s',
-  (holder, field, value) => {
-    const corrupted = validLabSeminar({ [field]: value });
-    const container =
-      holder === 'substitute'
-        ? substitutionContainer(corrupted, validLabSeminar())
-        : substitutionContainer(validLabSeminar(), corrupted);
+])('role/date check rejects a corrupted %s LAB catalog %s', (holder, field, value) => {
+  const corrupted = validLabSeminar({ [field]: value });
+  const container =
+    holder === 'substitute'
+      ? substitutionContainer(corrupted, validLabSeminar())
+      : substitutionContainer(validLabSeminar(), corrupted);
 
-    expect(() =>
-      runCheck(container, 'Articolazione CDU: supplenza, titolare finale e confini data')
-    ).toThrow(/attesi supplente LAB\.SEMINARIO_POMERIDIANO/);
-  }
-);
+  expect(() =>
+    runCheck(container, 'Articolazione CDU: supplenza, titolare finale e confini data')
+  ).toThrow(/attesi supplente LAB\.SEMINARIO_POMERIDIANO/);
+});
 
 test('role/date check rejects the obsolete split LAB seminar representation', () => {
   const during = classCdu([

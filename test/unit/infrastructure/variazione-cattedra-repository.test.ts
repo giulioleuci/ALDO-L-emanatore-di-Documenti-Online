@@ -60,8 +60,9 @@ test('findByTitolare', () => {
 describe('validate', () => {
   test('does not throw when every TITOLARE is a known docente and no row is self-referential', () => {
     const db = new FakeDatabase(fixtureTables());
-    expect(() => new VariazioneCattedraRepository(db).validate(new DocenteRepository(db))).not
-      .toThrow();
+    expect(() =>
+      new VariazioneCattedraRepository(db).validate(new DocenteRepository(db))
+    ).not.toThrow();
   });
 
   test('throws VariazioneCattedraTitolareNonTrovatoError when TITOLARE matches no DOCENTI row', () => {

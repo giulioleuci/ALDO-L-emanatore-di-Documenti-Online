@@ -10,9 +10,10 @@ export class CarenzaFocusProvider implements ContextProvider {
 
   provide(cdu: Cdu, params: BuildParams): void {
     const carenze = this.alunni.getCarenze(getAlunnoEntity(cdu));
-    const target = params.carenzaProgressivo === undefined
-      ? carenze[0]
-      : carenze.find((carenza) => carenza.progressivo === params.carenzaProgressivo);
+    const target =
+      params.carenzaProgressivo === undefined
+        ? carenze[0]
+        : carenze.find((carenza) => carenza.progressivo === params.carenzaProgressivo);
     const alunno = cdu.focus.alunno;
     if (target === undefined || alunno === undefined) return;
     const data = formatOggi(new Date(`${target.data}T00:00:00Z`));

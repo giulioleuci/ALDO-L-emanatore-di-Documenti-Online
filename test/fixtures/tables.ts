@@ -238,8 +238,7 @@ export function fixtureTables(): Record<string, Row[]> {
         CONDIZIONE: null,
         MODELLI:
           '[{"condizione":"{{focus.piano.tipo}} == \\"PDP_DSA\\"","templateId":"tmpl_pdp_dsa"},{"condizione":"{{focus.piano.tipo}} == \\"PDP_BES\\"","templateId":"tmpl_pdp_bes"},{"condizione":"{{focus.piano.tipo}} == \\"PDP_STRANIERI\\"","templateId":"tmpl_pdp_stranieri"},{"condizione":"{{focus.piano.tipo}} == \\"PEI\\"","templateId":"tmpl_pei"},{"condizione":"{{focus.piano.tipo}} == \\"PFP\\"","templateId":"tmpl_pfp"}]',
-        FILE_NAME:
-          'Piano_{{focus.piano.tipoLabel}}_{{focus.alunno.nomeCompleto}}',
+        FILE_NAME: 'Piano_{{focus.piano.tipoLabel}}_{{focus.alunno.nomeCompleto}}',
         PATH_OUT: 'Piani personalizzati/{{focus.classe.nome}}',
         DUPLICAZIONE: 'NEGATA',
         PERMESSI: null,
@@ -311,7 +310,8 @@ export function fixtureTables(): Record<string, Row[]> {
         PROCESSO: 'PER_CARENZA_GENITORI',
         BOX_CFG:
           '[{"TIPO_BOX":"carenze","TITOLO":"Carenze rilevate"},{"TIPO_BOX":"note","ORDINE":2},{"TIPO_BOX":"assenze","ORDINE":3}]',
-        TESTO_START: '<p>Si comunicano le carenze rilevate per la classe {{focus.carenza.classe.nome}}.</p>',
+        TESTO_START:
+          '<p>Si comunicano le carenze rilevate per la classe {{focus.carenza.classe.nome}}.</p>',
         TESTO_END: '',
         RISPONDI_A: '',
         SUPPLENTI: 'SOLO_TITOLARI',

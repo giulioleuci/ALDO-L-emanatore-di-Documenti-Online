@@ -1,5 +1,13 @@
-import { tipoPianoLabel, religioneLabel, tipoProgettoLabel } from '../../../../../src/application/context-engine/mappers/labels';
-import { TipoPiano, ReligioneScelta, TipoProgetto } from '../../../../../src/domain/value-objects/enums';
+import {
+  tipoPianoLabel,
+  religioneLabel,
+  tipoProgettoLabel
+} from '../../../../../src/application/context-engine/mappers/labels';
+import {
+  TipoPiano,
+  ReligioneScelta,
+  TipoProgetto
+} from '../../../../../src/domain/value-objects/enums';
 
 describe('labels', () => {
   it('maps every TipoPiano to a readable label', () => {

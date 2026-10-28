@@ -9,10 +9,12 @@
 ## 1. Problem Statement
 
 Currently, `CONF_DOC.TIPO` serves dual purposes:
+
 1. **Categorical** — names the document family (e.g., `DOCUMENTO_DOCENTE_CLASSE_MATERIA` is "a docent-scoped document")
-2. **Discriminatory** — *forces* DocumentBatchService to iterate over a specific axis (docent+subject pairs, class+subject pairs, or departments)
+2. **Discriminatory** — _forces_ DocumentBatchService to iterate over a specific axis (docent+subject pairs, class+subject pairs, or departments)
 
 This coupling makes it impossible to:
+
 - Render the same axis (e.g., docent+subject) via different strategies (template-based vs. spreadsheet)
 - Add new iteration axes independently of rendering strategy
 - Reason about which part of the code controls iteration vs. rendering
@@ -24,10 +26,12 @@ This coupling makes it impossible to:
 ## 2. Solution Overview
 
 Refactor `CONF_DOC.GENERATORE` to become the single discriminator for:
+
 - Which iteration axis DocumentBatchService uses
 - Which rendering Strategy the pipeline selects
 
 **New generators (7 total, replacing the hidden 3):**
+
 1. `DOCUMENTO_DOCENTE_CLASSE_MATERIA` — template-based rendering, docent+subject axis
 2. `SHEET_DOCENTE_CLASSE_MATERIA` — spreadsheet-based rendering, docent+subject axis
 3. `DOCUMENTO_CLASSE_MATERIA` — template-based rendering, class+subject axis
@@ -47,31 +51,37 @@ Refactor `CONF_DOC.GENERATORE` to become the single discriminator for:
 Create six new Strategy implementations under `src/application/strategies/`:
 
 #### `DocumentoDocentiClasseMateriaGeneratorStrategy.ts`
+
 - Inputs: CDU with `focus.docente` + `focus.materia` set; config with Drive template ID
 - Output: cloned, rendered Document
 - Delegates to existing template rendering pipeline (same as `VERBALE_CDC`, `DOCUMENTO_GENERICO`)
 
 #### `SheetDocentiClasseMateriaGeneratorStrategy.ts`
+
 - Inputs: CDU with `focus.docente` + `focus.materia`; config with Drive Sheet template ID
 - Output: cloned, rendered Spreadsheet
 - Reuses `SheetMaterieGeneratorStrategy` logic but scoped to a single docent+subject pair (not all subjects in a class)
 
 #### `DocumentoClasseMateriaGeneratorStrategy.ts`
+
 - Inputs: CDU with `focus.classiMateria` set; config with Drive template ID
 - Output: cloned, rendered Document
 - Delegates to template rendering pipeline
 
 #### `SheetClasseMateriaGeneratorStrategy.ts`
+
 - Inputs: CDU with `focus.classiMateria`; config with Drive Sheet template ID
 - Output: cloned, rendered Spreadsheet
 - Scoped to a single class+subject pair
 
 #### `DocumentoDipartimentoGeneratorStrategy.ts`
+
 - Inputs: CDU with `focus.dipartimento` set; config with Drive template ID
 - Output: cloned, rendered Document
 - Delegates to template rendering pipeline
 
 #### `SheetDipartimentoGeneratorStrategy.ts`
+
 - Inputs: CDU with `focus.dipartimento`; config with Drive Sheet template ID
 - Output: cloned, rendered Spreadsheet
 - Scoped to a single department
@@ -94,6 +104,7 @@ private static readonly GENERATOR_TO_AXIS = new Map<string, 'docentiClasseMateri
 ```
 
 **Why a map, not naming convention?**
+
 - Explicit and queryable (no parsing, no ambiguity)
 - Matches existing patterns in the codebase (e.g., role resolution registries)
 - Self-documenting: readers see exactly which generators are axis-specific
@@ -101,6 +112,7 @@ private static readonly GENERATOR_TO_AXIS = new Map<string, 'docentiClasseMateri
 ### 3.3 Refactored Dispatch Logic
 
 **Current `batchGenerateHandler` (DocumentBatchService.ts, lines 94–127):**
+
 ```typescript
 if (config.tipo === 'PIANO_PERS') { /* ... */ }
 if (config.tipo === 'DOCUMENTO_DOCENTE_CLASSE_MATERIA') { /* ... */ }
@@ -110,6 +122,7 @@ return yield* this.generateClassi(config, ...);
 ```
 
 **New dispatch (after refactor):**
+
 ```typescript
 if (config.tipo === 'PIANO_PERS') { /* unchanged */ }
 
@@ -140,11 +153,14 @@ const registry = new Map<string, GeneratorStrategy>([
   ['VERBALE_CDC', new VerbaleGeneratorStrategy(deps.templates)],
   ['DOCUMENTO_GENERICO', new DocumentoGenericoGeneratorStrategy(deps.templates)],
   // ... others ...
-  
+
   // New axis-specific generators
-  ['DOCUMENTO_DOCENTE_CLASSE_MATERIA', new DocumentoDocentiClasseMateriaGeneratorStrategy(deps.templates)],
+  [
+    'DOCUMENTO_DOCENTE_CLASSE_MATERIA',
+    new DocumentoDocentiClasseMateriaGeneratorStrategy(deps.templates)
+  ],
   ['DOCUMENTO_CLASSE_MATERIA', new DocumentoClasseMateriaGeneratorStrategy(deps.templates)],
-  ['DOCUMENTO_DIPARTIMENTO', new DocumentoDipartimentoGeneratorStrategy(deps.templates)],
+  ['DOCUMENTO_DIPARTIMENTO', new DocumentoDipartimentoGeneratorStrategy(deps.templates)]
 ]);
 
 // Sheet-based generators (requires deps.spreadsheets)
@@ -171,6 +187,7 @@ if (deps.spreadsheets !== undefined) {
 ### 4.1 CONF_DOC Schema
 
 **No schema changes.** Existing columns remain:
+
 - `GENERATORE` (String): now must be one of the 13 registered generators (7 existing + 6 new)
 - `TIPO` (String): optional, used for categorization/filtering only; no longer discriminates dispatch
 
@@ -186,6 +203,7 @@ if (deps.spreadsheets !== undefined) {
 ### 4.3 Examples
 
 **Old row (will not work after refactor):**
+
 ```
 ID: "VERBALE_5A_MAGGIO"
 TIPO: "DOCUMENTO_DOCENTE_CLASSE_MATERIA"
@@ -194,6 +212,7 @@ FORMATO: "DOCUMENTO"
 ```
 
 **New row (template-based, docent+subject):**
+
 ```
 ID: "VERBALE_DOCENTE_MATERIA"
 TIPO: (empty or "DOCUMENTO") — for categorization only
@@ -203,6 +222,7 @@ MODELLI: { ... Drive template ID ... }
 ```
 
 **New row (spreadsheet-based, class+subject):**
+
 ```
 ID: "FOGLIO_CLASSE_MATERIA"
 TIPO: (empty or "FOGLIO")
@@ -216,23 +236,27 @@ MODELLI: { ... Drive sheet template ID ... }
 ## 5. Implementation Phases
 
 ### Phase 1: Create Strategy Classes (6 new files)
+
 - Each file minimal: constructor, implements `GeneratorStrategy.generate()`
 - Delegate to existing `DocumentGenerationService` methods or reuse rendering helpers
 - Add unit tests for each (mock CDU, config, strategy behavior)
 
 ### Phase 2: Update DocumentBatchService
+
 - Add `GENERATOR_TO_AXIS` map
 - Refactor `batchGenerateHandler` to dispatch on `config.generatore`
 - Update batch handler calls to pass config (already done)
 - Integration tests: ensure dispatch routes to correct handler
 
 ### Phase 3: Update Bootstrap & Tests
+
 - Register six new strategies in `strategyRegistry`
 - Update test fixtures to use new `GENERATORE` values
 - Update online test seed data (if CONF_DOC rows hardcoded)
 - Update existing integration tests that reference old TIPO dispatch logic
 
 ### Phase 4: Documentation & Migration
+
 - Update `SPECS_ALDO/01_SCHEMA_DATABASE.md` (§CONF_DOC) to reflect new dispatch logic
 - Update architecture notes on generator lifecycle
 - (No backward-compatibility migration needed — clean refactor)
@@ -242,14 +266,17 @@ MODELLI: { ... Drive sheet template ID ... }
 ## 6. Testing Strategy
 
 ### Unit Tests
+
 - Each new Strategy class: mock CDU (focus.docente, focus.materia, etc.), mock config, verify cloned file is rendered correctly
 - DocumentBatchService dispatch map: verify `GENERATOR_TO_AXIS.get()` returns correct handler name for all 6 generators
 
 ### Integration Tests
+
 - DocumentBatchService batch flow: generate a CONF_DOC with `GENERATORE=DOCUMENTO_DOCENTE_CLASSE_MATERIA`, verify correct handler is invoked and correct Strategy (from registry) is used
 - Registry loading: verify all six new generators are registered when Bootstrap runs
 
 ### Online Tests
+
 - If seed data includes CONF_DOC rows, update them to use new GENERATORE values
 - Run full batch generation flow (in online mode) to confirm axis dispatch and rendering work end-to-end
 
@@ -258,11 +285,13 @@ MODELLI: { ... Drive sheet template ID ... }
 ## 7. Assumptions & Risks
 
 ### Assumptions
+
 1. **Batch handlers remain unchanged:** `generateDocentiClasseMateria`, `generateClassiMateria`, `generateDipartimenti` logic is orthogonal to Strategy selection.
 2. **Strategy selection happens in RenderTemplateStep:** The pipeline already decouples Strategy selection from iteration; new generators simply register new Strategy implementations.
 3. **No existing CONF_DOC rows depend on the old TIPO dispatch:** (Confirmed: no production data.)
 
 ### Risks
+
 1. **Incomplete Strategy implementation:** If a new Strategy doesn't correctly handle its axis's CDU shape, errors will surface late (in batch execution). Mitigate: thorough unit tests + integration tests before Phase 3.
 2. **Dispatch map & axis logic diverge:** If a generator is added to the registry but not to `GENERATOR_TO_AXIS`, dispatch silently falls back to `generateClassi`. Mitigate: document the map as the source of truth; add a check in tests that every axis-specific generator is in the map.
 

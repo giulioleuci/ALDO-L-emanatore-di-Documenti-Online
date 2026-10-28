@@ -37,7 +37,9 @@ export class DocumentStrategyFactory {
     if (config.formato === FormatoOutput.GSHEET) {
       if (parametri.aggiungiMaterieConPermessi) {
         if (this.sheetPermessi === undefined) {
-          throw new PipelineError('SHEET_CON_MATERIE_E_PERMESSI non disponibile in questo ambiente');
+          throw new PipelineError(
+            'SHEET_CON_MATERIE_E_PERMESSI non disponibile in questo ambiente'
+          );
         }
         return this.sheetPermessi;
       }
@@ -52,7 +54,9 @@ export class DocumentStrategyFactory {
     if (config.generatore === GeneratoreAxis.PIANO_PERSONALIZZATO) return this.docPersonalizzato;
     if (parametri.tabelleImportate === true) {
       if (this.docTabelle === undefined) {
-        throw new PipelineError('DOCUMENTO_CON_TABELLE_IMPORTATE non disponibile in questo ambiente');
+        throw new PipelineError(
+          'DOCUMENTO_CON_TABELLE_IMPORTATE non disponibile in questo ambiente'
+        );
       }
       return this.docTabelle;
     }

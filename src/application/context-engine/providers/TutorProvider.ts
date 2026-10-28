@@ -14,7 +14,9 @@ export class TutorProvider implements ContextProvider {
     const asl = this.docenti(classe, 'TUTOR_ASL');
     const orientamento = this.docenti(classe, 'TUTOR_ORIENT');
     const elenco = [...asl, ...orientamento]
-      .filter((persona, index, persone) => persone.findIndex((x) => x.email === persona.email) === index)
+      .filter(
+        (persona, index, persone) => persone.findIndex((x) => x.email === persona.email) === index
+      )
       .sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto));
     const collettivo = buildCollettivoPersone(elenco);
     focus.tutor = {
@@ -28,13 +30,27 @@ export class TutorProvider implements ContextProvider {
       aslDescrizione: descriviPersone(asl),
       orientamentoDescrizione: descriviPersone(orientamento),
       elencoDescrizione: descriviPersone(elenco),
-      collettivo: { appellativo: collettivo.appellativo, articolo: collettivo.articolo, sostantivo: 'Tutor', numero: elenco.length }
+      collettivo: {
+        appellativo: collettivo.appellativo,
+        articolo: collettivo.articolo,
+        sostantivo: 'Tutor',
+        numero: elenco.length
+      }
     };
   }
 
   private docenti(classe: ReturnType<typeof getClasseEntity>, ruolo: string): PersonaVM[] {
-    return this.classi.getDocentiRuoloArticolato(classe, ruolo)
-      .map((docente) => buildPersonaVm({ nome: docente.nome, cognome: docente.cognome, email: docente.id, genere: docente.genere, isEsterno: false }))
+    return this.classi
+      .getDocentiRuoloArticolato(classe, ruolo)
+      .map((docente) =>
+        buildPersonaVm({
+          nome: docente.nome,
+          cognome: docente.cognome,
+          email: docente.id,
+          genere: docente.genere,
+          isEsterno: false
+        })
+      )
       .sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto));
   }
 }

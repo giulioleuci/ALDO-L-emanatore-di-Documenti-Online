@@ -91,7 +91,7 @@ Permettere `{{studente.nomeCompleto}}` dentro un `tablerow_loop` su
   `studente?: { nomeCompleto: string }` (già presente per il ramo parent
   nella fonte; da allineare anche nel tipo TypeScript se non già coerente).
 - `RappresentantiProvider.provide` (`src/application/context-engine/
-  providers/RappresentantiProvider.ts`):
+providers/RappresentantiProvider.ts`):
   - Ramo classi parent articolate (righe ~90-120): già imposta
     `studente: { nomeCompleto: alunno.cognomeNome }` — nessuna modifica.
   - Ramo classi ordinarie/partner (righe ~123-134): il `.map()` su
@@ -102,7 +102,7 @@ Permettere `{{studente.nomeCompleto}}` dentro un `tablerow_loop` su
 ### Verifica
 
 - Estendere `test/unit/application/context-engine/providers/
-  rappresentanti-provider.test.ts` (o percorso equivalente) con
+rappresentanti-provider.test.ts` (o percorso equivalente) con
   un'asserzione su `studente.nomeCompleto` per il ramo classi ordinarie.
 - `npm run typecheck` per l'estensione del tipo.
 
@@ -152,9 +152,9 @@ classi Strategy per ogni tipo.
     `materiaCorrente` già esistente (già usato altrove per instradamento di
     ruolo, es. `RisolutoreRuoliService.capoDipartimento`).
   - Nuova recipe `CLASSE_DOCENTE_MATERIA` = provider di `CLASSE_COMPLETA`
-    + `'docenteClasseMateriaFocus'` in coda (dopo `consiglio`, di cui dipende).
+    - `'docenteClasseMateriaFocus'` in coda (dopo `consiglio`, di cui dipende).
 - Nuovo `src/application/context-engine/providers/
-  DocenteClasseMateriaFocusProvider.ts` (mirror di `PianoFocusProvider`): legge
+DocenteClasseMateriaFocusProvider.ts` (mirror di `PianoFocusProvider`): legge
   `cdu.focus.classe.consiglioDiClasse` (già popolato dal provider
   `consiglio` — nessuna nuova query), trova il `DocenteCdcVM` con email =
   `params.docenteCorrente`, poi il `SubjectVM` al suo interno con id =
@@ -171,7 +171,7 @@ classi Strategy per ogni tipo.
     metodo privato parametrizzato su nome recipe + `BuildParams` extra, così
     da non duplicarlo.
   - Nuovo metodo pubblico `generateForClasseDocenteClasseMateria(classeId,
-    docenteEmail, materiaId, confDocId, jobId?)` che usa l'helper con la
+docenteEmail, materiaId, confDocId, jobId?)` che usa l'helper con la
     recipe `CLASSE_DOCENTE_MATERIA` e
     `{ docenteCorrente: docenteEmail, materiaCorrente: materiaId }`.
 - `DocumentBatchService.ts`:
@@ -180,9 +180,9 @@ classi Strategy per ogni tipo.
     `gestioneArticolazione` come `generateClassi`), per ogni cattedra di
     `this.classi.getConsiglioDiClasse(classe.classeId).cattedre`
     (repository-level, nessun CDU necessario per enumerare) → `{classe,
-    docenteEmail, materiaId}`.
+docenteEmail, materiaId}`.
   - `batchGenerateHandler`: nuovo ramo `config.tipo ===
-    'DOCUMENTO_DOCENTE_CLASSE_MATERIA'` → `generateDocentiClasseMateria`.
+'DOCUMENTO_DOCENTE_CLASSE_MATERIA'` → `generateDocentiClasseMateria`.
   - `BatchResumeState`: nuovo campo `docenteClasseMateriaTargets` (mirror di
     `planTargets`) per la ripresa da checkpoint.
 - `documentSteps.ts`: generalizzare `sottotipoPiano(ctx)` in `sottotipo(ctx)`
@@ -193,7 +193,7 @@ classi Strategy per ogni tipo.
   altrimenti.
 - Nessun codice nuovo per `LOG_DOCS.MATERIE`/`.UTENTI`: già completamente
   data-driven via placeholder `{{focus.materia.id}}`/`{{focus.docente.
-  email}}` dentro `CONF_DOC.REGISTRA_DOC` (verificato in
+email}}` dentro `CONF_DOC.REGISTRA_DOC` (verificato in
   `RegisterDocumentStep`/`resolveLogRegistration`) — è una responsabilità di
   configurazione, non di codice.
 - Nota di comportamento (non un gap da chiudere): gli esempi `CONF_DOC`
@@ -295,15 +295,17 @@ schema di `targetsPerCdc` (un invio per unità aggregata), CDU con
 ### Progetto
 
 **Dominio / repository**
+
 - `IDipartimentoRepository`: nuovo `findAll(): Dipartimento[]` (manca
   oggi — unico metodo attuale è `findByMateria`).
 
 **CDU dipartimento**
+
 - `Cdu.ts`: nuovo `focus.dipartimento?: CduDipartimentoFocus` con
   `anagrafica: {id, nome}`, `capo: {email, nomeCompleto, appellativo} |
-  null`, `materie: SubjectVM[]`, `docenti: DocenteCdcVM[]`-style (riuso
+null`, `materie: SubjectVM[]`, `docenti: DocenteCdcVM[]`-style (riuso
   delle stesse VM già usate da `consiglio`, non nuovi tipi). `BuildParams.
-  tipoTarget` si allarga a `'classe' | 'alunno' | 'dipartimento'`.
+tipoTarget` si allarga a `'classe' | 'alunno' | 'dipartimento'`.
 - Nuovo `DipartimentoProvider` (context-engine/providers/): dato
   `params.target` (id dipartimento), usa `Dipartimento.getCapoEmail()`/
   `getMaterieIds()` + `RisolutoreRuoliService`/`RoleResolutionLib` per i
@@ -315,23 +317,25 @@ schema di `targetsPerCdc` (un invio per unità aggregata), CDU con
   (nessun bisogno di `class`/`student` — un dipartimento non ha classe).
 
 **Generazione documenti**
+
 - `DocumentGenerationService.generateForDipartimento(dipartimentoId,
-  confDocId, jobId?)`: build CDU con `DIPARTIMENTO_COMPLETO`,
+confDocId, jobId?)`: build CDU con `DIPARTIMENTO_COMPLETO`,
   `tipoTarget: 'dipartimento'`, stessa esecuzione pipeline
   transazionale delle altre `generateForX`.
 - `DocumentBatchService.generateDipartimenti`: target = `this.dipartimenti.
-  findAll()`, mirror strutturale di `generateClassi` (niente
+findAll()`, mirror strutturale di `generateClassi` (niente
   `gestioneArticolazione`, non applicabile ai dipartimenti — nota esplicita
   già nella fonte).
 - `batchGenerateHandler`: ramo `config.tipo === 'DIPARTIMENTO'`.
 
 **Email di dipartimento**
+
 - `ProcessoInvio` (`src/domain/value-objects/enums.ts`): due nuovi valori,
   `PER_CAPO_DIPARTIMENTO`, `PER_DIPARTIMENTO`.
 - `EmailNotificationService.ts`:
   - `targetsPerCapoDipartimento()`: per ogni `Dipartimento` con
     `getCapoEmail() !== null`, un `EmailTarget` (`tipoTarget:
-    'dipartimento'`, `emails: [capo]`).
+'dipartimento'`, `emails: [capo]`).
   - `targetsPerDipartimento()`: per ogni `Dipartimento`, un `EmailTarget`
     con `emails` = `findByDipartimento(dipartId)` mappato a email,
     deduplicato.

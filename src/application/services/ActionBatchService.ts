@@ -14,7 +14,12 @@ import type { Cdu } from '../context-engine/Cdu';
 import type { StoricoDocumentiService } from '../storico/StoricoDocumentiService';
 import { ConfigurazioneAzione } from '../../domain/entities/ConfigurazioneAzione';
 import { TABLE, COL_CONF_AZIONI } from '../../config/schema';
-import { ASSE_SINGOLA, GeneratoreAxis, GestioneArticolazione, StatoJob } from '../../domain/value-objects/enums';
+import {
+  ASSE_SINGOLA,
+  GeneratoreAxis,
+  GestioneArticolazione,
+  StatoJob
+} from '../../domain/value-objects/enums';
 import { ConfigurationError } from '../../domain/errors/DomainError';
 import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
@@ -138,7 +143,10 @@ export class ActionBatchService {
           righe.push(ConfigurazioneAzione.fromData(row));
         } catch (error) {
           const reason = error instanceof Error ? error.message : String(error);
-          const rawId = typeof row[COL_CONF_AZIONI.ID] === 'string' ? row[COL_CONF_AZIONI.ID] : `riga #${indice}`;
+          const rawId =
+            typeof row[COL_CONF_AZIONI.ID] === 'string'
+              ? row[COL_CONF_AZIONI.ID]
+              : `riga #${indice}`;
           this.deps.logger?.warn(`CONF_AZIONI ${String(rawId)} scartata: ${reason}`);
         }
       });
@@ -164,7 +172,9 @@ export class ActionBatchService {
     this.containerStartedAt = Date.now();
     this.runCount = (resume?.runCount ?? 0) + 1;
     this.priorDurationMs = resume?.totalDurationMs ?? 0;
-    this.eseguitoDa = String(params.eseguitoDa ?? resume?.eseguitoDa ?? this.deps.activeUser?.getEmail() ?? '');
+    this.eseguitoDa = String(
+      params.eseguitoDa ?? resume?.eseguitoDa ?? this.deps.activeUser?.getEmail() ?? ''
+    );
     this.esecuzioneIniziata = new Date(this.containerStartedAt).toISOString();
     const azioneIds = params.azioneIds ?? resume?.azioneIds ?? [];
     const jobId = String(params.jobId ?? resume?.jobId ?? 'azioni');
@@ -199,7 +209,10 @@ export class ActionBatchService {
       // entirely and, by design, writes no LOG_JOB row at all.
       if (
         config.condizione.trim() !== '' &&
-        !this.deps.expressionEngine.evaluateBoolean(config.condizione, cduBase as unknown as Record<string, unknown>)
+        !this.deps.expressionEngine.evaluateBoolean(
+          config.condizione,
+          cduBase as unknown as Record<string, unknown>
+        )
       ) {
         logger?.info(`Azione ${azioneId} saltata: CONDIZIONE falsa`);
         return true;
@@ -219,7 +232,9 @@ export class ActionBatchService {
         actions = JSON.parse(azioniRaw) as Array<{ tipo?: unknown }>;
       } catch (e) {
         const reason = e instanceof Error ? e.message : String(e);
-        throw new ConfigurationError(`CONF_AZIONI ${azioneId}: AZIONI non è JSON valido: ${reason}`);
+        throw new ConfigurationError(
+          `CONF_AZIONI ${azioneId}: AZIONI non è JSON valido: ${reason}`
+        );
       }
 
       const targets = resume === null ? this.targetsPerAsse(config) : resume.targets;
@@ -273,7 +288,9 @@ export class ActionBatchService {
             '✅ Actions completed',
             Math.max(0, Date.now() - itemStartedAt),
             {
-              Actions: actions.flatMap((action) => (typeof action.tipo === 'string' ? [action.tipo] : [])),
+              Actions: actions.flatMap((action) =>
+                typeof action.tipo === 'string' ? [action.tipo] : []
+              ),
               Updated: updated
             },
             { depth: 1, isLast: true, ancestorHasNext: [i + 1 < targets.length] }
@@ -413,7 +430,13 @@ export class ActionBatchService {
     // literal/enum type instead of a bare `string` (no-unsafe-enum-comparison).
     switch (config.asse as GeneratoreAxis | typeof ASSE_SINGOLA) {
       case ASSE_SINGOLA:
-        return [{ id: config.id ?? 'SINGOLA', recipe: 'AZIONE_SINGOLA', params: { target: '', tipoTarget: 'classe' } }];
+        return [
+          {
+            id: config.id ?? 'SINGOLA',
+            recipe: 'AZIONE_SINGOLA',
+            params: { target: '', tipoTarget: 'classe' }
+          }
+        ];
       case GeneratoreAxis.CLASSE:
         return targetsClasse(classi, gestione).map((classe) => ({
           id: classe.id ?? '',
@@ -448,19 +471,25 @@ export class ActionBatchService {
         return targetsClasseDocente(classi, teachingAssignments, now, gestione).map((target) => ({
           id: `${target.classe}:${target.docenteEmail}`,
           recipe: 'CLASSE_DOCENTE',
-          params: { target: target.classe, tipoTarget: 'classe', docenteCorrente: target.docenteEmail }
-        }));
-      case GeneratoreAxis.CLASSE_DOCENTE_MATERIA:
-        return targetsClasseDocenteMateria(classi, teachingAssignments, now, gestione).map((target) => ({
-          id: `${target.classe}:${target.materiaId}:${target.docenteEmail}`,
-          recipe: 'CLASSE_DOCENTE_MATERIA',
           params: {
             target: target.classe,
             tipoTarget: 'classe',
-            docenteCorrente: target.docenteEmail,
-            materiaCorrente: target.materiaId
+            docenteCorrente: target.docenteEmail
           }
         }));
+      case GeneratoreAxis.CLASSE_DOCENTE_MATERIA:
+        return targetsClasseDocenteMateria(classi, teachingAssignments, now, gestione).map(
+          (target) => ({
+            id: `${target.classe}:${target.materiaId}:${target.docenteEmail}`,
+            recipe: 'CLASSE_DOCENTE_MATERIA',
+            params: {
+              target: target.classe,
+              tipoTarget: 'classe',
+              docenteCorrente: target.docenteEmail,
+              materiaCorrente: target.materiaId
+            }
+          })
+        );
       case GeneratoreAxis.DOCENTE:
         return targetsDocenti(classi, teachingAssignments, now, gestione).map((target) => ({
           id: target.docenteEmail,
@@ -475,14 +504,18 @@ export class ActionBatchService {
       default:
         // Unreachable via the entity (its constructor validates ASSE), kept so a
         // future axis added to the dictionary fails loudly here instead of running zero targets.
-        throw new ConfigurationError(`CONF_AZIONI ${config.id ?? '?'}: ASSE non gestito: ${config.asse}`);
+        throw new ConfigurationError(
+          `CONF_AZIONI ${config.id ?? '?'}: ASSE non gestito: ${config.asse}`
+        );
     }
   }
 
   /** JobRunnerLib registry callback (passed to run/resume). */
   registerJobHandlers(queue: JobQueueLike): void {
     queue.setPurgeOnComplete?.(true);
-    queue.registerJobHandler(JOB_TYPE_ESECUZIONE_AZIONI, (params) => this.batchAzioniHandler(params));
+    queue.registerJobHandler(JOB_TYPE_ESECUZIONE_AZIONI, (params) =>
+      this.batchAzioniHandler(params)
+    );
   }
 
   /** Starts the batch through JobRunnerLib (state + resume triggers managed by the library). */

@@ -9,7 +9,11 @@ import type { Cdu } from '../../../../../src/application/context-engine/Cdu';
 function emptyCdu(): Cdu {
   const cdu = {
     focus: { classe: {} },
-    tech: { entita: {}, servizi: [], pipeline: { statoCorrente: '', stepEseguiti: [], errori: [], logEsecuzione: [] } }
+    tech: {
+      entita: {},
+      servizi: [],
+      pipeline: { statoCorrente: '', stepEseguiti: [], errori: [], logEsecuzione: [] }
+    }
   } as unknown as Cdu;
   setClasseEntity(cdu, new Classe({ ID: '5A', ANNO: 5, INDIRIZZO: 'SCIENTIFICO' }));
   return cdu;
@@ -27,7 +31,12 @@ describe('ProgettiProvider', () => {
     });
     const progetti = { findByClasse: () => [progetto] };
     const docenti = {
-      findById: () => ({ nome: 'Anna', cognome: 'Ferrari', genere: 'F', id: 'anna.ferrari@scuola.edu.it' })
+      findById: () => ({
+        nome: 'Anna',
+        cognome: 'Ferrari',
+        genere: 'F',
+        id: 'anna.ferrari@scuola.edu.it'
+      })
     };
     const provider = new ProgettiProvider(progetti as never, docenti as never);
     const cdu = emptyCdu();
@@ -41,7 +50,9 @@ describe('ProgettiProvider', () => {
       oreAsl: 30,
       isAsl: true
     });
-    expect(cdu.focus.classe!.progetti!.elenco[0]!.referente.appellativoCompleto).toBe('Prof.ssa Ferrari Anna');
+    expect(cdu.focus.classe!.progetti!.elenco[0]!.referente.appellativoCompleto).toBe(
+      'Prof.ssa Ferrari Anna'
+    );
   });
 
   it('treats an unresolved referente as an external expert (raw name, no email/genere)', () => {

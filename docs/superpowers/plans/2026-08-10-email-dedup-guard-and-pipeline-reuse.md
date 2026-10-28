@@ -37,10 +37,12 @@ Duplicate-send policy is opt-in-to-bypass, mirroring `CONF_DOC.DUPLICAZIONE` (`s
 ### Task 1.1: Add `CONF_MAIL.DUPLICAZIONE` schema column
 
 **Files:**
+
 - Modify: `src/config/schema.ts:34-47` (`COL_CONF_MAIL`)
 - Test: none (pure constant addition, exercised indirectly by Task 1.3/1.4 tests)
 
 **Interfaces:**
+
 - Produces: `COL_CONF_MAIL.DUPLICAZIONE === 'DUPLICAZIONE'`, consumed by Task 1.3.
 
 - [ ] **Step 1: Add the column constant**
@@ -80,10 +82,12 @@ git commit -m "feat: add CONF_MAIL.DUPLICAZIONE schema column"
 ### Task 1.2: Add `findByPattern` to `ILogEmailRepository`
 
 **Files:**
+
 - Modify: `src/domain/repositories/ILogEmailRepository.ts`
 - Test: none (interface-only change; `LogEmailRepository` already implements the method, exercised by Task 1.3/1.4 tests)
 
 **Interfaces:**
+
 - Produces: `ILogEmailRepository.findByPattern(patternId: string): LogEmail[]`, consumed by Task 1.3's `CheckAlreadySentStep`.
 
 - [ ] **Step 1: Add the method to the interface**
@@ -126,11 +130,13 @@ git commit -m "feat: expose findByPattern on ILogEmailRepository"
 ### Task 1.3: `CheckAlreadySentStep` — pipeline step + wiring
 
 **Files:**
+
 - Modify: `src/application/pipelines/emailSteps.ts` (new step class, after `ValutaCondizioniInvioStep`, before `RenderBoxesStep`)
 - Modify: `src/application/services/EmailNotificationService.ts:224-251` (`buildPipeline`)
 - Test: `test/unit/application/pipelines/email-steps.test.ts`
 
 **Interfaces:**
+
 - Consumes: `ctx.get('config')` (`Row`), `ctx.get('emailTarget')` (`EmailTarget`), `ctx.get('shouldSend')` (set by `ValutaCondizioniInvioStep`); `ILogEmailRepository.findByPattern` (Task 1.2); `emailTargetId(target: EmailTarget): string` (`src/application/email/saluto.ts:42`, already imported in `emailSteps.ts`); `COL_CONF_MAIL.DUPLICAZIONE` (Task 1.1); `DuplicazioneDocumento` enum (`src/domain/value-objects/enums.ts:7-10`).
 - Produces: on match, `ctx.set('shouldSend', false)` and `ctx.set('skipReason', <string>)`, consumed by every later step's `sendGate` and by `EmailNotificationService.sendPattern`'s `result.skipped` counter (`EmailNotificationService.ts:164-166`).
 
@@ -163,9 +169,21 @@ Then add a new `describe` block at the end of the file:
 describe('CheckAlreadySentStep', () => {
   // docenteTarget() (declared earlier in this file) needs PROCESSO: 'PER_DOCENTE' —
   // see the existing usages at email-steps.test.ts:357/372/381 for the same pairing.
-  function ctxAfterCondizioni(overrides: Partial<Record<string, unknown>> = {}, target: EmailTarget = docenteTarget()) {
+  function ctxAfterCondizioni(
+    overrides: Partial<Record<string, unknown>> = {},
+    target: EmailTarget = docenteTarget()
+  ) {
     const { db, ctx, docenti, alunni } = wire({ PROCESSO: 'PER_DOCENTE', ...overrides }, target);
-    new BuildCDUStep(logger, composeContextBuilder(db, new MasterSheetRepository(db), new AldoTeachingAssignmentResolver(db)), docenti, alunni).execute(ctx);
+    new BuildCDUStep(
+      logger,
+      composeContextBuilder(
+        db,
+        new MasterSheetRepository(db),
+        new AldoTeachingAssignmentResolver(db)
+      ),
+      docenti,
+      alunni
+    ).execute(ctx);
     new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(ctx);
     return { db, ctx };
   }
@@ -385,9 +403,11 @@ git commit -m "feat: guard NotificaPipeline against re-sending to an already-SUC
 ### Task 1.4: Service-level regression test — `sendPattern` skips an already-sent target
 
 **Files:**
+
 - Modify: `test/unit/application/email-notification-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `EmailNotificationService.sendPattern(patternId, options?): SendPatternResult` (unchanged signature, `EmailNotificationService.ts:137-172`); `LogEmailRepository.registraInvio` (existing); `emailTargetId` (existing).
 
 - [ ] **Step 1: Write the failing test**
@@ -457,6 +477,7 @@ git commit -m "test: cover sendPattern already-sent skip at the service level"
 `EmailNotificationService.sendPattern` (loop at `EmailNotificationService.ts:156-170`) and `sendToTarget` (`EmailNotificationService.ts:178-214`, called once per target from `EmailBatchService`'s batch loop at `src/application/services/EmailBatchService.ts:183`) both call `this.buildPipeline(jobId).execute(...)` — a **new** `Pipeline` with 9 freshly-`new`'d `Step` instances — on every single target. Likewise `DocumentGenerationService.generateForClasseWithRecipe` / `generateForDipartimento` / `generateForAlunnoWithRecipe` (`DocumentGenerationService.ts:164,213,289`) each call `this.buildPipeline(jobId).execute(...)`, and `DocumentBatchService` calls these once per document from its batch loops (e.g. `generateForPiano` at `DocumentBatchService.ts:161`, `generateForClasseDocenteMateria` at line 294, `generateForDipartimento` at line 366) — all passing the **same `jobId` string for the whole batch**.
 
 Verified safe to cache and reuse across `.execute()` calls:
+
 - `Pipeline.execute(initialData)` (`GasLibraryFactory/PipelineFramework/src/Pipeline.js:314-319`) does `const context = new PipelineContext(initialData);` — a fresh context every call. The `Pipeline` instance itself only holds `_steps` (fixed after `addStep` calls) and `_hooks` (fixed after `beforeStep`/`afterStep`/`onError` calls) — both set once in `buildPipeline()` and never mutated by `execute()`.
 - Every `Step` subclass constructor in `documentSteps.ts` and `emailSteps.ts` only assigns `private readonly` fields from constructor parameters (dependencies) — no field is written by `_executeLogic`. `_executeLogic(ctx)` reads/writes exclusively through the passed-in `PipelineContext`.
 - Conclusion: one `Pipeline` (with its `Step`s) built for a given `jobId` produces identical, independent results across repeated `.execute()` calls with different seed data — reuse changes only allocation cost, not behavior.
@@ -466,10 +487,12 @@ The only per-call variability inside `buildPipeline()` is the `monitor`/`jobId` 
 ### Task 2.1: Cache the pipeline in `EmailNotificationService`
 
 **Files:**
+
 - Modify: `src/application/services/EmailNotificationService.ts`
 - Test: `test/unit/application/email-notification-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: existing `buildPipeline(jobId?: string): Pipeline` (unchanged body).
 - Produces: new private `getPipeline(jobId?: string): Pipeline`, used internally by `sendPattern`/`sendToTarget` in place of `this.buildPipeline(jobId)`. No public signature changes.
 
@@ -535,11 +558,13 @@ Add a new private method right before `buildPipeline` (around line 223):
 Replace the two `this.buildPipeline(...)` call sites with `this.getPipeline(...)`:
 
 In `sendPattern` (line 157):
+
 ```typescript
       const ctx = this.getPipeline().execute({
 ```
 
 In `sendToTarget` (line 189):
+
 ```typescript
     const ctx = this.getPipeline(jobId).execute({
 ```
@@ -571,10 +596,12 @@ git commit -m "perf: reuse one NotificaPipeline instance per batch instead of re
 ### Task 2.2: Cache the pipeline in `DocumentGenerationService`
 
 **Files:**
+
 - Modify: `src/application/services/DocumentGenerationService.ts`
 - Test: `test/unit/application/pipelines/document-steps.test.ts` or a new focused test — check which file already covers `DocumentGenerationService` directly (search for `new DocumentGenerationService(` under `test/unit/`) and add to that file instead if one exists.
 
 **Interfaces:**
+
 - Consumes: existing `buildPipeline(jobId?: string): Pipeline` (unchanged body).
 - Produces: new private `getPipeline(jobId?: string): Pipeline`, used internally by `generateForClasseWithRecipe`/`generateForDipartimento`/`generateForAlunnoWithRecipe` in place of `this.buildPipeline(jobId)`. No public signature changes.
 
@@ -619,7 +646,7 @@ Add a new private method right before `buildPipeline` (around line 316-321):
 Replace all three `this.buildPipeline(jobId)` call sites (lines 164, 213, 289) with `this.getPipeline(jobId)`:
 
 ```typescript
-      ctx = this.getPipeline(jobId).execute({ config: row, confDoc: config, cdu });
+ctx = this.getPipeline(jobId).execute({ config: row, confDoc: config, cdu });
 ```
 
 (Same replacement text at all three call sites — `generateForClasseWithRecipe`, `generateForDipartimento`, `generateForAlunnoWithRecipe`.) `buildPipeline` itself, including its `onError` rollback hook and monitor telemetry hooks, is unchanged.

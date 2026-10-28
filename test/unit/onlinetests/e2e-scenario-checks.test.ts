@@ -127,9 +127,9 @@ function recordingHarness(
             ? 'VERBALE'
             : configId === CONF_DOC_PIANO_LAVORO
               ? 'PIANO_LAVORO'
-            : configId === CONF_DOC_RIEPILOGO_FIRME_CDC
-              ? 'RIEPILOGO_FIRME_CDC'
-              : configId,
+              : configId === CONF_DOC_RIEPILOGO_FIRME_CDC
+                ? 'RIEPILOGO_FIRME_CDC'
+                : configId,
         [COL_LOG_DOCS.CLASSI]: classe.value,
         [COL_LOG_DOCS.MATERIE]: configId === 'E2E_VERBALE' ? 'ALT,MATE' : '',
         [COL_LOG_DOCS.PATH]: configId === 'E2E_VERBALE' ? folderPath : '',
@@ -374,9 +374,7 @@ function recordingHarness(
       if (key === 'risolutoreRuoli') {
         return {
           risolvi: (role: string) =>
-            role === 'COORDINATORI'
-              ? []
-              : [{ value: 'e2edocente1@onlinetest.aldo.local' }]
+            role === 'COORDINATORI' ? [] : [{ value: 'e2edocente1@onlinetest.aldo.local' }]
         } as T;
       }
       if (key === 'materie') {
@@ -588,7 +586,10 @@ test('protected range scenario: test mode still verifies protections that the AP
 
 test('protected range scenario fails mixed empty and persisted evidence instead of skipping', () => {
   const documents = {
-    generateForClasse: (classe: ClasseId) => ({ fileId: `sheet-${classe.value}`, status: 'CREATED' })
+    generateForClasse: (classe: ClasseId) => ({
+      fileId: `sheet-${classe.value}`,
+      status: 'CREATED'
+    })
   } as unknown as DocumentGenerationService;
   const getProtectedRanges = jest
     .fn()
@@ -734,10 +735,7 @@ test('protected range scenario rejects a range missing its expected editor princ
   expect(() =>
     verifyProtectedRangeScenario(documents, spreadsheets, true, () => ({
       columns: [{ sigla: 'MAT', header: 'Matematica', column: 0 }],
-      expectedEditors: () => [
-        'teacher@onlinetest.aldo.local',
-        'coordinator@onlinetest.aldo.local'
-      ]
+      expectedEditors: () => ['teacher@onlinetest.aldo.local', 'coordinator@onlinetest.aldo.local']
     }))
   ).toThrow(/coordinator@onlinetest\.aldo\.local/);
 });
@@ -940,7 +938,15 @@ function scenario11WithArticulatedColumnEvidence(
       }
     }
   };
-  const headers = ['REL/ALT', 'Matematica', 'Classe 3C-S', 'Fisica', 'Classe 3C-C', 'Fisica', 'Laboratorio Gruppo A'];
+  const headers = [
+    'REL/ALT',
+    'Matematica',
+    'Classe 3C-S',
+    'Fisica',
+    'Classe 3C-C',
+    'Fisica',
+    'Laboratorio Gruppo A'
+  ];
   const expectedBySubject: Record<string, string> = {
     MAT: 'mat@onlinetest.aldo.local',
     FIS: 'second@onlinetest.aldo.local',
@@ -974,7 +980,11 @@ function scenario11WithArticulatedColumnEvidence(
       }
       if (key === 'risolutoreRuoli') {
         return {
-          risolvi: (role: string, subjectCdu: { meta: { materiaCorrente?: string | null } }, options: Record<string, unknown> = {}) => {
+          risolvi: (
+            role: string,
+            subjectCdu: { meta: { materiaCorrente?: string | null } },
+            options: Record<string, unknown> = {}
+          ) => {
             roleCalls.push({ role, options });
             if (role === 'COORDINATORI') return [];
             if (role === 'DOCENTI_IRC_ALT') return [{ value: 'special@onlinetest.aldo.local' }];
@@ -1022,31 +1032,46 @@ test('registered Scenario 11 maps duplicate labels to articulated generator colu
 });
 
 test.each([
-  ['missing', [
-    { index: 0, editors: ['special@onlinetest.aldo.local'] },
-    { index: 1, editors: ['mat@onlinetest.aldo.local'] },
-    { index: 3, editors: ['first@onlinetest.aldo.local'] },
-    { index: 5, editors: ['second@onlinetest.aldo.local'] }
-  ], /Laboratorio Gruppo A mancante/],
-  ['warning', [
-    { index: 0, editors: ['special@onlinetest.aldo.local'] },
-    { index: 1, editors: ['mat@onlinetest.aldo.local'], warningOnly: true },
-    { index: 3, editors: ['first@onlinetest.aldo.local'] },
-    { index: 5, editors: ['second@onlinetest.aldo.local'] },
-    { index: 6, editors: ['lab@onlinetest.aldo.local'] }
-  ], /warningOnly/],
-  ['wrong principal', [
-    { index: 0, editors: ['special@onlinetest.aldo.local'] },
-    { index: 1, editors: ['mat@onlinetest.aldo.local'] },
-    { index: 3, editors: ['first@onlinetest.aldo.local'] },
-    { index: 5, editors: ['wrong@onlinetest.aldo.local'] },
-    { index: 6, editors: ['lab@onlinetest.aldo.local'] }
-  ], /wrong@onlinetest\.aldo\.local/]
-])('registered Scenario 11 fails %s articulated persisted evidence', (_variant, evidence, message) => {
-  const { scenario } = scenario11WithArticulatedColumnEvidence(evidence);
-  expect(scenario).toMatchObject({ status: 'fail' });
-  expect(scenario?.message).toMatch(message);
-});
+  [
+    'missing',
+    [
+      { index: 0, editors: ['special@onlinetest.aldo.local'] },
+      { index: 1, editors: ['mat@onlinetest.aldo.local'] },
+      { index: 3, editors: ['first@onlinetest.aldo.local'] },
+      { index: 5, editors: ['second@onlinetest.aldo.local'] }
+    ],
+    /Laboratorio Gruppo A mancante/
+  ],
+  [
+    'warning',
+    [
+      { index: 0, editors: ['special@onlinetest.aldo.local'] },
+      { index: 1, editors: ['mat@onlinetest.aldo.local'], warningOnly: true },
+      { index: 3, editors: ['first@onlinetest.aldo.local'] },
+      { index: 5, editors: ['second@onlinetest.aldo.local'] },
+      { index: 6, editors: ['lab@onlinetest.aldo.local'] }
+    ],
+    /warningOnly/
+  ],
+  [
+    'wrong principal',
+    [
+      { index: 0, editors: ['special@onlinetest.aldo.local'] },
+      { index: 1, editors: ['mat@onlinetest.aldo.local'] },
+      { index: 3, editors: ['first@onlinetest.aldo.local'] },
+      { index: 5, editors: ['wrong@onlinetest.aldo.local'] },
+      { index: 6, editors: ['lab@onlinetest.aldo.local'] }
+    ],
+    /wrong@onlinetest\.aldo\.local/
+  ]
+])(
+  'registered Scenario 11 fails %s articulated persisted evidence',
+  (_variant, evidence, message) => {
+    const { scenario } = scenario11WithArticulatedColumnEvidence(evidence);
+    expect(scenario).toMatchObject({ status: 'fail' });
+    expect(scenario?.message).toMatch(message);
+  }
+);
 
 test('registered Scenario 11 mirrors non-articulated generator sorting when mapping persisted columns', () => {
   const base = recordingHarness();
@@ -1057,10 +1082,12 @@ test('registered Scenario 11 mirrors non-articulated generator sorting when mapp
     focus: {
       classe: {
         isArticolata: false,
-        consiglio: { elenco: [
-          { materie: [{ sigla: 'STO' }, { sigla: 'MAT' }] },
-          { materie: [{ sigla: 'LAB.GRUPPO_A' }] }
-        ] }
+        consiglio: {
+          elenco: [
+            { materie: [{ sigla: 'STO' }, { sigla: 'MAT' }] },
+            { materie: [{ sigla: 'LAB.GRUPPO_A' }] }
+          ]
+        }
       }
     }
   };
@@ -1070,10 +1097,42 @@ test('registered Scenario 11 mirrors non-articulated generator sorting when mapp
         return {
           getRanges: () => [['REL', 'Laboratorio Gruppo A', 'Matematica', 'Storia']],
           getProtectedRanges: () => [
-            { id: 1, range: { startColumnIndex: 0 }, description: 'REL', editors: { users: ['special@onlinetest.aldo.local'] }, sheetId: 0, sheetName: 'Sheet1', warningOnly: false },
-            { id: 2, range: { startColumnIndex: 1 }, description: 'LAB', editors: { users: ['lab@onlinetest.aldo.local'] }, sheetId: 0, sheetName: 'Sheet1', warningOnly: false },
-            { id: 3, range: { startColumnIndex: 2 }, description: 'MAT', editors: { users: ['mat@onlinetest.aldo.local'] }, sheetId: 0, sheetName: 'Sheet1', warningOnly: false },
-            { id: 4, range: { startColumnIndex: 3 }, description: 'STO', editors: { users: ['sto@onlinetest.aldo.local'] }, sheetId: 0, sheetName: 'Sheet1', warningOnly: false }
+            {
+              id: 1,
+              range: { startColumnIndex: 0 },
+              description: 'REL',
+              editors: { users: ['special@onlinetest.aldo.local'] },
+              sheetId: 0,
+              sheetName: 'Sheet1',
+              warningOnly: false
+            },
+            {
+              id: 2,
+              range: { startColumnIndex: 1 },
+              description: 'LAB',
+              editors: { users: ['lab@onlinetest.aldo.local'] },
+              sheetId: 0,
+              sheetName: 'Sheet1',
+              warningOnly: false
+            },
+            {
+              id: 3,
+              range: { startColumnIndex: 2 },
+              description: 'MAT',
+              editors: { users: ['mat@onlinetest.aldo.local'] },
+              sheetId: 0,
+              sheetName: 'Sheet1',
+              warningOnly: false
+            },
+            {
+              id: 4,
+              range: { startColumnIndex: 3 },
+              description: 'STO',
+              editors: { users: ['sto@onlinetest.aldo.local'] },
+              sheetId: 0,
+              sheetName: 'Sheet1',
+              warningOnly: false
+            }
           ]
         } as T;
       }
@@ -1081,7 +1140,8 @@ test('registered Scenario 11 mirrors non-articulated generator sorting when mapp
       if (key === 'materie') {
         return {
           findByIdCached: (id: { value: string }) => ({
-            sintesi: ({ MAT: 'Matematica', STO: 'Storia' } as Record<string, string>)[id.value] ?? id.value
+            sintesi:
+              ({ MAT: 'Matematica', STO: 'Storia' } as Record<string, string>)[id.value] ?? id.value
           }),
           findSpecifiche: () => [{ id: 'LAB.GRUPPO_A', sintesi: 'Laboratorio Gruppo A' }]
         } as T;
@@ -1192,9 +1252,9 @@ test('scenario 1 ignores an earlier non-verbale folder that mentions 3C', () => 
 
   registerE2eScenarioChecks(runner, harness.container, sample);
 
-  const scenario1 = runner.report().results.find((result) =>
-    result.name.startsWith('E2E scenario 1:')
-  );
+  const scenario1 = runner
+    .report()
+    .results.find((result) => result.name.startsWith('E2E scenario 1:'));
   expect(scenario1).toMatchObject({ status: 'pass' });
 });
 
@@ -1204,9 +1264,9 @@ test('accetta la cartella verbale registrata con TIPO=CONF_DOC.ID sul path del d
 
   registerE2eScenarioChecks(runner, harness.container, sample);
 
-  const scenario1 = runner.report().results.find((result) =>
-    result.name.startsWith('E2E scenario 1:')
-  );
+  const scenario1 = runner
+    .report()
+    .results.find((result) => result.name.startsWith('E2E scenario 1:'));
   expect(scenario1).toMatchObject({ status: 'pass' });
 });
 
@@ -1227,9 +1287,9 @@ test('rifiuta la cartella verbale priva di MATERIE', () => {
 
   registerE2eScenarioChecks(runner, harness.container, sample);
 
-  const scenario1 = runner.report().results.find((result) =>
-    result.name.startsWith('E2E scenario 1:')
-  );
+  const scenario1 = runner
+    .report()
+    .results.find((result) => result.name.startsWith('E2E scenario 1:'));
   expect(scenario1?.status).toBe('fail');
   expect(scenario1?.message).toMatch(/Cartella verbale per 1A/);
 });
@@ -1264,9 +1324,9 @@ test('scenario 3 reuses a plan an earlier check already generated (CheckDuplicat
 
   const scenario3 = runner.report().results.find((result) => result.name.includes('scenario 3'));
   expect(scenario3).toMatchObject({ status: 'pass' });
-  expect(
-    harness.planRows().filter((row) => row[COL_LOG_DOCS.UTENTI] === PDP_BES_3C)
-  ).toHaveLength(1);
+  expect(harness.planRows().filter((row) => row[COL_LOG_DOCS.UTENTI] === PDP_BES_3C)).toHaveLength(
+    1
+  );
 });
 
 test('scenario 3 accepts historical-plan lines separated by HTML-to-text newlines', () => {

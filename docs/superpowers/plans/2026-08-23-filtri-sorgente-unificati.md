@@ -26,19 +26,19 @@
 
 ## File Structure
 
-| File | Responsabilità |
-| --- | --- |
-| `src/domain/specifications/FiltriSorgente.ts` | Tipi del formato, parser/validatore e factory delle specification per documenti e cartelle. |
-| `src/domain/entities/LogDocumento.ts` | Espone in modo domain-safe `ID_ORIG` e le membership CSV necessarie alle specification. |
-| `src/domain/entities/LogCartella.ts` | Espone `PATH` e membership CSV UTENTI/MATERIE oltre a CLASSI, senza far filtrare i consumer sui record raw. |
-| `src/application/services/AggregatoreDati.ts` | Applica le specification dopo lo scope e implementa la matrice 3×2 degli accessor. |
-| `src/application/email/boxes.ts` | Converte ciascun box documenti/cartelle nel rispettivo accessor, valida i filtri e rende solo l'insieme filtrato. |
-| `src/application/pipelines/emailSteps.ts` | Risolve gli allegati dinamici attraverso lo stesso accesso/parser del box, preservando deduplica e allegati statici. |
-| `test/unit/domain/specifications/filtri-sorgente.test.ts` | Contratto di parsing e matching di tutti i filtri. |
-| `test/unit/domain/log-documento.test.ts`, `test/unit/domain/log-cartella.test.ts` | Contratto degli accessor domain-safe aggiunti. |
-| `test/unit/application/aggregatore-dati.test.ts` | Scope e filtro per tutti i sei accessor, inclusa la rinomina utente. |
-| `test/unit/application/email-boxes.test.ts` | Rendering, skip di config invalida e migrazione dal dialetto legacy. |
-| `test/unit/application/pipelines/email-steps.test.ts` | Allegati filtrati e parità fra IDs visibili/allegati. |
+| File                                                                              | Responsabilità                                                                                                       |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `src/domain/specifications/FiltriSorgente.ts`                                     | Tipi del formato, parser/validatore e factory delle specification per documenti e cartelle.                          |
+| `src/domain/entities/LogDocumento.ts`                                             | Espone in modo domain-safe `ID_ORIG` e le membership CSV necessarie alle specification.                              |
+| `src/domain/entities/LogCartella.ts`                                              | Espone `PATH` e membership CSV UTENTI/MATERIE oltre a CLASSI, senza far filtrare i consumer sui record raw.          |
+| `src/application/services/AggregatoreDati.ts`                                     | Applica le specification dopo lo scope e implementa la matrice 3×2 degli accessor.                                   |
+| `src/application/email/boxes.ts`                                                  | Converte ciascun box documenti/cartelle nel rispettivo accessor, valida i filtri e rende solo l'insieme filtrato.    |
+| `src/application/pipelines/emailSteps.ts`                                         | Risolve gli allegati dinamici attraverso lo stesso accesso/parser del box, preservando deduplica e allegati statici. |
+| `test/unit/domain/specifications/filtri-sorgente.test.ts`                         | Contratto di parsing e matching di tutti i filtri.                                                                   |
+| `test/unit/domain/log-documento.test.ts`, `test/unit/domain/log-cartella.test.ts` | Contratto degli accessor domain-safe aggiunti.                                                                       |
+| `test/unit/application/aggregatore-dati.test.ts`                                  | Scope e filtro per tutti i sei accessor, inclusa la rinomina utente.                                                 |
+| `test/unit/application/email-boxes.test.ts`                                       | Rendering, skip di config invalida e migrazione dal dialetto legacy.                                                 |
+| `test/unit/application/pipelines/email-steps.test.ts`                             | Allegati filtrati e parità fra IDs visibili/allegati.                                                                |
 
 ### Task 1: Esponi i dati di filtro dalle entità senza far trapelare record raw
 
@@ -102,9 +102,12 @@
   In `filtri-sorgente.test.ts`, aggiungi tabelle di casi per:
 
   ```ts
-  parseFiltriSorgente(undefined, 'documenti') // { filtri: undefined, errori: [] }
-  parseFiltriSorgente({}, 'documenti')        // idem
-  parseFiltriSorgente({ tipo: 'VERBALE', csv: 'all', classi: ['5A', '3B'], not: { stato: 'ARCHIVIATO' } }, 'documenti')
+  parseFiltriSorgente(undefined, 'documenti'); // { filtri: undefined, errori: [] }
+  parseFiltriSorgente({}, 'documenti'); // idem
+  parseFiltriSorgente(
+    { tipo: 'VERBALE', csv: 'all', classi: ['5A', '3B'], not: { stato: 'ARCHIVIATO' } },
+    'documenti'
+  );
   ```
 
   Verifica inoltre: stringa CSV convertita ad array di un elemento; tutti i campi validi per ciascuna entità; `StatoDocumento` non valido; `csv: 'none'`; booleano `notificato` non booleano; scalare/CSV del tipo sbagliato; chiave ignota; campo documento su cartella e viceversa; e `not.not`. Ogni caso invalido deve restituire `filtri: undefined` e messaggi che nominino le chiavi offending. Le chiavi legacy vivono invece sul box esterno e sono testate nel Task 4.
@@ -165,11 +168,27 @@
   Nel fixture locale crea documenti e cartelle che differiscono in `CLASSI`, `UTENTI`, `MATERIE`, `TIPO` e `PATH`. Testa:
 
   ```ts
-  agg.perMetodo('documentiPerClasse', { classeId: '5A', filtri: { not: { tipo: 'CONDOTTA' } } }, logger)
-  agg.perMetodo('documentiPerDipartimento', { dipartimentoId: 'DIP_SCI', filtri: { materie: 'MATE' } }, logger)
-  agg.perMetodo('cartellePerClasse', { classeId: '5A', filtri: { path: 'Archivio' } }, logger)
-  agg.perMetodo('cartellePerUtente', { utenteEmail: 'a@school.it', filtri: { nome: 'Verbali' } }, logger)
-  agg.perMetodo('cartellePerDipartimento', { dipartimentoId: 'DIP_SCI', filtri: { idGen: 'VERBALI' } }, logger)
+  agg.perMetodo(
+    'documentiPerClasse',
+    { classeId: '5A', filtri: { not: { tipo: 'CONDOTTA' } } },
+    logger
+  );
+  agg.perMetodo(
+    'documentiPerDipartimento',
+    { dipartimentoId: 'DIP_SCI', filtri: { materie: 'MATE' } },
+    logger
+  );
+  agg.perMetodo('cartellePerClasse', { classeId: '5A', filtri: { path: 'Archivio' } }, logger);
+  agg.perMetodo(
+    'cartellePerUtente',
+    { utenteEmail: 'a@school.it', filtri: { nome: 'Verbali' } },
+    logger
+  );
+  agg.perMetodo(
+    'cartellePerDipartimento',
+    { dipartimentoId: 'DIP_SCI', filtri: { idGen: 'VERBALI' } },
+    logger
+  );
   ```
 
   Per i dipartimenti, prepara `DIPART.MATERIE` e `MATERIE` coerenti e verifica che l'insieme materie provenga da `MateriePerDipartimentoSpec`. Aggiungi un caso con scope mancante: ritorna `null` e registra un warning che contiene metodo e motivo.

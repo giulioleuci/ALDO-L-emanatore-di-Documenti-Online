@@ -13,7 +13,11 @@ function tutorFor(target: string, tables = fixtureTables()) {
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi));
   b.registerProvider('tutor', new TutorProvider(classi));
-  const params: BuildParams = { target, tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') };
+  const params: BuildParams = {
+    target,
+    tipoTarget: 'classe',
+    now: new Date('2026-07-01T09:00:00Z')
+  };
   const recipe: Recipe = { providers: ['class', 'tutor'], options: makeOptions({}) };
   return b.build(params, recipe).focus.classe!.tutor!;
 }
@@ -23,9 +27,16 @@ test('standard class: tutor read from its own RUOLI as PersonaVM, single male AS
   const classe5A = tables.CLASSI!.find((r) => r.ID === '5A')!;
   classe5A.RUOLI = JSON.stringify({ TUTOR_ASL: 'rossi@school.it' });
   const tutor = tutorFor('5A', tables);
-  expect(tutor.asl).toEqual([expect.objectContaining({ email: 'rossi@school.it', nomeCompleto: 'ROSSI MARIO' })]);
+  expect(tutor.asl).toEqual([
+    expect.objectContaining({ email: 'rossi@school.it', nomeCompleto: 'ROSSI MARIO' })
+  ]);
   expect(tutor.orientamento).toEqual([]);
-  expect(tutor.collettivo).toEqual({ appellativo: 'Prof.', articolo: 'Il', sostantivo: 'Tutor', numero: 1 });
+  expect(tutor.collettivo).toEqual({
+    appellativo: 'Prof.',
+    articolo: 'Il',
+    sostantivo: 'Tutor',
+    numero: 1
+  });
 });
 
 test('articulated parent: tutor ASL merged across both partner classes, mixed group declines Prof./I', () => {
@@ -62,5 +73,10 @@ test('hasAsl/hasOrientamento/hasElenco are false and elenco is empty when RUOLI 
   expect(tutor.hasAsl).toBe(false);
   expect(tutor.hasOrientamento).toBe(false);
   expect(tutor.hasElenco).toBe(false);
-  expect(tutor.collettivo).toEqual({ appellativo: '', articolo: '', sostantivo: 'Tutor', numero: 0 });
+  expect(tutor.collettivo).toEqual({
+    appellativo: '',
+    articolo: '',
+    sostantivo: 'Tutor',
+    numero: 0
+  });
 });

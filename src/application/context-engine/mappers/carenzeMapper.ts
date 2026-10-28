@@ -18,36 +18,35 @@ export function buildElencoCarenzeVm(
     .flatMap((carenza) =>
       sigle.flatMap((sigla) => {
         const cella = carenza.getCella(sigla);
-        if (
-          typeof cella !== 'string' &&
-          typeof cella !== 'number' &&
-          typeof cella !== 'boolean'
-        ) {
+        if (typeof cella !== 'string' && typeof cella !== 'number' && typeof cella !== 'boolean') {
           return [];
         }
         const voto = String(cella).trim();
         if (voto === '') return [];
         const materia = materie.findByIdCached(MateriaId.of(sigla));
         const materiaNome = materia?.nome ?? sigla;
-        return [{
-          materiaSigla: sigla,
-          materiaNome,
-          materiaNomeSintetico: materia?.sintesi ?? materiaNome,
-          voto,
-          descrizione: `${materiaNome}: ${voto}`
-        }];
+        return [
+          {
+            materiaSigla: sigla,
+            materiaNome,
+            materiaNomeSintetico: materia?.sintesi ?? materiaNome,
+            voto,
+            descrizione: `${materiaNome}: ${voto}`
+          }
+        ];
       })
     )
-    .sort((a, b) =>
-      a.materiaNome.localeCompare(b.materiaNome) || a.materiaSigla.localeCompare(b.materiaSigla)
+    .sort(
+      (a, b) =>
+        a.materiaNome.localeCompare(b.materiaNome) || a.materiaSigla.localeCompare(b.materiaSigla)
     );
-  return { ...elencoVm(elenco), elencoDescrizione: elenco.map((item) => item.descrizione).join(', ') };
+  return {
+    ...elencoVm(elenco),
+    elencoDescrizione: elenco.map((item) => item.descrizione).join(', ')
+  };
 }
 
-export function curriculumArray(
-  alunno: Alunno,
-  materie: IMateriaRepository
-): CurriculumVM[] {
+export function curriculumArray(alunno: Alunno, materie: IMateriaRepository): CurriculumVM[] {
   return Array.from(alunno.getCurriculum())
     .map(([materiaId, specifiche]) => {
       const materia = materie.findByIdCached(materiaId);

@@ -496,7 +496,9 @@ function migrateResolvedPersistedE2eFixture(
   if (persistedStaticAttachmentFileId === undefined || persistedStaticAttachmentFileId === '') {
     const configuredAttachments = db
       .table(TABLE.CONF_MAIL)
-      .find((row) => row[COL_CONF_MAIL.ID] === CONF_MAIL_STATIC_ALLEGATO)?.[COL_CONF_MAIL.ALLEGATI_STATICI];
+      .find((row) => row[COL_CONF_MAIL.ID] === CONF_MAIL_STATIC_ALLEGATO)?.[
+      COL_CONF_MAIL.ALLEGATI_STATICI
+    ];
     let configuredStaticAttachmentFileId = '';
     if (typeof configuredAttachments === 'string') {
       try {
@@ -580,7 +582,8 @@ export function migratePersistedE2eFixture(
 ): PersistedE2eFixtureMigrationResult {
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
   const readSample =
-    overrides.readSample ?? ((props: IPropertiesFacade) => readPersistedFullOnlineTestSample(props, {}, true));
+    overrides.readSample ??
+    ((props: IPropertiesFacade) => readPersistedFullOnlineTestSample(props, {}, true));
   return migrateResolvedPersistedE2eFixture(readSample(properties), properties, overrides);
 }
 
@@ -598,7 +601,8 @@ function executeOnlineTestsBatch(
 ): OnlineTestReport {
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
   const readSample =
-    overrides.readSample ?? ((props: IPropertiesFacade) => readPersistedFullOnlineTestSample(props, {}, true));
+    overrides.readSample ??
+    ((props: IPropertiesFacade) => readPersistedFullOnlineTestSample(props, {}, true));
   const sample = readSample(properties);
   const resetAldoFn = overrides.resetAldo ?? resetAldo;
   const initAldoFn = overrides.initAldo ?? initAldo;
@@ -776,7 +780,8 @@ export function resetE2eHistoryTables(
 ): ResetE2eHistoryTablesResult {
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
   const readSample =
-    overrides.readSample ?? ((props: IPropertiesFacade) => readPersistedFullOnlineTestSample(props, {}, true));
+    overrides.readSample ??
+    ((props: IPropertiesFacade) => readPersistedFullOnlineTestSample(props, {}, true));
   const sample = readSample(properties);
   const resetAldoFn = overrides.resetAldo ?? resetAldo;
   const initAldoFn = overrides.initAldo ?? initAldo;
@@ -935,7 +940,8 @@ export function executePersistedImportChecks(
 ): OnlineTestReport {
   const properties = overrides.properties ?? new ScriptPropertiesFacade();
   const readSample =
-    overrides.readSample ?? ((props: IPropertiesFacade) => readPersistedFullOnlineTestSample(props, {}, true));
+    overrides.readSample ??
+    ((props: IPropertiesFacade) => readPersistedFullOnlineTestSample(props, {}, true));
   const sample = readSample(properties);
   const resetAldoFn = overrides.resetAldo ?? resetAldo;
   const initAldoFn = overrides.initAldo ?? initAldo;

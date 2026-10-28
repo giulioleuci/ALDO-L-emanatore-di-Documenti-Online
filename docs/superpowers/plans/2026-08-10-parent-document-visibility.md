@@ -21,12 +21,14 @@
 ### Task 1: Centralize parent-document visibility in `LogDocumentoRepository`
 
 **Files:**
+
 - Modify: `src/infrastructure/repositories/LogDocumentoRepository.ts:24-39`
 - Modify: `src/config/Bootstrap.ts:111-299`
 - Modify: `src/config/ApplicationComposition.ts:38-129`
 - Test: `test/unit/infrastructure/log-repositories.test.ts:1-80`
 
 **Interfaces:**
+
 - Consumes: `IClasseRepository.getClasseParent(classe: Classe): Classe | null`.
 - Produces: unchanged public signature `ILogDocumentoRepository.findByClasse(classe: Classe): LogDocumento[]`, now with inherited parent visibility.
 
@@ -38,9 +40,24 @@
   test('LOG_DOCS exposes a parent-owned document to its direct partner only', () => {
     const db = new FakeDatabase({
       CLASSI: [
-        { ID: '3C', ANNO: 3, INDIRIZZO: 'SCI', ARTICOLAZIONE: JSON.stringify({ partners: '3C-S,3C-C' }) },
-        { ID: '3C-S', ANNO: 3, INDIRIZZO: 'SCI', ARTICOLAZIONE: JSON.stringify({ parent: '3C', partner: '3C-C' }) },
-        { ID: '3C-C', ANNO: 3, INDIRIZZO: 'CLA', ARTICOLAZIONE: JSON.stringify({ parent: '3C', partner: '3C-S' }) }
+        {
+          ID: '3C',
+          ANNO: 3,
+          INDIRIZZO: 'SCI',
+          ARTICOLAZIONE: JSON.stringify({ partners: '3C-S,3C-C' })
+        },
+        {
+          ID: '3C-S',
+          ANNO: 3,
+          INDIRIZZO: 'SCI',
+          ARTICOLAZIONE: JSON.stringify({ parent: '3C', partner: '3C-C' })
+        },
+        {
+          ID: '3C-C',
+          ANNO: 3,
+          INDIRIZZO: 'CLA',
+          ARTICOLAZIONE: JSON.stringify({ parent: '3C', partner: '3C-S' })
+        }
       ],
       LOG_DOCS: [
         { ID: 'parent-doc', ID_GEN: 'VERBALE', CLASSI: '3C', STATO: 'GENERATO', UTENTI: '' },
@@ -53,7 +70,10 @@
     const scientifico = classi.findById(ClasseId.of('3C-S'))!;
     const classico = classi.findById(ClasseId.of('3C-C'))!;
 
-    expect(docs.findByClasse(scientifico).map((doc) => doc.id)).toEqual(['parent-doc', 'sibling-doc']);
+    expect(docs.findByClasse(scientifico).map((doc) => doc.id)).toEqual([
+      'parent-doc',
+      'sibling-doc'
+    ]);
     expect(docs.findByClasse(classico).map((doc) => doc.id)).toEqual(['parent-doc']);
     expect(docs.findByClasse(parent).map((doc) => doc.id)).toEqual(['parent-doc']);
   });
@@ -103,10 +123,12 @@
 ### Task 2: Route `AggregatoreDati` through the common document boundary
 
 **Files:**
+
 - Modify: `src/application/services/AggregatoreDati.ts:30-136`
 - Test: `test/unit/application/aggregatore-dati.test.ts:1-125`
 
 **Interfaces:**
+
 - Consumes: `ILogDocumentoRepository.findByClasse(classe: Classe): LogDocumento[]` from Task 1 and `IClasseRepository.findById(id: ClasseId): Classe | null`.
 - Produces: `getDocumentiPerClasse(classeId: string, filtri?: DocumentoFiltri): LogDocumento[]` with the same parent -> partner visibility contract.
 
@@ -118,14 +140,37 @@
   test('documentiPerClasse exposes parent-owned documents to a partner without rewriting CLASSI', () => {
     const tables = fixtureTables();
     tables.CLASSI = [
-      { ID: '3C', ANNO: 3, INDIRIZZO: 'SCI', ARTICOLAZIONE: JSON.stringify({ partners: '3C-S,3C-C' }) },
-      { ID: '3C-S', ANNO: 3, INDIRIZZO: 'SCI', ARTICOLAZIONE: JSON.stringify({ parent: '3C', partner: '3C-C' }) }
+      {
+        ID: '3C',
+        ANNO: 3,
+        INDIRIZZO: 'SCI',
+        ARTICOLAZIONE: JSON.stringify({ partners: '3C-S,3C-C' })
+      },
+      {
+        ID: '3C-S',
+        ANNO: 3,
+        INDIRIZZO: 'SCI',
+        ARTICOLAZIONE: JSON.stringify({ parent: '3C', partner: '3C-C' })
+      }
     ];
-    tables.LOG_DOCS = [{ ID: 'verbale-parent', ID_GEN: 'VERBALE', TIPO: 'VERBALE', STATO: 'GENERATO', CLASSI: '3C', UTENTI: '' }];
+    tables.LOG_DOCS = [
+      {
+        ID: 'verbale-parent',
+        ID_GEN: 'VERBALE',
+        TIPO: 'VERBALE',
+        STATO: 'GENERATO',
+        CLASSI: '3C',
+        UTENTI: ''
+      }
+    ];
     const agg = aggregatore(tables);
 
     expect(agg.getDocumentiPerClasse('3C-S').map((doc) => doc.id)).toEqual(['verbale-parent']);
-    expect((agg.perMetodo('documentiPerClasse', { classeId: '3C-S' }, logger) as LogDocumento[]).map((doc) => doc.id)).toEqual(['verbale-parent']);
+    expect(
+      (agg.perMetodo('documentiPerClasse', { classeId: '3C-S' }, logger) as LogDocumento[]).map(
+        (doc) => doc.id
+      )
+    ).toEqual(['verbale-parent']);
     expect(tables.LOG_DOCS[0]!.CLASSI).toBe('3C');
   });
   ```
@@ -166,11 +211,13 @@
 ### Task 3: Correct E2E coordinator expectation and verify the affected delivery path
 
 **Files:**
+
 - Modify: `src/onlinetests/checks/e2eScenarioChecks.ts:430-470`
 - Modify: `test/unit/onlinetests/e2e-scenario-checks.test.ts:110-150,730-780`
 - Test: `test/unit/onlinetests/e2e-scenario-checks.test.ts:730-780`
 
 **Interfaces:**
+
 - Consumes: the E2E fixture contract `3C-S -> Alessandro Verdi`, `3C-C -> Paolo Fontana`, and `SendPatternResult`.
 - Produces: an E2E assertion aligned with the actual fixture and a regression check that a zero-skip verbale result is required for all articulated targets.
 
@@ -179,7 +226,9 @@
   Change the expected `3C-C` coordinator in the scenario check to `Paolo Fontana`. In the recording harness, keep the inaccurate `Prof.ssa Elena Ferrari` text for `CONF_DOC_ARTICOLATA`; then assert scenario 10b fails:
 
   ```ts
-  const scenario10b = runner.report().results.find((result) => result.name.includes('scenario 10b'));
+  const scenario10b = runner
+    .report()
+    .results.find((result) => result.name.includes('scenario 10b'));
   expect(scenario10b).toMatchObject({ status: 'fail' });
   expect(scenario10b?.message).toMatch(/Paolo Fontana/);
   ```
@@ -222,9 +271,11 @@
 ### Task 4: Rebuild and run the online E2E proof
 
 **Files:**
+
 - No source changes expected.
 
 **Interfaces:**
+
 - Consumes: the bundled online test entrypoint and the parent-document read contract from Tasks 1–3.
 - Produces: online evidence that scenario 4 has `targets=3`, `sent=3`, `skipped=0`, `errors=none` and scenario 10b passes.
 

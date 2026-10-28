@@ -41,9 +41,9 @@ describe('ProgettiPerTipoSpec', () => {
   test('isSatisfiedBy false for a different tipo', () => {
     const spec = new ProgettiPerTipoSpec(TipoProgetto.ORIENTAMENTO);
     expect(spec.isSatisfiedBy(progetto())).toBe(false);
-    expect(
-      spec.isSatisfiedBy(progetto({ [COL_PROGETTI.TIPO]: TipoProgetto.ORIENTAMENTO }))
-    ).toBe(true);
+    expect(spec.isSatisfiedBy(progetto({ [COL_PROGETTI.TIPO]: TipoProgetto.ORIENTAMENTO }))).toBe(
+      true
+    );
   });
 
   test('toQueryObject pushes down TIPO filter', () => {

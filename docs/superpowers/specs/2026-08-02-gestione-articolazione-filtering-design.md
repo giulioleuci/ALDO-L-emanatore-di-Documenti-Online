@@ -33,11 +33,11 @@ reimplements this branch.
   caller of `DocumentGenerationService.generateForClasse`. It currently
   iterates `this.classi.findAttive()` unfiltered — every active class,
   including every partner, gets its own document today. This is the sole
-  place that decides *which* classes a CONF_DOC batch targets.
+  place that decides _which_ classes a CONF_DOC batch targets.
 - `DocumentGenerationService.generateForClasse`
   (`src/application/services/DocumentGenerationService.ts:93-154`)
   separately expands `classiCompetenza` for the CDU (`articolazione?.isParent()
-  === true ? [classe, ...partners] : [classe]`, lines 107-110). This decides
+=== true ? [classe, ...partners] : [classe]`, lines 107-110). This decides
   what a single already-targeted document's CDU contains (e.g. companion
   classes listed inside the doc), not which classes get a document. Out of
   scope — see "Why content-expansion logic is untouched" below.
@@ -62,8 +62,8 @@ reimplements this branch.
 
 ## Why content-expansion logic is untouched
 
-Both `classiCompetenza` methods only expand when the *target itself* is an
-articulated parent (`isParent() === true`). Once the target *set* is
+Both `classiCompetenza` methods only expand when the _target itself_ is an
+articulated parent (`isParent() === true`). Once the target _set_ is
 filtered by the new mechanism:
 
 - Under `COMPLETA`, only parents/standalone classes are ever targeted —
@@ -84,9 +84,11 @@ branches on articulation type.
 ### 1. Schema
 
 `COL_CONF_MAIL` (`src/config/schema.ts:34`) gains:
+
 ```ts
-GESTIONE_ARTICOLAZIONE: 'GESTIONE_ARTICOLAZIONE'
+GESTIONE_ARTICOLAZIONE: 'GESTIONE_ARTICOLAZIONE';
 ```
+
 (`COL_CONF_DOC` already has this key, unused until now — no change needed
 there.)
 

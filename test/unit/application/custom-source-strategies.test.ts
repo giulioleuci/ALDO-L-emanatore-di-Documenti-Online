@@ -78,7 +78,15 @@ function tablesWithFolders(): Record<string, Row[]> {
       UTENTI: '',
       MATERIE: ''
     },
-    { ID: 'fold_other', ID_GEN: 'ALTRO', PATH: 'X', LINK: '', CLASSI: '5A', UTENTI: '', MATERIE: '' }
+    {
+      ID: 'fold_other',
+      ID_GEN: 'ALTRO',
+      PATH: 'X',
+      LINK: '',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIE: ''
+    }
   ];
   return tables;
 }
@@ -365,7 +373,9 @@ describe('CERCA_DOCUMENTI custom SourceStrategy (12 §3)', () => {
       { getFiles } as unknown as DriveService
     );
 
-    expect(() => new Strategy(logger).extract({ idGen: 'CD_GRIGLIE' })).toThrow('Drive quota exceeded');
+    expect(() => new Strategy(logger).extract({ idGen: 'CD_GRIGLIE' })).toThrow(
+      'Drive quota exceeded'
+    );
     expect(getFiles).toHaveBeenCalledWith('sheet_doc1', { fields: 'id,mimeType', strict: true });
   });
 

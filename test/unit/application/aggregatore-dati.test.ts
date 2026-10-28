@@ -160,9 +160,9 @@ test("getDocumentiPerUtente does not leak a classmate's personal document via sh
   // a1's family box: live scope is a1's own class (5A), isDocente is absent
   // (this is a student/family recipient) — a2's personal PDP must stay hidden
   // even though it carries the same class tag.
-  expect(
-    agg.getDocumentiPerUtente('a1@school.it', undefined, ['5A']).map((d) => d.id)
-  ).toEqual(['d-a1']);
+  expect(agg.getDocumentiPerUtente('a1@school.it', undefined, ['5A']).map((d) => d.id)).toEqual([
+    'd-a1'
+  ]);
 });
 
 test('getCartellePerUtente without a live scope still falls back to the registered UTENTI (audit §5)', () => {
@@ -445,9 +445,7 @@ test('perMetodo stops after invalid filters without a false missing-scope warnin
   const agg = aggregatore();
   const warnSpy = jest.spyOn(logger, 'warn');
 
-  expect(
-    agg.perMetodo('documentiPerUtente', { filtri: { stato: 'BOGUS' } }, logger)
-  ).toBeNull();
+  expect(agg.perMetodo('documentiPerUtente', { filtri: { stato: 'BOGUS' } }, logger)).toBeNull();
   expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('filtri non validi'));
   expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('utenteEmail mancante'));
 

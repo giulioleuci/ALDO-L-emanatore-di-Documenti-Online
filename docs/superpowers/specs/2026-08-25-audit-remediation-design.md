@@ -14,18 +14,18 @@ in which case the underlying code is fixed rather than the assertion loosened.
 
 ## 1. Decisions taken
 
-| Item | Decision |
-|---|---|
-| GasLibraryFactory | In scope, additions and removals both |
-| `SystemUtils` public surface | All 50 names stay; the bind loop and the 25 re-guard wrappers go |
-| 19 repository interfaces (C3.2) | **Kept** — deliberate Clean-Architecture boundary |
-| 21 entity `*Data` interfaces (C3.1) | 3 collapse (dynamic columns), 18 become genuinely type-safe |
-| Assertion hardening (C1) | All 1,048 sites, both repos |
-| 9 skipped GLF tests (A9) | Differentiated treatment, none left as `it.skip` |
-| `appendRows` batching (C4.1) | Yes, plus one real online run to measure |
-| Specification contributions | Options 1, 5, 3, 2 — all four, in that order |
-| ALDO `Specification` base (C3.7) | **Keeps** `extends`, because option 1 makes the inheritance useful |
-| User-owned sheet columns | New `_` prefix convention |
+| Item                                | Decision                                                           |
+| ----------------------------------- | ------------------------------------------------------------------ |
+| GasLibraryFactory                   | In scope, additions and removals both                              |
+| `SystemUtils` public surface        | All 50 names stay; the bind loop and the 25 re-guard wrappers go   |
+| 19 repository interfaces (C3.2)     | **Kept** — deliberate Clean-Architecture boundary                  |
+| 21 entity `*Data` interfaces (C3.1) | 3 collapse (dynamic columns), 18 become genuinely type-safe        |
+| Assertion hardening (C1)            | All 1,048 sites, both repos                                        |
+| 9 skipped GLF tests (A9)            | Differentiated treatment, none left as `it.skip`                   |
+| `appendRows` batching (C4.1)        | Yes, plus one real online run to measure                           |
+| Specification contributions         | Options 1, 5, 3, 2 — all four, in that order                       |
+| ALDO `Specification` base (C3.7)    | **Keeps** `extends`, because option 1 makes the inheritance useful |
+| User-owned sheet columns            | New `_` prefix convention                                          |
 
 ## 2. Out of scope
 
@@ -165,9 +165,9 @@ that makes migrating 16 specs to a shared base verifiable rather than a reading 
 
 **Option 1 — declare `toQueryObject` on the base.** The contract already lives in
 `QueryTranslator.js` (its JSDoc even names ALDO) but not in `Specification.js`. Add it with a
-`null` default and the invariant written down: *when it returns a non-null object, the filter
+`null` default and the invariant written down: _when it returns a non-null object, the filter
 must be exactly equivalent to `isSatisfiedBy()`, because `Repository.find()` applies only one
-of the two.* Make `canBeTranslatedToQuery` answer statically instead of by attempt, and have
+of the two._ Make `canBeTranslatedToQuery` answer statically instead of by attempt, and have
 `QueryTranslator` call `toQueryObject()` once instead of five times per `find()`.
 
 Fixes trap 2 (5 calls per find) and trap 3 (the 11 in-memory specs each throw and catch an
@@ -195,7 +195,7 @@ so a row `"a@x.it,b@x.it"` would not match `"a@x.it"`. It does not explode only 
 
 **The guard is worth only what its rows are worth.** With positive rows only, both halves agree
 and the test passes vacuously. Commitment: every pushdown spec gets at least one row it does
-*not* satisfy, plus the edge cases that matter — multi-value CSV cells, string-vs-number cells.
+_not_ satisfy, plus the edge cases that matter — multi-value CSV cells, string-vs-number cells.
 `rows: []` is a review failure.
 
 `AlunniAttiviSpec` is the twin case to fix under this guard: it is typed `Specification<RowLike>`
@@ -309,11 +309,11 @@ Carried forward from this design:
 
 ## 9. Expected size
 
-| Workstream | Δ ALDO | Δ GLF | Risk |
-|---|---|---|---|
-| W0 | 58 sites rewritten | — | medium: will surface real defects |
-| W1 | ~−520 | — | low; `MateriaId` trim is the one behaviour change |
-| W2 | — | ~−450 | medium: public surface, mitigated by keeping all names |
-| W3 | −132 | +100 | low for options 1/5, medium for option 2 (ambient types) |
-| W4 | −60 | +40 | medium: only provable by a real online run |
-| W5 | 49 sites + 9 skips | 941 sites | medium: expect red, one file per commit |
+| Workstream | Δ ALDO             | Δ GLF     | Risk                                                     |
+| ---------- | ------------------ | --------- | -------------------------------------------------------- |
+| W0         | 58 sites rewritten | —         | medium: will surface real defects                        |
+| W1         | ~−520              | —         | low; `MateriaId` trim is the one behaviour change        |
+| W2         | —                  | ~−450     | medium: public surface, mitigated by keeping all names   |
+| W3         | −132               | +100      | low for options 1/5, medium for option 2 (ambient types) |
+| W4         | −60                | +40       | medium: only provable by a real online run               |
+| W5         | 49 sites + 9 skips | 941 sites | medium: expect red, one file per commit                  |

@@ -158,7 +158,10 @@ export function menuEsecuzioneAzioni(
     return;
   }
   const ids = tutte ? attive.map((a) => a.id) : [scelta];
-  ui.mostraSidebarMonitoraggio(`azioni_${tutte ? PAROLA_TUTTE : scelta}`, `Monitoraggio — ${titolo}`);
+  ui.mostraSidebarMonitoraggio(
+    `azioni_${tutte ? PAROLA_TUTTE : scelta}`,
+    `Monitoraggio — ${titolo}`
+  );
   try {
     avvia(ids);
   } catch (e) {

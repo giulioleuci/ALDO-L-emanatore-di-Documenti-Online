@@ -130,13 +130,15 @@ export const MATERIE_PER_INDIRIZZO = {
  * applicable for this address". Derived from MATERIE_PER_INDIRIZZO so the
  * fixture cannot drift from the class layouts.
  */
-export const MATERIE_ANNI_PER_INDIRIZZO: Record<string, Record<string, number[]>> =
-  Object.fromEntries(
-    Object.entries(MATERIE_PER_INDIRIZZO).map(([indirizzo, materie]) => [
-      indirizzo,
-      Object.fromEntries(materie.map((sigla) => [sigla, [1, 2, 3, 4, 5]]))
-    ])
-  );
+export const MATERIE_ANNI_PER_INDIRIZZO: Record<
+  string,
+  Record<string, number[]>
+> = Object.fromEntries(
+  Object.entries(MATERIE_PER_INDIRIZZO).map(([indirizzo, materie]) => [
+    indirizzo,
+    Object.fromEntries(materie.map((sigla) => [sigla, [1, 2, 3, 4, 5]]))
+  ])
+);
 
 export const STUDENT_TOTALE = 220;
 

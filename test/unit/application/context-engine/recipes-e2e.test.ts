@@ -46,7 +46,11 @@ test('CLASSE_COMPLETA on an ordinary class (5A) assembles every class-axis node 
   expect(c.studenti?.elenco).toHaveLength(1);
   expect(c.studenti?.statistiche.totale).toBe(1);
   expect(c.rappresentanti?.studenti.elenco).toEqual([
-    { studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, indirizzo: null, hasIndirizzo: false }
+    {
+      studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
+      indirizzo: null,
+      hasIndirizzo: false
+    }
   ]);
   expect(c.coordinatori?.elenco[0]?.email).toBe('rossi@school.it');
   // provider-created containers stay present with empty arrays + companion
@@ -121,7 +125,11 @@ test('includiStorico:true with positive depth attaches focus.alunno.storico and 
   const params: BuildParams = { target: 'a1@school.it', tipoTarget: 'alunno', now };
   const cdu = factory().build(
     params,
-    recipe('ALUNNO_DETTAGLIATO', { includiStorico: true, profonditaAnniStorico: 1, profonditaAnniDocumenti: 1 })
+    recipe('ALUNNO_DETTAGLIATO', {
+      includiStorico: true,
+      profonditaAnniStorico: 1,
+      profonditaAnniDocumenti: 1
+    })
   );
   expect(cdu.focus.alunno!.storico!.isResolved()).toBe(false);
   expect(cdu.focus.alunno!.documenti!.storico.isResolved()).toBe(false);

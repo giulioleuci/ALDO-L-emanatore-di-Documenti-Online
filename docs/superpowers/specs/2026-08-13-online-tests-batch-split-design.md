@@ -19,13 +19,13 @@ sequenza dal menu Esegui di Apps Script, invece di un singolo
 
 ## Decisioni chiave (da brainstorming)
 
-| # | Decisione | Scelta |
-|---|---|---|
-| 1 | Riduzione fixture (alunni/classi/docenti) | **Scartata.** Analisi call-site per call-site: `generateForClasse` produce un documento per classe (non per alunno), quindi il conteggio di ~100 documenti deriva dal numero di scenari distinti registrati, non dalla dimensione dell'anagrafica. `ALL_CLASSI_E2E` (3 classi) e `SharedTestDatabaseBuilder` sono già dimensionati al minimo che porta ogni scenario nominato (catena VARIAZIONI_CATTEDRA, ripetenti, catalogo specificità, gruppi articolati). Coerente con [[cattedra-resolution-review-pattern]]: tagli alla fixture condivisa hanno già mascherato regressioni reali in questo progetto. |
-| 2 | Riduzione call-site di generazione ridondanti | **Scartata.** Verificato ogni sito `generateFor*`/`avviaGenerazioneDataDriven` nei check: ogni rigenerazione volontaria è già protetta da dedupe (nessuna nuova scrittura Drive), e le apparenti duplicazioni (loop piani in `documenti` vs batch `CONF_DOC_JOBRUNNER`) testano percorsi di codice diversi (chiamata diretta vs generatore JobRunner con checkpoint/resume) sullo stesso target set — non sono ridondanti. |
-| 3 | Leva scelta | **Split in batch GAS multipli**, riusando i launcher granulari già esistenti (`test*`, 23 funzioni, `src/onlinetests/index.ts:821-977`) via un nuovo livello di raggruppamento intermedio. Copertura invariata, rischio di regressione nullo. |
-| 4 | Numero di batch | **4**, bilanciati per peso reale (scritture Drive) e per la dipendenza dati esistente (`email`/`articolazione` leggono righe `LOG_DOCS` che solo `documenti` produce). |
-| 5 | Ordine di esecuzione | Batch 1 → 2 → 3 → 4. Il batch 2 **richiede** che il batch 1 sia già stato eseguito sullo stesso fixture persistito; 3 e 4 sono indipendenti ma restano numerati in coda per semplicità operativa. |
+| #   | Decisione                                     | Scelta                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| --- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Riduzione fixture (alunni/classi/docenti)     | **Scartata.** Analisi call-site per call-site: `generateForClasse` produce un documento per classe (non per alunno), quindi il conteggio di ~100 documenti deriva dal numero di scenari distinti registrati, non dalla dimensione dell'anagrafica. `ALL_CLASSI_E2E` (3 classi) e `SharedTestDatabaseBuilder` sono già dimensionati al minimo che porta ogni scenario nominato (catena VARIAZIONI_CATTEDRA, ripetenti, catalogo specificità, gruppi articolati). Coerente con [[cattedra-resolution-review-pattern]]: tagli alla fixture condivisa hanno già mascherato regressioni reali in questo progetto. |
+| 2   | Riduzione call-site di generazione ridondanti | **Scartata.** Verificato ogni sito `generateFor*`/`avviaGenerazioneDataDriven` nei check: ogni rigenerazione volontaria è già protetta da dedupe (nessuna nuova scrittura Drive), e le apparenti duplicazioni (loop piani in `documenti` vs batch `CONF_DOC_JOBRUNNER`) testano percorsi di codice diversi (chiamata diretta vs generatore JobRunner con checkpoint/resume) sullo stesso target set — non sono ridondanti.                                                                                                                                                                                   |
+| 3   | Leva scelta                                   | **Split in batch GAS multipli**, riusando i launcher granulari già esistenti (`test*`, 23 funzioni, `src/onlinetests/index.ts:821-977`) via un nuovo livello di raggruppamento intermedio. Copertura invariata, rischio di regressione nullo.                                                                                                                                                                                                                                                                                                                                                                |
+| 4   | Numero di batch                               | **4**, bilanciati per peso reale (scritture Drive) e per la dipendenza dati esistente (`email`/`articolazione` leggono righe `LOG_DOCS` che solo `documenti` produce).                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| 5   | Ordine di esecuzione                          | Batch 1 → 2 → 3 → 4. Il batch 2 **richiede** che il batch 1 sia già stato eseguito sullo stesso fixture persistito; 3 e 4 sono indipendenti ma restano numerati in coda per semplicità operativa.                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 ## Causa della violazione dei 30 minuti (analisi)
 
@@ -82,7 +82,12 @@ function executeOnlineTestsBatch(
     if (key === 'email' || key === 'jobRunner') {
       (registrations[key] as RegisterEmailChecks)(runner, container, testSample, EMAIL_TEST_SAFE);
     } else if (key === 'cacheIsolamento') {
-      registrations.cacheIsolamento(runner, container, testSample, cacheIsolationDeps(properties, overrides));
+      registrations.cacheIsolamento(
+        runner,
+        container,
+        testSample,
+        cacheIsolationDeps(properties, overrides)
+      );
     } else {
       (registrations[key] as RegisterSharedChecks)(runner, container, testSample);
     }
@@ -98,12 +103,12 @@ aggregato cambia).
 
 ### Raggruppamento batch
 
-| Batch | Gruppi (`FullOnlineTestRegistrations` keys) | Peso reale | Vincolo |
-|---|---|---|---|
-| 1 | `documenti`, `jobRunner` | ~55-60 documenti Drive, il più pesante | Nessuno — provisiona i dati che il batch 2 legge |
-| 2 | `email`, `articolazione` | Leggero, ma legge righe `LOG_DOCS`/`LOG_MAIL` già generate | **Richiede batch 1 già eseguito** (email invia allegati VERBALE/PIANI/PIANO_LAVORO generati in batch 1; articolazione legge `RIEPILOGO_FIRME_CDC` e i piani duali generati in batch 1) |
-| 3 | `import`, `storico`, `itpDotted`, `aclReali` | Leggero, ~5 documenti totali | Indipendente |
-| 4 | `supplenzeRuoli`, `cacheIsolamento`, `permessi` | Quasi nullo, solo lettura/assert | Indipendente |
+| Batch | Gruppi (`FullOnlineTestRegistrations` keys)     | Peso reale                                                 | Vincolo                                                                                                                                                                                |
+| ----- | ----------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | `documenti`, `jobRunner`                        | ~55-60 documenti Drive, il più pesante                     | Nessuno — provisiona i dati che il batch 2 legge                                                                                                                                       |
+| 2     | `email`, `articolazione`                        | Leggero, ma legge righe `LOG_DOCS`/`LOG_MAIL` già generate | **Richiede batch 1 già eseguito** (email invia allegati VERBALE/PIANI/PIANO_LAVORO generati in batch 1; articolazione legge `RIEPILOGO_FIRME_CDC` e i piani duali generati in batch 1) |
+| 3     | `import`, `storico`, `itpDotted`, `aclReali`    | Leggero, ~5 documenti totali                               | Indipendente                                                                                                                                                                           |
+| 4     | `supplenzeRuoli`, `cacheIsolamento`, `permessi` | Quasi nullo, solo lettura/assert                           | Indipendente                                                                                                                                                                           |
 
 ### Nuovi launcher GAS
 

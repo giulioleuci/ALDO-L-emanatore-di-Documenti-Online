@@ -186,9 +186,9 @@ test('duplicate-policy checks reject persisted filenames with leading or trailin
 
   registerDocumentiChecks(runner as never, container, sample, 'duplicazione');
 
-  expect(
-    runner.callbacks.get('documenti.duplicazione::PERMESSA crea copie distinte')
-  ).toThrow(/normalizzate/);
+  expect(runner.callbacks.get('documenti.duplicazione::PERMESSA crea copie distinte')).toThrow(
+    /normalizzate/
+  );
 });
 
 test('imported-table check clears leftover job state before the first generation run', () => {

@@ -24,16 +24,16 @@ Riscrivere e riorganizzare completamente gli online test di ALDO su GAS reale:
 
 ## Decisioni chiave (da brainstorming)
 
-| # | Decisione | Scelta |
-|---|---|---|
-| 1 | Identità dataset | Dataset unico condiviso su Drive; sostituisce `E2eSampleDatabaseBuilder` (5 classi) e `SampleDatabaseBuilder` |
-| 2 | Test trigger JobRunner | Sospensione deterministica (maxDurationMs minimo) come default + test trigger reale opzionale separato |
-| 3 | Scenario email | Batch via JobRunner + `enableTestMode()` (indirizzo sicuro, LOG_MAIL `testMode`) |
-| 4 | Ambito gap | Intero DoD di `MISSING_TESTS.md` |
-| 5 | Struttura file/build | Approccio A: due entry webpack → `OnlineTests.gs` (strumentato) + `EntryPointOnlineTests.gs` (leggibile) |
-| 6 | Granularità launcher | Intermedia: ~20 launcher di scenario + provisioning + 2 aggregati (25 totali) |
-| 7 | JobRunner | A (deterministico, nel runner) + B (`testJobRunnerTriggerReale()`, mai nel runner aggregato) |
-| 8 | Vecchi runner | `runOnlineTests`, `runE2eScenarios`, `runArticolazioneScenarios` rimossi; `dumpOnlineCoverage` invariato |
+| #   | Decisione              | Scelta                                                                                                        |
+| --- | ---------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 1   | Identità dataset       | Dataset unico condiviso su Drive; sostituisce `E2eSampleDatabaseBuilder` (5 classi) e `SampleDatabaseBuilder` |
+| 2   | Test trigger JobRunner | Sospensione deterministica (maxDurationMs minimo) come default + test trigger reale opzionale separato        |
+| 3   | Scenario email         | Batch via JobRunner + `enableTestMode()` (indirizzo sicuro, LOG_MAIL `testMode`)                              |
+| 4   | Ambito gap             | Intero DoD di `MISSING_TESTS.md`                                                                              |
+| 5   | Struttura file/build   | Approccio A: due entry webpack → `OnlineTests.gs` (strumentato) + `EntryPointOnlineTests.gs` (leggibile)      |
+| 6   | Granularità launcher   | Intermedia: ~20 launcher di scenario + provisioning + 2 aggregati (25 totali)                                 |
+| 7   | JobRunner              | A (deterministico, nel runner) + B (`testJobRunnerTriggerReale()`, mai nel runner aggregato)                  |
+| 8   | Vecchi runner          | `runOnlineTests`, `runE2eScenarios`, `runArticolazioneScenarios` rimossi; `dumpOnlineCoverage` invariato      |
 
 ## Sezione 1 — Dataset mock condiviso (`creaDatiMockDrive`)
 
@@ -88,33 +88,33 @@ registri (`contextEngineChecks`, `pipelineChecks`, `repositoryChecks`,
 
 **Launcher GAS (in `EntryPointOnlineTests.gs`, zero-arg, chiamano globals ambient):**
 
-| Funzione GAS | Scenario |
-|---|---|
-| `creaDatiMockDrive()` | Provisioning dataset condiviso (Sez. 1); prima di tutto |
-| `testDocumentiStandard()` | Doc standard + template Sheets + protected ranges + interop template |
-| `testDocumentiArticolati()` | Articolate, target COMPLETA/ARTICOLATA, CdC split |
-| `testDocumentiTabelleImportate()` | `DOCUMENTO_CON_TABELLE_IMPORTATE` (P0) |
-| `testDuplicazioneDocumenti()` | NEGATA/PERMESSA, file reali, retry idempotente, LOG_DOCS |
-| `testInvioEmail()` | Batch via JobRunner + test mode + allegati |
-| `testEmailSicurezza()` | Soppressione duplicati + identità target tra container + destinatario mai produttivo |
-| `testJobRunnerDocGen()` | Sospensione/ripresa deterministica doc + stato/trigger/pulizia |
-| `testJobRunnerEmail()` | Sospensione/ripresa deterministica email + stato/trigger/pulizia |
-| `testJobRunnerTriggerReale()` | Trigger one-time reale: attesa scatto + resume via contesto; fallback `cancelJob`; MAI in `runFullOnlineTests` |
-| `testImportFileSingolo()` | `FILE_SINGOLO` + mapping + `hasHeaders` + `OVERWRITE` |
-| `testImportCartelleClasse()` | `CERCA_CARTELLE_CLASSE` storico ASL (P0) |
-| `testImportCercaDocumenti()` | `CERCA_DOCUMENTI` + `_CLASSE` + policy (IGNORE/TIMESTAMP/fallback/ATTIVO=false/ghost/misconfig) |
-| `testImportChunked()` | Import chunked resume senza duplicati né stato residuo |
-| `testRecuperoStoricoAlunno()` | `ALUNNO_COMPLETO` depth 2 + casi limite |
-| `testRecuperoStoricoClasse()` | `CLASSE_COMPLETA` + continuità CdC/ITP + `MATERIE.EVOLUZIONE` |
-| `testRecuperoStoricoDocumenti()` | `ID_GEN`/famiglia/sottotipo, isolamento PEI/PDP |
-| `testArticolazione()` | Boundary date, sostituzione composita, CdC split |
-| `testITPeMateriePuntate()` | `getITPPerMateria`, identità primaria/dotted, nomi, CDU, storico |
-| `testSupplenzeERuoli()` | Date inclusive/esclusive, sovrapposizioni, `SOLO_TITOLARI`/`SOLO_SUPPLENTI`/`ENTRAMBI` |
-| `testACLReali()` | Read-back ACL reali file/cartelle + protected ranges |
-| `testCacheIsolamento()` | Isolamento cache cross-spreadsheet |
-| `testPermessiAttivi()` | Visibilità utente attivo (gated da policy) |
-| `runFullOnlineTests()` | Runner aggregato: provisioning fresco + tutti i gruppi (A) |
-| `dumpOnlineCoverage()` | Reporting coverage (invariato) |
+| Funzione GAS                      | Scenario                                                                                                       |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `creaDatiMockDrive()`             | Provisioning dataset condiviso (Sez. 1); prima di tutto                                                        |
+| `testDocumentiStandard()`         | Doc standard + template Sheets + protected ranges + interop template                                           |
+| `testDocumentiArticolati()`       | Articolate, target COMPLETA/ARTICOLATA, CdC split                                                              |
+| `testDocumentiTabelleImportate()` | `DOCUMENTO_CON_TABELLE_IMPORTATE` (P0)                                                                         |
+| `testDuplicazioneDocumenti()`     | NEGATA/PERMESSA, file reali, retry idempotente, LOG_DOCS                                                       |
+| `testInvioEmail()`                | Batch via JobRunner + test mode + allegati                                                                     |
+| `testEmailSicurezza()`            | Soppressione duplicati + identità target tra container + destinatario mai produttivo                           |
+| `testJobRunnerDocGen()`           | Sospensione/ripresa deterministica doc + stato/trigger/pulizia                                                 |
+| `testJobRunnerEmail()`            | Sospensione/ripresa deterministica email + stato/trigger/pulizia                                               |
+| `testJobRunnerTriggerReale()`     | Trigger one-time reale: attesa scatto + resume via contesto; fallback `cancelJob`; MAI in `runFullOnlineTests` |
+| `testImportFileSingolo()`         | `FILE_SINGOLO` + mapping + `hasHeaders` + `OVERWRITE`                                                          |
+| `testImportCartelleClasse()`      | `CERCA_CARTELLE_CLASSE` storico ASL (P0)                                                                       |
+| `testImportCercaDocumenti()`      | `CERCA_DOCUMENTI` + `_CLASSE` + policy (IGNORE/TIMESTAMP/fallback/ATTIVO=false/ghost/misconfig)                |
+| `testImportChunked()`             | Import chunked resume senza duplicati né stato residuo                                                         |
+| `testRecuperoStoricoAlunno()`     | `ALUNNO_COMPLETO` depth 2 + casi limite                                                                        |
+| `testRecuperoStoricoClasse()`     | `CLASSE_COMPLETA` + continuità CdC/ITP + `MATERIE.EVOLUZIONE`                                                  |
+| `testRecuperoStoricoDocumenti()`  | `ID_GEN`/famiglia/sottotipo, isolamento PEI/PDP                                                                |
+| `testArticolazione()`             | Boundary date, sostituzione composita, CdC split                                                               |
+| `testITPeMateriePuntate()`        | `getITPPerMateria`, identità primaria/dotted, nomi, CDU, storico                                               |
+| `testSupplenzeERuoli()`           | Date inclusive/esclusive, sovrapposizioni, `SOLO_TITOLARI`/`SOLO_SUPPLENTI`/`ENTRAMBI`                         |
+| `testACLReali()`                  | Read-back ACL reali file/cartelle + protected ranges                                                           |
+| `testCacheIsolamento()`           | Isolamento cache cross-spreadsheet                                                                             |
+| `testPermessiAttivi()`            | Visibilità utente attivo (gated da policy)                                                                     |
+| `runFullOnlineTests()`            | Runner aggregato: provisioning fresco + tutti i gruppi (A)                                                     |
+| `dumpOnlineCoverage()`            | Reporting coverage (invariato)                                                                                 |
 
 **Organizzazione moduli (`src/onlinetests/`):**
 
@@ -191,7 +191,7 @@ crea mai trigger persistenti.
 
 - Nuovo entry `entrypoints-onlinetests` (stile `makeEntrypointsConfig`:
   `iife:false`, readable, NON strumentato) → `./src/onlinetests/entrypoints/
-  EntryPointOnlineTests.ts` → `dist/EntryPointOnlineTests.js`. Gated dallo
+EntryPointOnlineTests.ts` → `dist/EntryPointOnlineTests.js`. Gated dallo
   stesso flag `online` di `onlinetestsConfig`.
 
 **`scripts/build-and-prepare.cjs`:**
@@ -242,7 +242,7 @@ fuori dai contatori.
    (doc, email) → import → storico → articolazione/ITP/supplenze → ACL/cache/
    permessi. I gruppi documenti precedono email/import perché questi possono
    consumare i LOG_DOCS generati; gli assert restano comunque scoped per run.
-8. **Coverage:** istanbul solo su scenario code; `dumpOnlineCoverage` invariato;
+9. **Coverage:** istanbul solo su scenario code; `dumpOnlineCoverage` invariato;
    coverage-index (spec 2026-07-26) aggiornata.
 
 ## Definizione di done (da MISSING_TESTS.md, intero DoD)

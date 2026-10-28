@@ -78,16 +78,16 @@ Il Domain Layer è completamente agnostico rispetto a Google Sheets, Drive o Gma
 
 ### Struttura del repository (`src/`)
 
-| Cartella | Contenuto |
-| --- | --- |
-| `src/domain/` | Entità, value object, specification, interfacce dei repository, `DomainError`. Nessun import di GAS o di GasLibraryFactory. |
-| `src/application/` | Servizi applicativi (`services/`), strategie di generazione documentale (`strategies/`, una classe per tipo di generatore `CONF_DOC`), l'assemblatore del CDU (`context-engine/`, con `providers/`, `mappers/`, `interceptors/`), orchestrazione import dati (`import/`). |
-| `src/infrastructure/` | `facades/` incapsulano le chiamate a GasLibraryFactory e ai servizi nativi GAS dietro interfacce proprie di ALDO (`IDriveFacade`, `IGmailFacade`, `ITemplateEngine`); `repositories/` implementano le interfacce di dominio sopra `SheetDbAdapter`; `steps/` e `services/` contengono helper infrastrutturali (es. `AlberoCartelle`). |
-| `src/presentation/Menu.ts` | Costruisce il menu Google Sheets; riceve una UI facade, nessuna logica di business. |
-| `src/config/` | Composition root: `ServiceContainer.ts` (wrapper tipizzato su `CoreUtilsLib.LazyServiceContainer`), `Bootstrap.ts` (`initAldo()` cablaggio di ogni facade/servizio/repository reale), `schema.ts`. |
-| `src/entrypoints/EntryPoints.ts` | Script file GAS separato e leggibile; richiama funzioni come `initAldo`, `avviaGenerazioneDataDriven` come globali ambientali (non import), perché GAS condivide un unico namespace globale tra i file di uno stesso progetto. |
-| `src/index.ts` | L'altra metà dell'entry point: dichiara le funzioni reali e le assegna a `globalThis` così che GAS possa richiamarle per nome (`onOpen`, `menu_avvioImportazioni`, `resumeJob`, e tutto ciò che serve a `EntryPoints.ts`). `onOpen` costruisce solo il menu, non innesca mai `initAldo()` in modo eager. |
-| `src/onlinetests/` | Entry point webpack separato (`checks/`) di smoke test live-GAS, compilato solo in modalità `--mode=online`. |
+| Cartella                         | Contenuto                                                                                                                                                                                                                                                                                                                             |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/domain/`                    | Entità, value object, specification, interfacce dei repository, `DomainError`. Nessun import di GAS o di GasLibraryFactory.                                                                                                                                                                                                           |
+| `src/application/`               | Servizi applicativi (`services/`), strategie di generazione documentale (`strategies/`, una classe per tipo di generatore `CONF_DOC`), l'assemblatore del CDU (`context-engine/`, con `providers/`, `mappers/`, `interceptors/`), orchestrazione import dati (`import/`).                                                             |
+| `src/infrastructure/`            | `facades/` incapsulano le chiamate a GasLibraryFactory e ai servizi nativi GAS dietro interfacce proprie di ALDO (`IDriveFacade`, `IGmailFacade`, `ITemplateEngine`); `repositories/` implementano le interfacce di dominio sopra `SheetDbAdapter`; `steps/` e `services/` contengono helper infrastrutturali (es. `AlberoCartelle`). |
+| `src/presentation/Menu.ts`       | Costruisce il menu Google Sheets; riceve una UI facade, nessuna logica di business.                                                                                                                                                                                                                                                   |
+| `src/config/`                    | Composition root: `ServiceContainer.ts` (wrapper tipizzato su `CoreUtilsLib.LazyServiceContainer`), `Bootstrap.ts` (`initAldo()` cablaggio di ogni facade/servizio/repository reale), `schema.ts`.                                                                                                                                    |
+| `src/entrypoints/EntryPoints.ts` | Script file GAS separato e leggibile; richiama funzioni come `initAldo`, `avviaGenerazioneDataDriven` come globali ambientali (non import), perché GAS condivide un unico namespace globale tra i file di uno stesso progetto.                                                                                                        |
+| `src/index.ts`                   | L'altra metà dell'entry point: dichiara le funzioni reali e le assegna a `globalThis` così che GAS possa richiamarle per nome (`onOpen`, `menu_avvioImportazioni`, `resumeJob`, e tutto ciò che serve a `EntryPoints.ts`). `onOpen` costruisce solo il menu, non innesca mai `initAldo()` in modo eager.                              |
+| `src/onlinetests/`               | Entry point webpack separato (`checks/`) di smoke test live-GAS, compilato solo in modalità `--mode=online`.                                                                                                                                                                                                                          |
 
 L'albero dei test rispecchia `src/` sotto `test/unit/`; `test/integration/` e `test/build/` sono progetti Jest separati. `test/fakes/` e `test/fixtures/` contengono test double e dati condivisi.
 
@@ -101,24 +101,24 @@ L'albero dei test rispecchia `src/` sotto `test/unit/`; `test/integration/` e `t
 
 ### Librerie di GasLibraryFactory usate (livelli L0→L4)
 
-| Livello | Libreria | Responsabilità |
-| --- | --- | --- |
-| L0 | `CoreUtilsLib` | Utility generali, helper primitivi |
-| L0 | `GasResilienceLib` | Retry, backoff esponenziale, rate limiting |
-| L0 | `GasOnlineTestFramework` | Framework di test in-cloud |
-| L1 | `GoogleApiWrapper` | Accesso batch-first alle Google API (Drive, Docs, Sheets) |
-| L1 | `GasSchemaValidatorLib` | Validazione strutturale dati (Zod-based) |
-| L2 | `SheetDBLib` | ORM-lite su Google Sheets, query builder |
-| L2 | `GasExpressionEngineLib` | Parser/valutatore di espressioni logiche AST-based |
-| L2 | `WorkspaceTemplateEngine` | Motore di template per documenti e testi con placeholder |
-| L3 | `JobRunnerLib` | Processi lunghi con generator + trigger temporizzati |
-| L3 | `PipelineFramework` | Pipeline ETL a step sequenziali |
-| L3 | `ContextEngine` | Dependency injection dei dati (CDU builder) |
-| L3 | `DomainRepositoryLib` | Base class per i repository DDD |
-| L3 | `GasDataImporter` | ETL da file esterni |
-| L4 | `RoleResolutionLib` | Risoluzione ruoli astratti → email reali, con supplenze |
-| L4 | `ComposableContentLib` | Composizione di contenuto HTML modulare |
-| L4 | `GasProcessMonitorLib` | Monitoraggio processi batch con sidebar HTML |
+| Livello | Libreria                  | Responsabilità                                            |
+| ------- | ------------------------- | --------------------------------------------------------- |
+| L0      | `CoreUtilsLib`            | Utility generali, helper primitivi                        |
+| L0      | `GasResilienceLib`        | Retry, backoff esponenziale, rate limiting                |
+| L0      | `GasOnlineTestFramework`  | Framework di test in-cloud                                |
+| L1      | `GoogleApiWrapper`        | Accesso batch-first alle Google API (Drive, Docs, Sheets) |
+| L1      | `GasSchemaValidatorLib`   | Validazione strutturale dati (Zod-based)                  |
+| L2      | `SheetDBLib`              | ORM-lite su Google Sheets, query builder                  |
+| L2      | `GasExpressionEngineLib`  | Parser/valutatore di espressioni logiche AST-based        |
+| L2      | `WorkspaceTemplateEngine` | Motore di template per documenti e testi con placeholder  |
+| L3      | `JobRunnerLib`            | Processi lunghi con generator + trigger temporizzati      |
+| L3      | `PipelineFramework`       | Pipeline ETL a step sequenziali                           |
+| L3      | `ContextEngine`           | Dependency injection dei dati (CDU builder)               |
+| L3      | `DomainRepositoryLib`     | Base class per i repository DDD                           |
+| L3      | `GasDataImporter`         | ETL da file esterni                                       |
+| L4      | `RoleResolutionLib`       | Risoluzione ruoli astratti → email reali, con supplenze   |
+| L4      | `ComposableContentLib`    | Composizione di contenuto HTML modulare                   |
+| L4      | `GasProcessMonitorLib`    | Monitoraggio processi batch con sidebar HTML              |
 
 Il grafo di dipendenza delle librerie è rigorosamente a livelli (L0→L4), senza dipendenze circolari.
 
@@ -132,40 +132,40 @@ Il database è implementato su Google Sheets: ogni foglio è una tabella, ogni r
 
 Un unico spreadsheet **Master Sheet** è il punto di ingresso per i database di ogni anno scolastico:
 
-| Colonna | Descrizione |
-| --- | --- |
-| `ANNO_SCOLASTICO` | Chiave primaria, formato `YYYY-YYYY` |
-| `ID_SPREADSHEET` | ID Drive dello spreadsheet del database dell'anno |
-| `ID_CARTELLA_GOOGLE` | ID della cartella Drive radice per i documenti generati |
-| `DIRIGENTE_SCOLASTICO` | Nome del dirigente scolastico |
-| `SUPERVISORE_EMAIL` | Indirizzo in BCC su tutte le email del sistema (opzionale) |
+| Colonna                | Descrizione                                                |
+| ---------------------- | ---------------------------------------------------------- |
+| `ANNO_SCOLASTICO`      | Chiave primaria, formato `YYYY-YYYY`                       |
+| `ID_SPREADSHEET`       | ID Drive dello spreadsheet del database dell'anno          |
+| `ID_CARTELLA_GOOGLE`   | ID della cartella Drive radice per i documenti generati    |
+| `DIRIGENTE_SCOLASTICO` | Nome del dirigente scolastico                              |
+| `SUPERVISORE_EMAIL`    | Indirizzo in BCC su tutte le email del sistema (opzionale) |
 
 Le righe sono mantenute in ordine cronologico decrescente: la prima riga è sempre l'anno scolastico corrente, senza alcun parametro di configurazione separato.
 
 ### Tabelle del database per anno scolastico
 
-| Tabella | Ruolo nel sistema |
-| --- | --- |
-| **ALUNNI** | Registro anagrafico degli studenti (PK `EMAIL`) |
-| **DOCENTI** | Anagrafica del corpo docente (PK `EMAIL`) |
-| **CLASSI** | Configurazione classi e matrice di assegnazione cattedre (PK `ID`); rappresenta Priority 3 nella risoluzione ruoli |
-| **MATERIE** | Catalogo delle discipline insegnate (PK `ID`) |
-| **INDIRIZZI** | Percorsi di studio disponibili nell'istituto (PK `ID`) |
-| **DIPART** | Dipartimenti disciplinari (PK `ID`) |
-| **RUOLI** | Incarichi speciali d'istituto (PK `ID`) |
-| **VARIAZIONI_CATTEDRA** | Cambi permanenti di titolarità post-inizio anno; Priority 2 nella risoluzione ruoli |
-| **SUPPLENZE** | Sostituzioni temporanee dei docenti; Priority 1 nella risoluzione ruoli, con catene ricorsive |
-| **CARENZE** | Insufficienze degli studenti, struttura a matrice (PK composita `STUDENTE, PROGRESSIVO`) |
-| **PIANI** | Piani Didattici Personalizzati — PDP, PEI, PFP (PK composita `STUDENTE, TIPO`) |
-| **PROGETTI** | Attività extracurricolari e percorsi PCTO/ASL (PK composita `CLASSE, TIPO, NOME`) |
-| **MOV_ALUNNI** | Storico della mobilità studentesca, append-only (PK composita `STUDENTE, TIPO, DATA`) |
-| **ASL** | Ore cumulative di Alternanza Scuola Lavoro per studente/anno (PK composita `STUDENTE, ANNO`) |
-| **CONF_DOC** | Configurazione del motore di generazione documenti (PK `ID`) |
-| **CONF_MAIL** | Configurazione del motore di notifiche email (PK `ID`) |
-| **CONF_IMP** | Configurazione dei job ETL di importazione (PK `ID`) |
-| **LOG_DOCS** | Audit trail append-only dei documenti generati (PK `ID` = ID Drive del file) |
-| **LOG_FOLD** | Audit trail append-only delle cartelle create su Drive (PK `ID` = ID Drive della cartella) |
-| **LOG_MAIL** | Audit trail delle email inviate (PK composita `PATTERN, DESTINATARI, DATA`) |
+| Tabella                 | Ruolo nel sistema                                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **ALUNNI**              | Registro anagrafico degli studenti (PK `EMAIL`)                                                                    |
+| **DOCENTI**             | Anagrafica del corpo docente (PK `EMAIL`)                                                                          |
+| **CLASSI**              | Configurazione classi e matrice di assegnazione cattedre (PK `ID`); rappresenta Priority 3 nella risoluzione ruoli |
+| **MATERIE**             | Catalogo delle discipline insegnate (PK `ID`)                                                                      |
+| **INDIRIZZI**           | Percorsi di studio disponibili nell'istituto (PK `ID`)                                                             |
+| **DIPART**              | Dipartimenti disciplinari (PK `ID`)                                                                                |
+| **RUOLI**               | Incarichi speciali d'istituto (PK `ID`)                                                                            |
+| **VARIAZIONI_CATTEDRA** | Cambi permanenti di titolarità post-inizio anno; Priority 2 nella risoluzione ruoli                                |
+| **SUPPLENZE**           | Sostituzioni temporanee dei docenti; Priority 1 nella risoluzione ruoli, con catene ricorsive                      |
+| **CARENZE**             | Insufficienze degli studenti, struttura a matrice (PK composita `STUDENTE, PROGRESSIVO`)                           |
+| **PIANI**               | Piani Didattici Personalizzati — PDP, PEI, PFP (PK composita `STUDENTE, TIPO`)                                     |
+| **PROGETTI**            | Attività extracurricolari e percorsi PCTO/ASL (PK composita `CLASSE, TIPO, NOME`)                                  |
+| **MOV_ALUNNI**          | Storico della mobilità studentesca, append-only (PK composita `STUDENTE, TIPO, DATA`)                              |
+| **ASL**                 | Ore cumulative di Alternanza Scuola Lavoro per studente/anno (PK composita `STUDENTE, ANNO`)                       |
+| **CONF_DOC**            | Configurazione del motore di generazione documenti (PK `ID`)                                                       |
+| **CONF_MAIL**           | Configurazione del motore di notifiche email (PK `ID`)                                                             |
+| **CONF_IMP**            | Configurazione dei job ETL di importazione (PK `ID`)                                                               |
+| **LOG_DOCS**            | Audit trail append-only dei documenti generati (PK `ID` = ID Drive del file)                                       |
+| **LOG_FOLD**            | Audit trail append-only delle cartelle create su Drive (PK `ID` = ID Drive della cartella)                         |
+| **LOG_MAIL**            | Audit trail delle email inviate (PK composita `PATTERN, DESTINATARI, DATA`)                                        |
 
 Dettagli di colonne, tipi, vincoli e chiavi esterne per ogni tabella sono documentati in modo esaustivo in `SPECS_ALDO/01_SCHEMA_DATABASE.md`, la fonte di verità fisica del database. La struttura logica del Contesto Dati Unificato che aggrega questi dati per template ed email è documentata in `SPECS_ALDO/02_CDU_STRUTTURA.md`.
 

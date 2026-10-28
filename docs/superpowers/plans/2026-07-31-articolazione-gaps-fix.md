@@ -21,12 +21,14 @@
 ### Task 1: `DocumentGenerationService.generateForClasse` must expand articulated parents into `classiCompetenza`
 
 **Files:**
+
 - Modify: `src/application/services/DocumentGenerationService.ts:1-90` (imports, `DocumentGenerationDeps`, constructor, `generateForClasse`)
 - Modify: `src/config/Bootstrap.ts:200-216` (`documentGenerationService` registration)
 - Modify: `src/application/services/EmailNotificationService.ts:292-297` (simplify now-redundant branch)
 - Test: `test/unit/application/document-generation-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `IClasseRepository.findById(id: ClasseId): Classe | null`, `IClasseRepository.getGruppoArticolazione(classe: Classe): Classe[]` (both already exist, `ClasseRepository.ts:255-278`).
 - Produces: `DocumentGenerationDeps.classi: IClasseRepository` (new required field) — no other task depends on this.
 
@@ -124,9 +126,9 @@ describe('DocumentGenerationService.generateForClasse — articulated parent (AR
 
     service.generateForClasse(ClasseId.of('1F'), 'CD_CLASSE_COMPLETA');
 
-    expect(strategy.cdu?.focus.classe?.didattica?.pianiPersonalizzati.items.map((i) => i.id)).toEqual([
-      'LD1'
-    ]);
+    expect(
+      strategy.cdu?.focus.classe?.didattica?.pianiPersonalizzati.items.map((i) => i.id)
+    ).toEqual(['LD1']);
   });
 
   test('standard (non-articulated) class is unaffected: classiCompetenza is just the target', () => {
@@ -175,8 +177,8 @@ import type { IClasseRepository } from '../../domain/repositories/IClasseReposit
 Add to `DocumentGenerationDeps` (after `configs: IConfigurazioneDocumentoRepository;`):
 
 ```ts
-  /** Needed to expand an articulated parent target into its partner classes (ARTICOLAZIONE.md item 7). */
-  classi: IClasseRepository;
+/** Needed to expand an articulated parent target into its partner classes (ARTICOLAZIONE.md item 7). */
+classi: IClasseRepository;
 ```
 
 Add the field and constructor assignment to `DocumentGenerationService`:
@@ -188,7 +190,7 @@ Add the field and constructor assignment to `DocumentGenerationService`:
 (after `private readonly configs: IConfigurazioneDocumentoRepository;`), and in the constructor body (after `this.configs = deps.configs;`):
 
 ```ts
-    this.classi = deps.classi;
+this.classi = deps.classi;
 ```
 
 - [ ] **Step 4: Compute and pass `classiCompetenza` in `generateForClasse`**
@@ -232,24 +234,24 @@ Leave the rest of the method (transaction/pipeline execution) unchanged.
 In `src/config/Bootstrap.ts`, inside the `documentGenerationService` registration (currently `Bootstrap.ts:200-216`), add `classi` to the object literal:
 
 ```ts
-  c.register(
-    'documentGenerationService',
-    (container) =>
-      new DocumentGenerationService({
-        db: deps.db,
-        drive: deps.drive,
-        contextBuilder: container.get<ContextBuilder>('contextBuilder'),
-        strategyRegistry: container.get<Map<string, GeneratorStrategy>>('strategyRegistry'),
-        templates: deps.templates,
-        expressionEngine: deps.expressionEngine,
-        configs: new ConfigurazioneDocumentoRepository(deps.db),
-        roleResolver: container.get<RisolutoreRuoliService>('risolutoreRuoli'),
-        classi: container.get<ClasseRepository>('classi'),
-        now: deps.now,
-        monitor: deps.monitor,
-        logger
-      })
-  );
+c.register(
+  'documentGenerationService',
+  (container) =>
+    new DocumentGenerationService({
+      db: deps.db,
+      drive: deps.drive,
+      contextBuilder: container.get<ContextBuilder>('contextBuilder'),
+      strategyRegistry: container.get<Map<string, GeneratorStrategy>>('strategyRegistry'),
+      templates: deps.templates,
+      expressionEngine: deps.expressionEngine,
+      configs: new ConfigurazioneDocumentoRepository(deps.db),
+      roleResolver: container.get<RisolutoreRuoliService>('risolutoreRuoli'),
+      classi: container.get<ClasseRepository>('classi'),
+      now: deps.now,
+      monitor: deps.monitor,
+      logger
+    })
+);
 ```
 
 (`ClasseRepository` is already imported in `Bootstrap.ts` and the `'classi'` token is already registered earlier in `buildAldoContainer` — confirmed by the existing `emailNotificationService` registration at `Bootstrap.ts:241` using the same `container.get<ClasseRepository>('classi')` call.)
@@ -286,10 +288,12 @@ git commit -m "fix: expand articulated-parent targets into classiCompetenza in D
 ### Task 2: `RisolutoreRuoliService` role strategies must expand to partner classes
 
 **Files:**
+
 - Modify: `src/application/services/RisolutoreRuoliService.ts:1-20` (import), `:139-153` (`buildRegistro` two lines), `:267-275` (`genitoriClasse`/`rappresentantiStudenti`), append one new private method
 - Test: `test/unit/application/risolutore-ruoli-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `studentiDellaClasse(classi: IClasseRepository, classe: Classe, soloAttivi: boolean): Alunno[]` (already exists, `src/application/context-engine/studenti.ts:10-20`), `IClasseRepository.getArticolazione`/`getClassiPartner`/`getDocentiRuolo` (already exist).
 - Produces: `RisolutoreRuoliService.docentiRuoloArticolato` (new private method) — internal only, no other task depends on it.
 
@@ -414,10 +418,12 @@ git commit -m "fix: expand GENITORI_CLASSE/RAPPRESENTANTI_STUDENTI/TUTOR_ASL/TUT
 ### Task 3: `TutorProvider` must expand `focus.classe.tutor` to partner classes on the parent
 
 **Files:**
+
 - Modify: `src/application/context-engine/providers/TutorProvider.ts` (whole file, 31 lines)
 - Test: create `test/unit/application/context-engine/tutor-provider.test.ts`
 
 **Interfaces:**
+
 - Consumes: `IClasseRepository.getArticolazione`/`getClassiPartner`/`getDocentiRuolo` (already exist).
 - Produces: none consumed elsewhere in this plan.
 
@@ -441,7 +447,11 @@ function tutorFor(target: string, tables = fixtureTables()) {
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi));
   b.registerProvider('tutor', new TutorProvider(classi));
-  const params: BuildParams = { target, tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') };
+  const params: BuildParams = {
+    target,
+    tipoTarget: 'classe',
+    now: new Date('2026-07-01T09:00:00Z')
+  };
   const recipe: Recipe = { providers: ['class', 'tutor'], options: makeOptions({}) };
   return b.build(params, recipe).focus.classe!.tutor!;
 }
@@ -546,10 +556,12 @@ git commit -m "fix: TutorProvider expands ASL/orientamento tutors to partner cla
 ### Task 4: Dedupe `DocenteCdcVM.materie`/`materieDescrizione` for `COMUNE` teachers
 
 **Files:**
+
 - Modify: `src/application/context-engine/TeachingCouncilProjection.ts:197-267` (`councilVmStrategy`), add one module-level helper
 - Test: `test/unit/application/context-engine/consiglio-provider.test.ts`
 
 **Interfaces:**
+
 - Produces: none consumed elsewhere in this plan.
 
 - [ ] **Step 1: Write the failing assertions**
@@ -557,10 +569,10 @@ git commit -m "fix: TutorProvider expands ASL/orientamento tutors to partner cla
 In `test/unit/application/context-engine/consiglio-provider.test.ts`, extend the existing test `'CDC of an articulated parent: tipoArticolazione by partner membership (09 §9)'` (already at lines 87-99) by adding, after the existing `materieDescrizione` assertions:
 
 ```ts
-  expect(byEmail(list, 'rossi@school.it').materie).toEqual([
-    { sigla: 'MATE', nome: 'Matematica', colore: '', specificita: null }
-  ]);
-  expect(byEmail(list, 'rossi@school.it').materieDescrizione).toBe('Matematica');
+expect(byEmail(list, 'rossi@school.it').materie).toEqual([
+  { sigla: 'MATE', nome: 'Matematica', colore: '', specificita: null }
+]);
+expect(byEmail(list, 'rossi@school.it').materieDescrizione).toBe('Matematica');
 ```
 
 (`rossi` is `COMUNE` — MATE is taught by `rossi` in both `1F-LSO` and `1F-LSS`, so today it produces two identical `materie` entries and `materieDescrizione: 'Matematica, Matematica'`.)
@@ -579,7 +591,7 @@ function dedupeMaterie<T extends { sigla: string; specificita: string | null }>(
   const seen = new Set<string>();
   const result: T[] = [];
   for (const item of items) {
-    const key = `${item.sigla} ${item.specificita ?? ''}`;
+    const key = `${item.sigla}�${item.specificita ?? ''}`;
     if (seen.has(key)) continue;
     seen.add(key);
     result.push(item);
@@ -591,29 +603,28 @@ function dedupeMaterie<T extends { sigla: string; specificita: string | null }>(
 In `councilVmStrategy` (`TeachingCouncilProjection.ts:197-267`), change:
 
 ```ts
-      const materieVm = assignments.map((assignment) => ({
-        sigla: assignment.slot.materia,
-        nome:
-          materie.findByIdCached(MateriaId.of(assignment.slot.materia))?.nome ??
-          assignment.slot.materia,
-        colore: '',
-        specificita: assignment.slot.specifica
-      }));
+const materieVm = assignments.map((assignment) => ({
+  sigla: assignment.slot.materia,
+  nome:
+    materie.findByIdCached(MateriaId.of(assignment.slot.materia))?.nome ?? assignment.slot.materia,
+  colore: '',
+  specificita: assignment.slot.specifica
+}));
 ```
 
 to:
 
 ```ts
-      const materieVm = dedupeMaterie(
-        assignments.map((assignment) => ({
-          sigla: assignment.slot.materia,
-          nome:
-            materie.findByIdCached(MateriaId.of(assignment.slot.materia))?.nome ??
-            assignment.slot.materia,
-          colore: '',
-          specificita: assignment.slot.specifica
-        }))
-      );
+const materieVm = dedupeMaterie(
+  assignments.map((assignment) => ({
+    sigla: assignment.slot.materia,
+    nome:
+      materie.findByIdCached(MateriaId.of(assignment.slot.materia))?.nome ??
+      assignment.slot.materia,
+    colore: '',
+    specificita: assignment.slot.specifica
+  }))
+);
 ```
 
 The rest of the function (`materie: materieVm`, `materieDescrizione: materieVm.map((m) => m.nome).join(', ')`) is unchanged — both now derive from the deduped array.
@@ -640,9 +651,11 @@ git commit -m "fix: dedupe DocenteCdcVM.materie/materieDescrizione for COMUNE te
 ### Task 5: Update `ARTICOLAZIONE.md` to close out fixed items
 
 **Files:**
+
 - Modify: `ARTICOLAZIONE.md`
 
 **Interfaces:**
+
 - Consumes: the merged state of Tasks 1-4.
 
 - [ ] **Step 1: Mark items 2, 3, and 7 as resolved**

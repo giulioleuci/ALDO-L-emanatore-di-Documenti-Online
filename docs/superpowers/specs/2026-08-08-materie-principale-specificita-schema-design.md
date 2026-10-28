@@ -32,10 +32,10 @@ update alongside code, not after)
 
 New columns, added to the existing MATERIE column table:
 
-| Colonna         | Tipo   | PK  | Vincoli | Descrizione                                                                                          |
-| ---------------- | ------ | --- | ------- | ----------------------------------------------------------------------------------------------------- |
-| `PRINCIPALE`     | String | —   | —       | Nome della materia principale/famiglia (es. `Interpretazione ed esecuzione`); vuoto per righe non specifiche |
-| `SPECIFICITA`    | String | —   | —       | Nome descrittivo della specificità (es. `Chitarra`); vuoto per righe non specifiche                    |
+| Colonna       | Tipo   | PK  | Vincoli | Descrizione                                                                                                  |
+| ------------- | ------ | --- | ------- | ------------------------------------------------------------------------------------------------------------ |
+| `PRINCIPALE`  | String | —   | —       | Nome della materia principale/famiglia (es. `Interpretazione ed esecuzione`); vuoto per righe non specifiche |
+| `SPECIFICITA` | String | —   | —       | Nome descrittivo della specificità (es. `Chitarra`); vuoto per righe non specifiche                          |
 
 `NOME` semantics change: if `NOME` is blank, it is reconstructed at read time
 as `"${PRINCIPALE} (${SPECIFICITA})"` when both are present; otherwise stays
@@ -98,7 +98,7 @@ may now have zero bare rows:
 
 No change needed to `ClasseRepository.getTeachingSlots()`'s composite-row
 existence check (`materieIds.has(column)`) — `materieIds` is already built
-from *all* rows unconditionally, dotted or not.
+from _all_ rows unconditionally, dotted or not.
 
 ## `TeachingCouncilProjection.materiaVm()`
 
@@ -118,7 +118,8 @@ function materiaVm(
   const materia =
     specifica === null
       ? materie.findByIdCached(baseId)
-      : (materie.findSpecifiche(baseId).find((m) => m.id === `${baseId.value}.${specifica}`) ?? null);
+      : (materie.findSpecifiche(baseId).find((m) => m.id === `${baseId.value}.${specifica}`) ??
+        null);
   if (materia === null) return null;
   return buildSubjectVm(materia, {
     indirizzo: IndirizzoId.of(classe.indirizzo),

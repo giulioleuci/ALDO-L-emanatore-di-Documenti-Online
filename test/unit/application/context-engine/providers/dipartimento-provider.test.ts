@@ -15,8 +15,18 @@ function emptyCdu(): Cdu {
   return { meta: {} as never, focus: {}, tech: {} as never };
 }
 
-function fakeDipartimento(id: string, nome: string, capoEmail: string, materieIds: string[]): Dipartimento {
-  return Dipartimento.fromData({ ID: id, NOME: nome, CAPO: capoEmail, MATERIE: materieIds.join(',') });
+function fakeDipartimento(
+  id: string,
+  nome: string,
+  capoEmail: string,
+  materieIds: string[]
+): Dipartimento {
+  return Dipartimento.fromData({
+    ID: id,
+    NOME: nome,
+    CAPO: capoEmail,
+    MATERIE: materieIds.join(',')
+  });
 }
 
 function fakeDocente(email: string, dipart = ''): Docente {
@@ -90,7 +100,10 @@ describe('DipartimentoProvider', () => {
 
   it('sets capo to null when the department has no CAPO', () => {
     const dipartimento = fakeDipartimento('SCIENZE', 'Scienze', '', ['SCI']);
-    const dipartimenti = { findAll: () => [dipartimento], findByMateria: () => null } as unknown as IDipartimentoRepository;
+    const dipartimenti = {
+      findAll: () => [dipartimento],
+      findByMateria: () => null
+    } as unknown as IDipartimentoRepository;
     const docenti = {
       findByDipartimento: () => [],
       findById: () => null
@@ -106,12 +119,20 @@ describe('DipartimentoProvider', () => {
   });
 
   it('throws PipelineError when the department is not found', () => {
-    const dipartimenti = { findAll: () => [], findByMateria: () => null } as unknown as IDipartimentoRepository;
-    const docenti = { findByDipartimento: () => [], findById: () => null } as unknown as IDocenteRepository;
+    const dipartimenti = {
+      findAll: () => [],
+      findByMateria: () => null
+    } as unknown as IDipartimentoRepository;
+    const docenti = {
+      findByDipartimento: () => [],
+      findById: () => null
+    } as unknown as IDocenteRepository;
     const logDocs = { findAll: () => [] } as unknown as ILogDocumentoRepository;
     const provider = new DipartimentoProvider(dipartimenti, docenti, fakeMaterie(), logDocs);
     const cdu = emptyCdu();
 
-    expect(() => provider.provide(cdu, { target: 'IGNOTO' } as BuildParams, {})).toThrow(PipelineError);
+    expect(() => provider.provide(cdu, { target: 'IGNOTO' } as BuildParams, {})).toThrow(
+      PipelineError
+    );
   });
 });

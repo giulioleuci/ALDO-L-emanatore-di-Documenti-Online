@@ -56,12 +56,16 @@ export class ConfigurazioneDocumento extends AldoEntity {
       typeof data[COL_CONF_DOC.TIPO] === 'string' ? (data[COL_CONF_DOC.TIPO] as string) : '';
     const generatoreRaw = data[COL_CONF_DOC.GENERATORE];
     if (!Object.values(GeneratoreAxis).includes(generatoreRaw as GeneratoreAxis)) {
-      throw new ConfigurationError(`CONF_DOC ${this.id ?? '?'}: GENERATORE non valido: ${String(generatoreRaw)}`);
+      throw new ConfigurationError(
+        `CONF_DOC ${this.id ?? '?'}: GENERATORE non valido: ${String(generatoreRaw)}`
+      );
     }
     this.generatore = generatoreRaw as GeneratoreAxis;
     const formatoRaw = data[COL_CONF_DOC.FORMATO];
     if (formatoRaw !== FormatoOutput.GDOC && formatoRaw !== FormatoOutput.GSHEET) {
-      throw new ConfigurationError(`CONF_DOC ${this.id ?? '?'}: FORMATO non valido: ${String(formatoRaw)}`);
+      throw new ConfigurationError(
+        `CONF_DOC ${this.id ?? '?'}: FORMATO non valido: ${String(formatoRaw)}`
+      );
     }
     this.formato = formatoRaw;
     this.gestioneArticolazione =
@@ -69,25 +73,38 @@ export class ConfigurazioneDocumento extends AldoEntity {
         ? GestioneArticolazione.ARTICOLATA
         : GestioneArticolazione.COMPLETA;
     this.modelliRaw =
-      typeof data[COL_CONF_DOC.MODELLI] === 'string' ? (data[COL_CONF_DOC.MODELLI] as string) : null;
+      typeof data[COL_CONF_DOC.MODELLI] === 'string'
+        ? (data[COL_CONF_DOC.MODELLI] as string)
+        : null;
     this.condizioneRaw =
-      typeof data[COL_CONF_DOC.CONDIZIONE] === 'string' ? (data[COL_CONF_DOC.CONDIZIONE] as string) : '';
+      typeof data[COL_CONF_DOC.CONDIZIONE] === 'string'
+        ? (data[COL_CONF_DOC.CONDIZIONE] as string)
+        : '';
     this.parametriRaw =
-      typeof data[COL_CONF_DOC.PARAMETRI] === 'string' ? (data[COL_CONF_DOC.PARAMETRI] as string) : null;
+      typeof data[COL_CONF_DOC.PARAMETRI] === 'string'
+        ? (data[COL_CONF_DOC.PARAMETRI] as string)
+        : null;
     this.permessiRaw =
-      typeof data[COL_CONF_DOC.PERMESSI] === 'string' ? (data[COL_CONF_DOC.PERMESSI] as string) : null;
+      typeof data[COL_CONF_DOC.PERMESSI] === 'string'
+        ? (data[COL_CONF_DOC.PERMESSI] as string)
+        : null;
 
     const parametri = this.getParametri() as DocumentoParametriFlags;
     const aggiungiMaterie = Boolean(parametri.aggiungiMaterie);
     const aggiungiMaterieConPermessi = Boolean(parametri.aggiungiMaterieConPermessi);
     if (this.formato === FormatoOutput.GSHEET && parametri.tabelleImportate === true) {
-      throw new ConfigurationError("L'importazione tabelle è supportata unicamente su formato GDOC");
+      throw new ConfigurationError(
+        "L'importazione tabelle è supportata unicamente su formato GDOC"
+      );
     }
     if (this.formato === FormatoOutput.GDOC && (aggiungiMaterie || aggiungiMaterieConPermessi)) {
-      throw new ConfigurationError('Le colonne materie sono supportate unicamente su formato GSHEET');
+      throw new ConfigurationError(
+        'Le colonne materie sono supportate unicamente su formato GSHEET'
+      );
     }
     if (
-      (this.generatore === GeneratoreAxis.DIPARTIMENTO || this.generatore === GeneratoreAxis.DOCENTE) &&
+      (this.generatore === GeneratoreAxis.DIPARTIMENTO ||
+        this.generatore === GeneratoreAxis.DOCENTE) &&
       (aggiungiMaterie || aggiungiMaterieConPermessi)
     ) {
       throw new ConfigurationError(
@@ -95,7 +112,9 @@ export class ConfigurazioneDocumento extends AldoEntity {
       );
     }
     if (aggiungiMaterie && aggiungiMaterieConPermessi) {
-      throw new ConfigurationError('aggiungiMaterie e aggiungiMaterieConPermessi sono mutuamente esclusivi');
+      throw new ConfigurationError(
+        'aggiungiMaterie e aggiungiMaterieConPermessi sono mutuamente esclusivi'
+      );
     }
   }
 

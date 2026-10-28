@@ -37,12 +37,7 @@ interface TableDatabase {
 }
 
 const ARTICULATION_PARENTS = new Set<string>([CLASSE_C_PARENT, '5B']);
-const ARTICULATION_PARTNERS = new Set<string>([
-  CLASSE_C,
-  CLASSE_C_PARTNER,
-  '5B-S',
-  '5B-C'
-]);
+const ARTICULATION_PARTNERS = new Set<string>([CLASSE_C, CLASSE_C_PARTNER, '5B-S', '5B-C']);
 const COMPLETA_TARGETS = ALL_CLASSI.filter((id) => !ARTICULATION_PARTNERS.has(id));
 const ARTICOLATA_TARGETS = ALL_CLASSI.filter((id) => !ARTICULATION_PARENTS.has(id));
 
@@ -67,7 +62,14 @@ function classCdu(
   gestioneSupplenti = GestioneSupplenti.ENTRAMBI
 ) {
   return contextBuilder.build(
-    { target, tipoTarget: 'classe', now, configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
+    {
+      target,
+      tipoTarget: 'classe',
+      now,
+      configurazioneId: 'ONLINE_CHECK',
+      esecuzioneId: 'ONLINE_CHECK',
+      tipoOperazione: 'GENERAZIONE_DOCUMENTO'
+    },
     recipe('CLASSE_COMPLETA', {
       includiSupplenti: true,
       gestioneSupplenti
@@ -138,9 +140,7 @@ export function registerArticolazioneChecks(
       const replacementAfterBoundary = after.find(
         (docente) => docente.email === e2eDocenteEmail(18)
       );
-      const finalHolder = current.find(
-        (docente) => docente.email === e2eDocenteEmail(16)
-      );
+      const finalHolder = current.find((docente) => docente.email === e2eDocenteEmail(16));
 
       if (
         seminar === undefined ||
@@ -255,9 +255,7 @@ export function registerArticolazioneChecks(
       const contextBuilder = container.get<ContextBuilder>('contextBuilder');
       const cdu = classCdu(contextBuilder, CLASSE_A);
       const consiglio = cdu.focus.classe?.consiglio?.elenco ?? [];
-      const docente5 = consiglio.find(
-        (docente) => docente.email === e2eDocenteEmail(5)
-      );
+      const docente5 = consiglio.find((docente) => docente.email === e2eDocenteEmail(5));
       const chitarra = docente5?.materie.find((materia) => materia.sigla === 'INTERPRET.CHITARRA');
       if (
         docente5 === undefined ||
@@ -368,7 +366,8 @@ export function registerArticolazioneChecks(
         JSON.stringify(partners) !== JSON.stringify([CLASSE_C, CLASSE_C_PARTNER]) ||
         parentIds.some((id) => id !== CLASSE_C_PARENT) ||
         articolazione === undefined ||
-        JSON.stringify(articolazione.sottoClassi.map((classe) => classe.nome)) !== JSON.stringify([CLASSE_C, CLASSE_C_PARTNER]) ||
+        JSON.stringify(articolazione.sottoClassi.map((classe) => classe.nome)) !==
+          JSON.stringify([CLASSE_C, CLASSE_C_PARTNER]) ||
         !articolazione.materieComuni.some((materia) => materia.sigla === 'MAT') ||
         !articolazione.materieSeparatePrimo.some((materia) => materia.sigla === 'ITA') ||
         !articolazione.materieSeparateSecondo.some((materia) => materia.sigla === 'ITA')
@@ -555,12 +554,7 @@ export function registerArticolazioneChecks(
           // with the default GestioneSupplenti.ENTRAMBI, both titolare (8) and
           // supplente (17) are visible.
           JSON.stringify(
-            [
-              e2eDocenteEmail(6),
-              e2eDocenteEmail(7),
-              e2eDocenteEmail(8),
-              e2eDocenteEmail(17)
-            ].sort()
+            [e2eDocenteEmail(6), e2eDocenteEmail(7), e2eDocenteEmail(8), e2eDocenteEmail(17)].sort()
           )
       ) {
         throw new ValidationError(

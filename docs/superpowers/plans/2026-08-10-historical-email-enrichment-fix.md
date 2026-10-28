@@ -21,9 +21,11 @@
 ### Task 1: Prove the minimal historical database regression
 
 **Files:**
+
 - Modify: `test/unit/application/storico-services.test.ts`
 
 **Interfaces:**
+
 - Consumes: `MasterStoricoDatabaseProvider.anniStorici(profondita: number): AnnoStorico[]` and `StoricoDocumentiService.perAlunnoConTipo(alunnoEmail: string, profondita?: number): DocumentoStoricoConTipo[]`.
 - Produces: a regression test proving that historical document lookup works without `DOCENTI`, `INDIRIZZI`, or `MATERIE`.
 
@@ -80,6 +82,7 @@ Expected: FAIL with `Cannot read properties of undefined (reading 'setPrimaryKey
 ### Task 2: Make the class hierarchy dependency lazy
 
 **Files:**
+
 - Modify: `src/infrastructure/repositories/LogDocumentoRepository.ts`
 - Modify: `src/application/storico/StoricoDatabaseProvider.ts`
 - Modify: `src/config/Bootstrap.ts`
@@ -89,6 +92,7 @@ Expected: FAIL with `Cannot read properties of undefined (reading 'setPrimaryKey
 - Modify constructor call sites in the 13 affected files under `test/unit/` reported by graph search for `new LogDocumentoRepository`.
 
 **Interfaces:**
+
 - Consumes: ambient `LazyRef<T>` with `constructor(factory: () => T)` and `get(): T`.
 - Produces: `new LogDocumentoRepository(database: RepositoryDatabase, classi: LazyRef<IClasseRepository>)`; `findByClasse()` retains its existing return contract.
 
@@ -117,16 +121,16 @@ findByClasse(classe: Classe): LogDocumento[] {
 Wrap every concrete class repository without creating a second instance. Representative forms:
 
 ```ts
-new LogDocumentoRepository(deps.db, new LazyRef(() => container.get<ClasseRepository>('classi')))
-new LogDocumentoRepository(db, new LazyRef(() => classi))
-new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db)))
-new LogDocumentoRepository(database, new LazyRef(() => this.classi))
+new LogDocumentoRepository(deps.db, new LazyRef(() => container.get<ClasseRepository>('classi')));
+new LogDocumentoRepository(db, new LazyRef(() => classi));
+new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db)));
+new LogDocumentoRepository(database, new LazyRef(() => this.classi));
 ```
 
 In `MasterStoricoDatabaseProvider`, the required construction is:
 
 ```ts
-logDocs: new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db)))
+logDocs: new LogDocumentoRepository(db, new LazyRef(() => new ClasseRepository(db)));
 ```
 
 This factory must remain unresolved during `findByUtente()`.

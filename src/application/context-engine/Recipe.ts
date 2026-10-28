@@ -205,15 +205,7 @@ export const RECIPES: Record<string, string[]> = {
     'pianoFocus',
     'documenti'
   ],
-  FAMIGLIA_COMPLETO: [
-    'school',
-    'class',
-    'student',
-    'movimenti',
-    'carenze',
-    'piani',
-    'documenti'
-  ],
+  FAMIGLIA_COMPLETO: ['school', 'class', 'student', 'movimenti', 'carenze', 'piani', 'documenti'],
   CARENZA_COMPLETO: ['school', 'class', 'student', 'movimenti', 'carenze', 'piani', 'carenzaFocus'],
   /** Department-scoped recipe (11 §11 new) — a dipartimento has no class dimension, so this activates only 'school' + 'dipartimentoFocus'. */
   DIPARTIMENTO_COMPLETO: ['school', 'dipartimentoFocus'],
@@ -269,5 +261,8 @@ export function recipe(name: string, overrides: Partial<RecipeOptions> = {}): Re
     name === 'CLASSE_MATERIA' || name === 'CLASSE_DOCENTE_MATERIA'
       ? { gestioneSupplenti: GestioneSupplenti.SOLO_SUPPLENTI }
       : {};
-  return { providers: providers.slice(), options: makeOptions({ ...recipeDefaults, ...overrides }) };
+  return {
+    providers: providers.slice(),
+    options: makeOptions({ ...recipeDefaults, ...overrides })
+  };
 }

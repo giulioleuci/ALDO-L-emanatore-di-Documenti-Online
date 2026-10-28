@@ -28,12 +28,13 @@ it makes resolution throw the moment such a row exists.
 
 ALDO's VARIAZIONI_CATTEDRA table (permanent cattedra changes, ref
 `01_SCHEMA_DATABASE.md` §VARIAZIONI_CATTEDRA) needs multi-hop resolution: a class
-+ subject can change hands more than once in a year (e.g. titolare A → B in
-September, B → C in January), each change its own row, and resolution must walk
-the chain to the final holder as of the query date — mirroring how
-`_resolveDelegations` already walks SUPPLENZE chains (a supplente who is
-themself substituted, "catena di supplenza", ref `01_SCHEMA_DATABASE.md`
-§SUPPLENZE and `RoleResolutionLib.md`).
+
+- subject can change hands more than once in a year (e.g. titolare A → B in
+  September, B → C in January), each change its own row, and resolution must walk
+  the chain to the final holder as of the query date — mirroring how
+  `_resolveDelegations` already walks SUPPLENZE chains (a supplente who is
+  themself substituted, "catena di supplenza", ref `01_SCHEMA_DATABASE.md`
+  §SUPPLENZE and `RoleResolutionLib.md`).
 
 ## Non-goals
 
@@ -53,24 +54,24 @@ loop, `_selectOverrideChain(candidate, overrides, asOfDate, trace)`:
 1. `visited = [candidate.actorId]`, `applied = []`, `current = candidate.actorId`.
 2. Loop:
    a. Filter `overrides` to those where `previousActorId === current`,
-      `asOf >= effectiveFrom`, and the override's `slotScope` matches
-      `candidate.slot` (reuse the existing scope/validity checks from
-      `AssignmentOverride.matches`, decoupled from the `candidate.actorId`
-      equality check so it can be evaluated against `current` instead of the
-      original candidate's actor).
+   `asOf >= effectiveFrom`, and the override's `slotScope` matches
+   `candidate.slot` (reuse the existing scope/validity checks from
+   `AssignmentOverride.matches`, decoupled from the `candidate.actorId`
+   equality check so it can be evaluated against `current` instead of the
+   original candidate's actor).
    b. If no matches: stop: the chain ends at `current`.
    c. Among matches, select the one with max `effectiveFrom` (existing logic in
-      today's `_selectOverride`, reused verbatim per hop, including the
-      `tieBehavior` THROW/FIRST handling on exact-timestamp ties within a hop).
+   today's `_selectOverride`, reused verbatim per hop, including the
+   `tieBehavior` THROW/FIRST handling on exact-timestamp ties within a hop).
    d. If `selected.nextActorId` is already in `visited` → throw
-      `CircularAssignmentOverrideError` (new error, mirrors
-      `CircularDelegationError`), including the visited chain in its context.
+   `CircularAssignmentOverrideError` (new error, mirrors
+   `CircularDelegationError`), including the visited chain in its context.
    e. If `policy.maxOverrideChainDepth !== null` and `applied.length + 1 >
-      policy.maxOverrideChainDepth` → throw `OverrideChainDepthExceededError`
-      (new error, mirrors `DelegationDepthExceededError`).
+   policy.maxOverrideChainDepth` → throw `OverrideChainDepthExceededError`
+   (new error, mirrors `DelegationDepthExceededError`).
    f. Push `selected` onto `applied`, push `selected.nextActorId` onto
-      `visited`, set `current = selected.nextActorId`, continue the loop (so a
-      third hop is picked up if one exists).
+   `visited`, set `current = selected.nextActorId`, continue the loop (so a
+   third hop is picked up if one exists).
 3. Return `{ chain: applied, finalActorId: current }`.
 
 `_resolveCandidate` uses `finalActorId` (or `candidate.actorId` if the chain is
@@ -91,11 +92,12 @@ can reuse the scope/date logic without a `candidate.actorId` coupling:
   contract and signature are unchanged for existing consumers.
 
 The chain loop calls `appliesAtDate` + `matchesActor(current)` + `matchesSlot`
-+ `candidate.isValidAt(asOf)` directly, per hop.
+
+- `candidate.isValidAt(asOf)` directly, per hop.
 
 ### `_validateOverrides` relaxation
 
-Currently: every override with `effectiveFrom ≤ asOfDate` must match *some* base
+Currently: every override with `effectiveFrom ≤ asOfDate` must match _some_ base
 candidate by `override.matches(candidate, asOfDate)` (actor identity included).
 Change: validate by **slot only** — every such override's `slotScope` must match
 at least one candidate's `slot`. This still catches a genuinely orphaned

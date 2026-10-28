@@ -28,7 +28,7 @@ PK: TITOLARE, NUOVO_TITOLARE, DAL, CLASSI, MATERIE   (composite, no single ID co
 ```
 
 - `TITOLARE` (was `VECCHIO_TITOLARE`): docente losing the cattedra. Renamed for
-  symmetry with SUPPLENZE's `TITOLARE` (the docente the row is *about*), and
+  symmetry with SUPPLENZE's `TITOLARE` (the docente the row is _about_), and
   because it's the anchor used by sub-project 3's restriction-by-omission
   lookup (the teacher whose own CLASSI assignments resolve an empty
   `CLASSI`/`MATERIE`).

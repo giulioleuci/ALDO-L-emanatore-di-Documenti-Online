@@ -5,7 +5,14 @@ import {
   riprendiJobSospeso
 } from '../../../src/config/Bootstrap';
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
-import { COL_ASL, COL_CARENZE, COL_CONF_IMP, COL_LOG_DOCS, COL_LOG_FOLD, TABLE } from '../../../src/config/schema';
+import {
+  COL_ASL,
+  COL_CARENZE,
+  COL_CONF_IMP,
+  COL_LOG_DOCS,
+  COL_LOG_FOLD,
+  TABLE
+} from '../../../src/config/schema';
 import { ConfigurationError } from '../../../src/domain/errors/DomainError';
 import {
   registerImportCartelleClasseChecks,
@@ -352,10 +359,9 @@ test('registerImportCercaDocumentiChecks generates 2 real sheets, appends the ex
   expect(runner.checks).toHaveLength(1);
   expect(runner.checks[0]?.error).toBeUndefined();
   expect(generateForClasse).toHaveBeenCalledTimes(2);
-  expect(generateForClasse.mock.calls.map(([classe]: [{ value: string }]) => classe.value)).toEqual([
-    '1A',
-    '2A'
-  ]);
+  expect(generateForClasse.mock.calls.map(([classe]: [{ value: string }]) => classe.value)).toEqual(
+    ['1A', '2A']
+  );
   const excludedRows = logDocsRows.filter(
     (row) => row[COL_LOG_DOCS.TIPO] === 'E2E_IMPORT_SOURCE_ALTRO_TIPO'
   );
@@ -399,7 +405,11 @@ test('registerImportCercaDocumentiChecks fails when the excluded-tipo document l
         [COL_ASL.ORE]: ore,
         _CLASSE: '2A'
       })),
-      { [COL_ASL.STUDENTE]: 'leaked@onlinetest.aldo.local', [COL_ASL.ORE]: 1, _CLASSE: 'ZZ_ESCLUSA_TIPO' }
+      {
+        [COL_ASL.STUDENTE]: 'leaked@onlinetest.aldo.local',
+        [COL_ASL.ORE]: 1,
+        _CLASSE: 'ZZ_ESCLUSA_TIPO'
+      }
     );
     return { inseriti: 5, aggiornati: 0, saltati: 0, ghost: 0, errori: [] };
   });
@@ -430,7 +440,11 @@ test('registerImportCercaDocumentiChecks fails when the non-sheet document leaks
         [COL_ASL.ORE]: ore,
         _CLASSE: '2A'
       })),
-      { [COL_ASL.STUDENTE]: 'leaked@onlinetest.aldo.local', [COL_ASL.ORE]: 1, _CLASSE: 'ZZ_NON_FOGLIO' }
+      {
+        [COL_ASL.STUDENTE]: 'leaked@onlinetest.aldo.local',
+        [COL_ASL.ORE]: 1,
+        _CLASSE: 'ZZ_NON_FOGLIO'
+      }
     );
     return { inseriti: 5, aggiornati: 0, saltati: 0, ghost: 0, errori: [] };
   });

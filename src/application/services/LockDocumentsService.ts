@@ -78,7 +78,11 @@ export class LockDocumentsService {
           );
         }
         for (const fallito of falliti) {
-          esito.falliti.push({ fileId, permissionId: fallito.permissionId, errore: fallito.errore });
+          esito.falliti.push({
+            fileId,
+            permissionId: fallito.permissionId,
+            errore: fallito.errore
+          });
           this.logger.warn(
             `Blocco documenti: ${fileId}/${fallito.permissionId} non declassato — ${fallito.errore}`
           );

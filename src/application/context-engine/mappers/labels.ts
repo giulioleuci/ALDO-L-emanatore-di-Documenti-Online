@@ -1,4 +1,9 @@
-import { TipoPiano, ReligioneScelta, TipoProgetto, StatoDocumento } from '../../../domain/value-objects/enums';
+import {
+  TipoPiano,
+  ReligioneScelta,
+  TipoProgetto,
+  StatoDocumento
+} from '../../../domain/value-objects/enums';
 
 const TIPO_PIANO_LABELS: Record<TipoPiano, string> = {
   [TipoPiano.PDP_DSA]: 'PDP (DSA)',
@@ -45,5 +50,11 @@ export function statoDocumentoLabel(stato: StatoDocumento): string {
 
 /** Canonical `IndirizzoVM.tipoLabel` mapping — the one place every provider that builds an indirizzo VM sources it from. */
 export function indirizzoTipoLabel(tipo: string): string {
-  return tipo === 'LICEO' ? 'Liceo' : tipo === 'TECNICO' ? 'Tecnico' : tipo === 'ITS' ? 'ITS' : tipo;
+  return tipo === 'LICEO'
+    ? 'Liceo'
+    : tipo === 'TECNICO'
+      ? 'Tecnico'
+      : tipo === 'ITS'
+        ? 'ITS'
+        : tipo;
 }

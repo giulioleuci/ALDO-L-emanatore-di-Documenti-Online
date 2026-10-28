@@ -9,21 +9,25 @@
 ## 1. Executive Summary & Problem Statement
 
 ### 1.1 Context
+
 In ALDO, email notifications are orchestrated in a 9-step pipeline (`NotificaPipeline` in `EmailNotificationService`) and transmitted via `GmailServiceFacade` -> `MailService.send()` (`GoogleApiWrapper`).
 When sending emails through Google Apps Script (`GmailApp.sendEmail`):
+
 1. **Synchronous dispatch:** The Google API validates recipient address syntax and immediately accepts the message into Google's outgoing routing queue, returning `success: true`.
 2. **Asynchronous bounce:** If a recipient email address is syntactically valid but non-existent on the target mail server (e.g., `nonexistent.user.12345@domain.com`), the remote mail transfer agent (MTA) responds with an SMTP rejection code (e.g., `550 5.1.1 User unknown`). Google then generates an asynchronous Non-Delivery Report (NDR) from `mailer-daemon@googlemail.com` and delivers it to the sender's Gmail inbox minutes or hours later.
 
 ### 1.2 Current Gaps
+
 1. **Misleading `LOG_MAIL` status:** At time of send, `LOG_MAIL` records `STATO = SUCCESS`. ALDO currently possesses no automated reconciliation mechanism to scan the sender inbox for NDRs and mark those deliveries as failed retroactively.
 2. **The `NOREPLY` trap:** When `CONF_MAIL.NOREPLY = TRUE`, ALDO passes `{ noReply: true }` to `GmailApp.sendEmail()`. Under RFC 3834 / RFC 5321 standards and Google Workspace infrastructure, no-reply return-paths suppress bounce reports to prevent automated mail loops. When `NOREPLY` is enabled, **NDRs are never generated or delivered**, rendering any post-send bounce detection structurally impossible.
-3. **Documentation omission:** `SPECS_ALDO/01_SCHEMA_DATABASE.md` currently documents `NOREPLY` simply as *"Aggiunge disclaimer no-reply nel footer"*, failing to warn administrators that enabling `NOREPLY` disables all NDRs and delivery tracking for non-existent addresses.
+3. **Documentation omission:** `SPECS_ALDO/01_SCHEMA_DATABASE.md` currently documents `NOREPLY` simply as _"Aggiunge disclaimer no-reply nel footer"_, failing to warn administrators that enabling `NOREPLY` disables all NDRs and delivery tracking for non-existent addresses.
 
 ---
 
 ## 2. Requirements
 
 ### 2.1 Documentation Update (`SPECS_ALDO/`)
+
 - **Target File:** `SPECS_ALDO/01_SCHEMA_DATABASE.md` (and any related doc references in `SPECS_ALDO/00_PANORAMICA.md`).
 - **Section `CONF_MAIL`:**
   - Update description of column `NOREPLY`:
@@ -39,8 +43,10 @@ When sending emails through Google Apps Script (`GmailApp.sendEmail`):
 ---
 
 ### 2.2 GasLibraryFactory Extension Seam (`GoogleApiWrapper`)
-*Per architectural rules, ALDO must never call native GAS `GmailApp` directly in application code.*
+
+_Per architectural rules, ALDO must never call native GAS `GmailApp` directly in application code._
 `GoogleApiWrapper/src/services/MailService.js` must be evaluated and extended:
+
 - **New Method in `MailService`:**
   ```javascript
   /**
@@ -49,7 +55,7 @@ When sending emails through Google Apps Script (`GmailApp.sendEmail`):
    * @param {number} [maxResults=50] Maximum number of messages to retrieve.
    * @returns {Array<{id: string, threadId: string, subject: string, from: string, date: Date, plainBody: string, rawContent?: string}>}
    */
-  searchMessages(query, maxResults)
+  searchMessages(query, maxResults);
   ```
 - **New Method in `IGmailFacade` / `GmailServiceFacade` (ALDO Infrastructure):**
   - Expose `searchBounces(lookbackDays: number): BounceReport[]` delegating cleanly to `MailService`.
@@ -59,6 +65,7 @@ When sending emails through Google Apps Script (`GmailApp.sendEmail`):
 ### 2.3 Email Bounce Reconciliation Job (`BounceReconciliationService`)
 
 #### A. Responsibilities
+
 1. **Inbox Polling:** Query the executing account's Gmail inbox for messages from `mailer-daemon@googlemail.com` within a configurable lookback window (default: last 2 days).
 2. **NDR Message Parsing:** Parse the bounce message to extract:
    - Target failed recipient email address (`failedRecipient`).
@@ -85,6 +92,7 @@ When sending emails through Google Apps Script (`GmailApp.sendEmail`):
    - Notification content includes: total inspected NDRs, count of correlated bounces, list of affected student/teacher names, class references, rejected email addresses, and specific failure diagnostics to facilitate immediate database correction.
 
 #### B. Batch Orchestration via `JobRunnerLib`
+
 - **Job Identifier:** `RECONCILE_BOUNCES`
 - **Execution Mode:**
   - Can be triggered manually via Sheets menu: `Comunicazioni` -> `Riconcilia Rimbalzi Email`.
@@ -102,17 +110,19 @@ When sending emails through Google Apps Script (`GmailApp.sendEmail`):
 To adhere to ALDO's data-driven paradigm, email delivery verification must be orchestrable via a dedicated record in the `CONF_AZIONI` table, rather than existing solely as a hardcoded menu entry.
 
 #### A. Physical `CONF_AZIONI` Record Definition
-| Column | Value | Notes |
-| :--- | :--- | :--- |
-| `ID` | `VERIFICA_EMAIL_INVIATE` | Unique identifier in `CONF_AZIONI` |
-| `TIPO` | `VERIFICA_EMAIL` | Descriptive category label written to `LOG_JOB.NOME_CONFIG` |
-| `ASSE` | `SINGOLA` | Single execution iteration using base school CDU |
-| `CONDIZIONE` | *(null or empty)* | Unconditional gate; always executes when triggered |
-| `ATTIVO` | `TRUE` | Visible in actions menu / runnable lists |
-| `AZIONI` | `[{"tipo":"VERIFICA_EMAIL_INVIATE", ...}]` | JSON action definition carrying filtering parameters |
-| `PERIODICITA` | `DAILY` | Reserved for future trigger automation (ignored in v1) |
+
+| Column        | Value                                      | Notes                                                       |
+| :------------ | :----------------------------------------- | :---------------------------------------------------------- |
+| `ID`          | `VERIFICA_EMAIL_INVIATE`                   | Unique identifier in `CONF_AZIONI`                          |
+| `TIPO`        | `VERIFICA_EMAIL`                           | Descriptive category label written to `LOG_JOB.NOME_CONFIG` |
+| `ASSE`        | `SINGOLA`                                  | Single execution iteration using base school CDU            |
+| `CONDIZIONE`  | _(null or empty)_                          | Unconditional gate; always executes when triggered          |
+| `ATTIVO`      | `TRUE`                                     | Visible in actions menu / runnable lists                    |
+| `AZIONI`      | `[{"tipo":"VERIFICA_EMAIL_INVIATE", ...}]` | JSON action definition carrying filtering parameters        |
+| `PERIODICITA` | `DAILY`                                    | Reserved for future trigger automation (ignored in v1)      |
 
 #### B. JSON Action Schema (`AZIONI` Array)
+
 ```json
 [
   {
@@ -129,6 +139,7 @@ To adhere to ALDO's data-driven paradigm, email delivery verification must be or
 ```
 
 #### C. Timestamp Formatting & Filtering Rules
+
 1. **Timestamp Bounds (`daTimestamp` / `aTimestamp`):**
    - **Format:** Strict European date/time format `"GG-MM-AAAA HH:MM:SS"` (e.g., `"01-10-2026 08:30:00"`).
    - **Parsing:** Parsed into JavaScript `Date` instances via `CoreUtilsLib.DateUtils.parseDateWithFormat(val, 'dd-MM-yyyy HH:mm:ss')` (or strict regex `^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2}):(\d{2})$`).
@@ -179,6 +190,7 @@ flowchart TD
 ## 4. Work Breakdown & Implementation Plan
 
 ### Task 1: Update Database Specifications (`SPECS_ALDO/01_SCHEMA_DATABASE.md`)
+
 - Update `CONF_MAIL` table definition to clearly explain the `NOREPLY` trade-off:
   - Document that `NOREPLY = TRUE` switches Return-Path to no-reply, causing MTAs to suppress NDRs and rendering asynchronous bounce detection impossible.
 - Update `LOG_MAIL` table definition:
@@ -187,11 +199,13 @@ flowchart TD
   - Document `VERIFICA_EMAIL_INVIATE` action type and its JSON schema with timestamp ranges (`"GG-MM-AAAA HH:MM:SS"`) and pattern filters.
 
 ### Task 2: Extend `GasLibraryFactory` (`GoogleApiWrapper`)
+
 - Extend `MailService` with `searchMessages(query, maxResults)`.
 - Write unit tests in `GasLibraryFactory/GoogleApiWrapper` for search parsing and error handling.
 - Run `npm run build` in `GasLibraryFactory` and `npm run refresh:vendor` in ALDO workspace.
 
 ### Task 3: ALDO Infrastructure - `IGmailFacade` & `GmailServiceFacade`
+
 - Update `IGmailFacade` interface:
   ```typescript
   export interface BounceMessage {
@@ -211,6 +225,7 @@ flowchart TD
 - Update mock `FakeGmailFacade` in `test/fakes/FakeGmailFacade.ts`.
 
 ### Task 4: NDR Parser (`src/application/email/NdrParser.ts`)
+
 - Implement a dedicated parser utility to extract:
   - Bounced recipient address (handles both standard Google NDR formats and RFC 3464 format).
   - Diagnostic status code (`550`, `551`, `552`, `554`, etc.).
@@ -218,6 +233,7 @@ flowchart TD
 - Comprehensive unit tests covering various mail provider NDR formats (Google, Microsoft 365, generic postfix).
 
 ### Task 5: Application Service `BounceReconciliationService`
+
 - Implement `BounceReconciliationService` with dependencies:
   - `gmail: IGmailFacade`
   - `logMail: ILogEmailRepository`
@@ -230,6 +246,7 @@ flowchart TD
 - Send summary notification report to both the initiating user (`activeUser.getEmail()`) and `SUPERVISORE_EMAIL` (when present), deduplicating recipient addresses.
 
 ### Task 6: Standalone Action Handler Integration (`CONF_AZIONI`)
+
 - Extend `Azione` interface in `src/application/pipelines/standaloneActions.ts`:
   ```typescript
   export interface Azione {
@@ -246,6 +263,7 @@ flowchart TD
 - Delegate execution to `BounceReconciliationService`.
 
 ### Task 7: Presentation, Seeders & Wiring
+
 - Wire service into `src/config/Bootstrap.ts` and `ServiceContainer.ts`.
 - Register job in `JobDefinitionRegistry`.
 - Add default `CONF_AZIONI` row (`VERIFICA_EMAIL_INVIATE`) in sample database builders (`SharedTestDatabaseBuilder.ts`, `SampleDatabaseBuilder.ts`).

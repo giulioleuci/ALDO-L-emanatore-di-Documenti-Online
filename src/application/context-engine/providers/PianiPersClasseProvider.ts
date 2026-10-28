@@ -53,7 +53,10 @@ export class PianiPersClasseProvider implements ContextProvider {
         const piani = this.alunni.getPiani(alunno);
         if (piani.length === 0) return [];
         emails.add(alunno.email.value);
-        const studente: StudenteRef = { nomeCompleto: alunno.cognomeNome, email: alunno.email.value };
+        const studente: StudenteRef = {
+          nomeCompleto: alunno.cognomeNome,
+          email: alunno.email.value
+        };
         return piani.flatMap((piano) => this.itemsPerPiano(alunno, piano, studente, classeRef));
       });
     });

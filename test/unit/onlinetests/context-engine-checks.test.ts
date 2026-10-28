@@ -105,9 +105,7 @@ describe('registerContextEngineChecks', () => {
   it('registers a passing check when focus.classe.nome resolves to the seeded classe', () => {
     const runner = new TestRunner();
     registerContextEngineChecks(runner, buildFakeContainer(), sampleFixture());
-    const result = runner
-      .report()
-      .results.find((r) => r.name.includes('focus.classe.nome'));
+    const result = runner.report().results.find((r) => r.name.includes('focus.classe.nome'));
     expect(result?.status).toBe('pass');
   });
 
@@ -118,9 +116,7 @@ describe('registerContextEngineChecks', () => {
       buildFakeContainer({ includeClasse: false }),
       sampleFixture()
     );
-    const result = runner
-      .report()
-      .results.find((r) => r.name.includes('focus.classe.nome'));
+    const result = runner.report().results.find((r) => r.name.includes('focus.classe.nome'));
     expect(result?.status).toBe('fail');
     expect(result?.message).toMatch(/Classe 1A non trovata/);
   });
@@ -128,9 +124,7 @@ describe('registerContextEngineChecks', () => {
   it('registers a passing check when focus.alunno.email resolves to the seeded alunno', () => {
     const runner = new TestRunner();
     registerContextEngineChecks(runner, buildFakeContainer(), sampleFixture());
-    const result = runner
-      .report()
-      .results.find((r) => r.name.includes('focus.alunno.email'));
+    const result = runner.report().results.find((r) => r.name.includes('focus.alunno.email'));
     expect(result?.status).toBe('pass');
   });
 

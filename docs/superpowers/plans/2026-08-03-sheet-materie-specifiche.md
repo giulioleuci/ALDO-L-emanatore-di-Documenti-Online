@@ -20,6 +20,7 @@
 ### Task 1: Identita' specifica in colonne e permessi
 
 **Files:**
+
 - Modify: `test/unit/application/sheet-materie-generator.test.ts`
 - Modify: `test/fixtures/tables.ts`
 - Modify: `src/application/strategies/SheetMaterieGeneratorStrategy.ts`
@@ -28,6 +29,7 @@
 - Modify: `src/application/services/RisolutoreRuoliService.ts`
 
 **Interfaces:**
+
 - Consumes: `DocenteCdcVM.materie: { sigla, specificita }[]`.
 - Produces: `MateriaColumn { sigla, specificita?: string, header, classeId?, kind? }`.
 - Produces: `RisolviOptions { classeId?, specifica?, kind? }`; `DOCENTE_MATERIA` restituisce solo assegnazioni slot compatibili.
@@ -44,12 +46,16 @@
       { sigla: 'LAB', specificita: 'GRUPPO_A', header: 'Lab A' },
       { sigla: 'LAB', specificita: 'GRUPPO_B', header: 'Lab B' }
     ]);
-    expect(sheets.protectCalls.find((r) => r.range === 'Sheet1!B:B')?.editors?.users)
-      .toEqual(expect.arrayContaining(['docente-a@school.it']));
-    expect(sheets.protectCalls.find((r) => r.range === 'Sheet1!C:C')?.editors?.users)
-      .toEqual(expect.arrayContaining(['docente-b@school.it']));
-    expect(roles.subjectCduVariants.map((v) => v.meta.parametriInput.materiaCorrente))
-      .toEqual(['LAB', 'LAB']);
+    expect(sheets.protectCalls.find((r) => r.range === 'Sheet1!B:B')?.editors?.users).toEqual(
+      expect.arrayContaining(['docente-a@school.it'])
+    );
+    expect(sheets.protectCalls.find((r) => r.range === 'Sheet1!C:C')?.editors?.users).toEqual(
+      expect.arrayContaining(['docente-b@school.it'])
+    );
+    expect(roles.subjectCduVariants.map((v) => v.meta.parametriInput.materiaCorrente)).toEqual([
+      'LAB',
+      'LAB'
+    ]);
   });
   ```
 
@@ -88,7 +94,11 @@
   In `RisolutoreRuoliService.ts`, estendere `RisolviOptions` e `RoleContext`:
 
   ```ts
-  interface RisolviOptions { classeId?: string; specifica?: string; kind?: string; }
+  interface RisolviOptions {
+    classeId?: string;
+    specifica?: string;
+    kind?: string;
+  }
   ```
 
   In `docenteMateria`, salvare risultato `resolveMateria(...)`, filtrare `assignment.slot.specifica === ctx.specifica` quando definita e `assignment.slot.kind === ctx.kind` quando definito, poi passare assegnazioni filtrate a `routedEmails`. In `SheetMaterieConPermessiGeneratorStrategy.resolveDocentiMateria`, passare `specifica: item.specificita` e `kind: item.kind` oltre a `classeId`.

@@ -36,7 +36,10 @@ function persistedProperties(values: Record<string, string>) {
 
 test('reads the exact persisted non-Sheets static attachment ID with strict Drive metadata fields', () => {
   const driveService = {
-    getFiles: jest.fn(() => ({ id: 'real-static-doc', mimeType: 'application/vnd.google-apps.document' }))
+    getFiles: jest.fn(() => ({
+      id: 'real-static-doc',
+      mimeType: 'application/vnd.google-apps.document'
+    }))
   };
 
   const sample = readPersistedFullOnlineTestSample(

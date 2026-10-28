@@ -20,12 +20,14 @@
 ### Task 1: Resolve the Master from the bound script spreadsheet
 
 **Files:**
+
 - Modify: `test/unit/config/bootstrap.test.ts`
 - Modify: `src/config/Bootstrap.ts`
 - Modify: `src/index.ts`
 - Modify: `test/unit/index.test.ts`
 
 **Interfaces:**
+
 - Consumes: `ServiceFactory.getSpreadsheetService().getActiveStandard().getId(): string`
 - Produces: `initAldo(now?, props?)`, which no longer reads `MASTER_SPREADSHEET_ID` from `props`.
 

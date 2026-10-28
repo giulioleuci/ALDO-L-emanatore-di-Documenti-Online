@@ -36,7 +36,10 @@ function callSplitCsvList(raw: string): string[] {
 function callGroupMateriaEntriesBySlot(materieRaw: string): MateriaSlotGroup[] {
   return globalThis.groupMateriaEntriesBySlot(materieRaw);
 }
-export { callSplitCsvList as splitCsvList, callGroupMateriaEntriesBySlot as groupMateriaEntriesBySlot };
+export {
+  callSplitCsvList as splitCsvList,
+  callGroupMateriaEntriesBySlot as groupMateriaEntriesBySlot
+};
 
 /**
  * (classe, materia) pairs the anchor teacher nominally holds — via

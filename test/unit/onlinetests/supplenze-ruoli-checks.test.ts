@@ -21,7 +21,8 @@ import { fixtureTables } from '../../fixtures/tables';
 import type { Row } from '../../../src/infrastructure/db/Database';
 
 class RecordingRunner {
-  readonly checks: Array<{ name: string; artifactUrl: string | undefined; callback: () => void }> = [];
+  readonly checks: Array<{ name: string; artifactUrl: string | undefined; callback: () => void }> =
+    [];
 
   add(name: string, artifactUrl: string | undefined, callback: () => void): void {
     this.checks.push({ name, artifactUrl, callback });

@@ -20,7 +20,12 @@ const NOW = new Date('2026-07-01T09:00:00Z');
 
 /** Every class gets the same two cattedre; one subject carries a specifica. */
 function resolver(): ITeachingAssignmentResolver {
-  const docente = new Docente({ EMAIL: 'd1@school.it', COGNOME: 'ROSSI', NOME: 'MARIO', ITP: false });
+  const docente = new Docente({
+    EMAIL: 'd1@school.it',
+    COGNOME: 'ROSSI',
+    NOME: 'MARIO',
+    ITP: false
+  });
   return {
     resolveConsiglio: () => [
       { docenteEffettivo: docente, slot: { materia: MateriaId.of('MAT'), specifica: null } },
@@ -69,13 +74,16 @@ test('targetsDocenti aggregates every class a teacher is assigned to', () => {
   expect(targets).toHaveLength(1);
   expect(targets[0]!.docenteEmail).toBe('d1@school.it');
   expect(targets[0]!.classiCompetenza.length).toBe(
-    classi.filterPerGestioneArticolazione(classi.findAttive(), GestioneArticolazione.COMPLETA).length
+    classi.filterPerGestioneArticolazione(classi.findAttive(), GestioneArticolazione.COMPLETA)
+      .length
   );
 });
 
 test('targetsAlunni and targetsDipartimenti enumerate their whole tables', () => {
   const db = new FakeDatabase(fixtureTables());
-  expect(targetsAlunni(new AlunnoRepository(db)).length).toBe(new AlunnoRepository(db).findAttivi().length);
+  expect(targetsAlunni(new AlunnoRepository(db)).length).toBe(
+    new AlunnoRepository(db).findAttivi().length
+  );
   expect(targetsDipartimenti(new DipartimentoRepository(db)).length).toBe(
     new DipartimentoRepository(db).findAll().length
   );

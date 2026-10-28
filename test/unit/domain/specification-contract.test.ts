@@ -48,11 +48,7 @@ import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { DipartimentoId } from '../../../src/domain/value-objects/DipartimentoId';
 import { Email } from '../../../src/domain/value-objects/Email';
 import { IndirizzoId } from '../../../src/domain/value-objects/IndirizzoId';
-import {
-  TipoMovimento,
-  TipoPiano,
-  TipoProgetto
-} from '../../../src/domain/value-objects/enums';
+import { TipoMovimento, TipoPiano, TipoProgetto } from '../../../src/domain/value-objects/enums';
 
 type Row = Record<string, unknown>;
 type PushdownCase = [string, Specification<unknown>, Row[], (row: Row) => unknown];
@@ -205,12 +201,13 @@ it.each(SPEC_PUSHDOWN)('%s: pushdown e in-memory concordano', (_name, spec, rows
   expect(assertSpecificationContract(spec, rows, hydrate).divergenti).toEqual([]);
 });
 
-it.each([
-  ['IndirizziPerTipoSpec', new IndirizziPerTipoSpec(''), {}, hydrateIndirizzo]
-])('%s resta in memoria quando la colonna assente usa il valore predefinito', (_name, spec, row, hydrate) => {
-  expect(spec.toQueryObject()).toBeNull();
-  expect(spec.isSatisfiedBy(hydrate(row))).toBe(true);
-});
+it.each([['IndirizziPerTipoSpec', new IndirizziPerTipoSpec(''), {}, hydrateIndirizzo]])(
+  '%s resta in memoria quando la colonna assente usa il valore predefinito',
+  (_name, spec, row, hydrate) => {
+    expect(spec.toQueryObject()).toBeNull();
+    expect(spec.isSatisfiedBy(hydrate(row))).toBe(true);
+  }
+);
 
 test('DocentiPerDipartimentoSpec resta in memoria per preservare la normalizzazione del VO', () => {
   const spec = new DocentiPerDipartimentoSpec(DipartimentoId.of('LETTERE'));

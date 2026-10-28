@@ -36,8 +36,7 @@ test('Task 6 declares religion and curriculum decisions directly as projection e
     },
     {
       type: 'filter',
-      expression:
-        'slot.hasSpecificity == false || slot.specifica match studentSpecificityPattern'
+      expression: 'slot.hasSpecificity == false || slot.specifica match studentSpecificityPattern'
     }
   ]);
 });
@@ -72,11 +71,7 @@ test('Task 6 filters arbitrary specificities into their accepted composite catal
   const db = new FakeDatabase(tables);
   const teachingAssignments = new AldoTeachingAssignmentResolver(db);
   const resolveConsiglio = jest.spyOn(teachingAssignments, 'resolveConsiglio');
-  const cdu = composeContextBuilder(
-    db,
-    new MasterSheetRepository(db),
-    teachingAssignments
-  ).build(
+  const cdu = composeContextBuilder(db, new MasterSheetRepository(db), teachingAssignments).build(
     {
       target: 'a1@school.it',
       tipoTarget: 'alunno',
@@ -102,9 +97,7 @@ test('Task 6 filters arbitrary specificities into their accepted composite catal
   );
   expect(consiglio.map((row) => row.email)).not.toContain('specific-b@school.test');
   expect(
-    consiglio
-      .flatMap((row) => row.materie)
-      .map((materia) => [materia.sigla, materia.specificita])
+    consiglio.flatMap((row) => row.materie).map((materia) => [materia.sigla, materia.specificita])
   ).toEqual(
     expect.arrayContaining([
       ['LAB.GRUPPO_A', null],

@@ -155,11 +155,7 @@ function condottaUpdates(): SheetValueUpdate[] {
     },
     {
       range: 'A2',
-      values: [
-        [
-          '{{dynamic_rows[source=focus.classe.studenti.elenco,value=nomeCompleto]}}'
-        ]
-      ]
+      values: [['{{dynamic_rows[source=focus.classe.studenti.elenco,value=nomeCompleto]}}']]
     }
   ];
   for (let i = 0; i < CONDOTTA_ROSTER_ROWS; i++) {

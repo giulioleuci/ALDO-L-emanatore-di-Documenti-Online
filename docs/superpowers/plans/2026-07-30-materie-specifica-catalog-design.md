@@ -45,7 +45,7 @@ appartiene a un catalogo tecnico chiuso", so this is a shape constraint, not a
 closed enum).
 
 **Invariant:** a `MATERIE` row with a dotted `ID` (a specifica row) requires
-the corresponding bare `MATERIA` id to *also* exist as its own `MATERIE` row
+the corresponding bare `MATERIA` id to _also_ exist as its own `MATERIE` row
 (the base subject, e.g. `INTERPRETAZIONE`, must be a catalog entry
 independently of any of its specifiche) — mirrors how `MateriaSpecificaId`'s
 `.materia()` always needs somewhere to resolve to.
@@ -75,7 +75,7 @@ cross-validated today).
 - `ClasseRepository.getTeachingSlots` (`ClasseRepository.ts:107-139`): today
   builds `specifica` from the raw column-name suffix with no MATERIE lookup at
   all — add validation that a `SPECIFICA` slot's `materia.value + '.' +
-  specifica` actually exists as a MATERIE row, since point C's requirement is
+specifica` actually exists as a MATERIE row, since point C's requirement is
   that it "must always exist". Hard throw (`MateriaNotFoundError`, already
   exists and is thrown elsewhere in this file for the bare-materia case) — no
   graceful fallback, since silently tolerating an unregistered specifica would

@@ -28,7 +28,10 @@ function build(
   const logDocs = new LogDocumentoRepository(db, new LazyRef(() => classi));
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi, alunni));
-  b.registerProvider('pianiPersClasse', new PianiPersClasseProvider(classi, logDocs, alunni, databases));
+  b.registerProvider(
+    'pianiPersClasse',
+    new PianiPersClasseProvider(classi, logDocs, alunni, databases)
+  );
   const params: BuildParams = {
     target: '5A',
     tipoTarget: 'classe',

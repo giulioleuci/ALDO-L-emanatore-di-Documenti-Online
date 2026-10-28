@@ -76,17 +76,26 @@ function createProject() {
     }
     const masterSpreadsheetId = urlMatch[1] || urlMatch[2];
 
-    fs.writeFileSync(claspJsonPath, JSON.stringify({ scriptId: scratchClasp.scriptId, rootDir: './dist' }, null, 2) + '\n');
+    fs.writeFileSync(
+      claspJsonPath,
+      JSON.stringify({ scriptId: scratchClasp.scriptId, rootDir: './dist' }, null, 2) + '\n'
+    );
     fs.writeFileSync(
       trackingPath,
       JSON.stringify(
-        { scriptId: scratchClasp.scriptId, masterSpreadsheetId, createdAt: new Date().toISOString() },
+        {
+          scriptId: scratchClasp.scriptId,
+          masterSpreadsheetId,
+          createdAt: new Date().toISOString()
+        },
         null,
         2
       ) + '\n'
     );
 
-    console.log(`Created. scriptId=${scratchClasp.scriptId} masterSpreadsheetId=${masterSpreadsheetId}`);
+    console.log(
+      `Created. scriptId=${scratchClasp.scriptId} masterSpreadsheetId=${masterSpreadsheetId}`
+    );
     console.log(
       'Next steps: npm run push:testing, then open the MASTER sheet -> Extensions -> Apps Script -> ' +
         'Run -> impostaMasterSpreadsheetId (once).'

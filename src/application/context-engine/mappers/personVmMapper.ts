@@ -11,8 +11,7 @@ export interface PersonaVmInput {
 export function buildPersonaVm(input: PersonaVmInput): PersonaVM {
   const nomeCompleto =
     input.cognome === null ? input.nome : `${input.cognome} ${input.nome}`.trim();
-  const appellativo =
-    input.genere === null ? null : input.genere === 'F' ? 'Prof.ssa' : 'Prof.';
+  const appellativo = input.genere === null ? null : input.genere === 'F' ? 'Prof.ssa' : 'Prof.';
   const articolo = input.genere === null ? null : input.genere === 'F' ? 'La' : 'Il';
   const coordinatore =
     input.genere === null ? null : input.genere === 'F' ? 'Coordinatrice' : 'Coordinatore';

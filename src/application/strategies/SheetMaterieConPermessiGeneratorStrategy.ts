@@ -92,7 +92,12 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
       docente.materie.some((materia) => materia.sigla === 'ALT')
     );
     const elenco = buildElencoMaterieConPermessi(consiglio, hasAlt);
-    const printable = elenco.map((item) => ({ sigla: item.sigla, header: item.nome, isSpeciale: item.isSpecial, ruoli: item.roles }));
+    const printable = elenco.map((item) => ({
+      sigla: item.sigla,
+      header: item.nome,
+      isSpeciale: item.isSpecial,
+      ruoli: item.roles
+    }));
     const special = elenco.find((item) => item.isSpecial);
     const groups = super.buildGroups(classe);
     const finalGroups: MaterieGroups =
@@ -111,7 +116,11 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
             ]
           };
     classe.sheet = {
-      materieConPermessi: { elenco: printable, hasElenco: printable.length > 0, numero: printable.length },
+      materieConPermessi: {
+        elenco: printable,
+        hasElenco: printable.length > 0,
+        numero: printable.length
+      },
       materieColonne: toPrintableGroups(finalGroups)
     };
     return finalGroups;
@@ -140,14 +149,14 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
     const coordinatori = this.roles.risolvi('COORDINATORI', cdu).map((e) => e.value);
     const sourceItems =
       groups === undefined
-        ? (cdu.focus.classe?.sheet?.materieColonne.gruppi.flatMap((group) => group.colonne) ?? []).map(
-            (item) => ({
-              sigla: item.sigla,
-              header: item.header,
-              isSpecial: item.isSpeciale,
-              roles: item.ruoli
-            })
-          )
+        ? (
+            cdu.focus.classe?.sheet?.materieColonne.gruppi.flatMap((group) => group.colonne) ?? []
+          ).map((item) => ({
+            sigla: item.sigla,
+            header: item.header,
+            isSpecial: item.isSpeciale,
+            roles: item.ruoli
+          }))
         : [...groups.group1, ...groups.group2, ...groups.group3];
     let sourceIndex = 0;
     return layout
@@ -187,7 +196,13 @@ export class SheetMaterieConPermessiGeneratorStrategy extends SheetMaterieGenera
   ): void {
     const hasDataColumn = layout.some((c) => !c.isLabel);
     if (!hasDataColumn) return;
-    const allRequests = this.resolveColumnRequests(cdu, sheetName, layout, gestioneSupplenti, groups);
+    const allRequests = this.resolveColumnRequests(
+      cdu,
+      sheetName,
+      layout,
+      gestioneSupplenti,
+      groups
+    );
     // Sheets rejects every @onlinetest.aldo.local principal with "Utente non valido",
     // and GasResilienceLib retries three times with backoff before giving up: 58 doomed
     // calls and ~90 s per suite in the 2026-08-21 run. Skip them, log once, keep every

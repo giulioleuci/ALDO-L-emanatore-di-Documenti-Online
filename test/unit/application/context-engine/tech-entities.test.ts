@@ -12,7 +12,19 @@ import { EntityNotFoundError } from '../../../../src/domain/errors/DomainError';
 import { COL_ALUNNI } from '../../../../src/config/schema';
 
 function emptyCdu(): Cdu {
-  return { tech: { entita: { classe: null, alunno: null, docente: null, patternEmail: null, documentoMetadato: null }, servizi: [], pipeline: { statoCorrente: '', stepEseguiti: [], errori: [], logEsecuzione: [] } } } as unknown as Cdu;
+  return {
+    tech: {
+      entita: {
+        classe: null,
+        alunno: null,
+        docente: null,
+        patternEmail: null,
+        documentoMetadato: null
+      },
+      servizi: [],
+      pipeline: { statoCorrente: '', stepEseguiti: [], errori: [], logEsecuzione: [] }
+    }
+  } as unknown as Cdu;
 }
 
 describe('techEntities: classe entity slot', () => {
@@ -44,7 +56,10 @@ describe('techEntities: alunno entity slot', () => {
 
   test('setAlunnoEntity then getAlunnoEntity round-trips the same instance', () => {
     const cdu = emptyCdu();
-    const alunno = new Alunno({ [COL_ALUNNI.EMAIL]: 'a1@school.it', [COL_ALUNNI.COGNOMENOME]: 'VERDI ANNA' });
+    const alunno = new Alunno({
+      [COL_ALUNNI.EMAIL]: 'a1@school.it',
+      [COL_ALUNNI.COGNOMENOME]: 'VERDI ANNA'
+    });
     setAlunnoEntity(cdu, alunno);
     expect(getAlunnoEntity(cdu)).toBe(alunno);
   });

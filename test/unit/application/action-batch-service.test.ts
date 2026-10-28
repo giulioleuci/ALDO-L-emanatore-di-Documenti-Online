@@ -13,7 +13,10 @@ import { DipartimentoRepository } from '../../../src/infrastructure/repositories
 import { composeContextBuilder } from '../../../src/config/ApplicationComposition';
 import { StatoJob } from '../../../src/domain/value-objects/enums';
 import { ConfigurationError } from '../../../src/domain/errors/DomainError';
-import type { ILogJobRepository, LogJobEntryInput } from '../../../src/domain/repositories/ILogJobRepository';
+import type {
+  ILogJobRepository,
+  LogJobEntryInput
+} from '../../../src/domain/repositories/ILogJobRepository';
 import type { ITeachingAssignmentResolver } from '../../../src/application/ports/ITeachingAssignmentResolver';
 import type { StoricoDatabaseProvider } from '../../../src/application/storico/StoricoDatabaseProvider';
 
@@ -48,7 +51,10 @@ const noopTeachingAssignments = {
   resolveMateria: () => null
 } as unknown as ITeachingAssignmentResolver;
 
-function wire(azioni: Array<Record<string, unknown>>, options: { condizione?: boolean; logger?: LoggerService } = {}) {
+function wire(
+  azioni: Array<Record<string, unknown>>,
+  options: { condizione?: boolean; logger?: LoggerService } = {}
+) {
   const tables = fixtureTables();
   tables['CONF_AZIONI'] = azioni;
   // Deviation from the brief: patch the fixture's own rossi@school.it row in
@@ -110,7 +116,9 @@ const SANIFICA = {
   ASSE: 'SINGOLA',
   CONDIZIONE: '',
   ATTIVO: true,
-  AZIONI: JSON.stringify([{ tipo: 'TRASFORMA_CAMPO', tab: 'DOCENTI', col: 'COGNOME', operazione: 'TRIM' }]),
+  AZIONI: JSON.stringify([
+    { tipo: 'TRASFORMA_CAMPO', tab: 'DOCENTI', col: 'COGNOME', operazione: 'TRIM' }
+  ]),
   PERIODICITA: ''
 };
 
@@ -120,14 +128,23 @@ test.each([
 ])('logs action names, affected count and duration for target %s', (email, updated) => {
   const logger = new LoggerService();
   const summary = jest.spyOn(logger, 'logSummary').mockReturnThis();
-  const { service } = wire([
-    {
-      ...SANIFICA,
-      AZIONI: JSON.stringify([
-        { tipo: 'AGGIORNA_CAMPO', tab: 'DOCENTI', col: 'NOME', valore: 'MARIO', criteri: { EMAIL: email } }
-      ])
-    }
-  ], { logger });
+  const { service } = wire(
+    [
+      {
+        ...SANIFICA,
+        AZIONI: JSON.stringify([
+          {
+            tipo: 'AGGIORNA_CAMPO',
+            tab: 'DOCENTI',
+            col: 'NOME',
+            valore: 'MARIO',
+            criteri: { EMAIL: email }
+          }
+        ])
+      }
+    ],
+    { logger }
+  );
 
   drain(service.batchAzioniHandler({ azioneIds: ['SANIFICA_TRIM'], jobId: 'job' }));
 
@@ -144,7 +161,9 @@ test('logs a failed target with its reason and keeps the failure in LOG_JOB', ()
   const logger = new LoggerService();
   const summary = jest.spyOn(logger, 'logSummary').mockReturnThis();
   const { service, db, entries } = wire([SANIFICA], { logger });
-  jest.spyOn(db, 'save').mockImplementation(() => { throw new Error('Salvataggio fallito'); });
+  jest.spyOn(db, 'save').mockImplementation(() => {
+    throw new Error('Salvataggio fallito');
+  });
 
   drain(service.batchAzioniHandler({ azioneIds: ['SANIFICA_TRIM'], jobId: 'job' }));
 
@@ -160,7 +179,9 @@ test('logs a failed target with its reason and keeps the failure in LOG_JOB', ()
 
 test('ASSE=SINGOLA runs the action exactly once and applies it', () => {
   const { service, db, entries } = wire([SANIFICA]);
-  const checkpoints = drain(service.batchAzioniHandler({ azioneIds: ['SANIFICA_TRIM'], jobId: 'azioni_SANIFICA_TRIM' }));
+  const checkpoints = drain(
+    service.batchAzioniHandler({ azioneIds: ['SANIFICA_TRIM'], jobId: 'azioni_SANIFICA_TRIM' })
+  );
 
   expect(checkpoints).toHaveLength(1);
   expect(db.tables['DOCENTI']!.getAllRows()[0]!['COGNOME']).toBe('rossi');
@@ -179,7 +200,9 @@ test('ASSE=SINGOLA runs the action exactly once and applies it', () => {
 
 test('ASSE=CLASSE yields one checkpoint per active class', () => {
   const { service } = wire([{ ...SANIFICA, ID: 'PER_CLASSE', ASSE: 'CLASSE' }]);
-  const checkpoints = drain(service.batchAzioniHandler({ azioneIds: ['PER_CLASSE'], jobId: 'job' }));
+  const checkpoints = drain(
+    service.batchAzioniHandler({ azioneIds: ['PER_CLASSE'], jobId: 'job' })
+  );
   expect(checkpoints.length).toBeGreaterThan(1);
   expect(checkpoints[checkpoints.length - 1]!.percentage).toBe(100);
 });
@@ -190,7 +213,9 @@ test('a false CONDIZIONE skips the action and writes no LOG_JOB row', () => {
   // convention — only calls evaluateBoolean when CONDIZIONE is non-blank
   // (blank means "no gate, always run"); a blank CONDIZIONE would never reach
   // the mocked evaluator this test relies on, so it needs a non-blank one.
-  const { service, db, entries } = wire([{ ...SANIFICA, CONDIZIONE: 'sempreFalsa' }], { condizione: false });
+  const { service, db, entries } = wire([{ ...SANIFICA, CONDIZIONE: 'sempreFalsa' }], {
+    condizione: false
+  });
   drain(service.batchAzioniHandler({ azioneIds: ['SANIFICA_TRIM'], jobId: 'job' }));
   expect(entries).toEqual([]);
   expect(db.tables['DOCENTI']!.getAllRows()[0]!['COGNOME']).toBe('  rossi  ');
@@ -198,29 +223,35 @@ test('a false CONDIZIONE skips the action and writes no LOG_JOB row', () => {
 
 test('an unknown ASSE fails the job with a ConfigurationError and a FALLITO row', () => {
   const { service, entries } = wire([{ ...SANIFICA, ASSE: 'GALASSIA' }]);
-  expect(() => drain(service.batchAzioniHandler({ azioneIds: ['SANIFICA_TRIM'], jobId: 'job' }))).toThrow(
-    ConfigurationError
-  );
+  expect(() =>
+    drain(service.batchAzioniHandler({ azioneIds: ['SANIFICA_TRIM'], jobId: 'job' }))
+  ).toThrow(ConfigurationError);
   expect(entries[0]).toMatchObject({ stato: StatoJob.FALLITO });
 });
 
 test('malformed AZIONI JSON fails fast with a single FALLITO row, not one COMPLETATO_CON_ERRORI per target', () => {
-  const { service, entries } = wire([{ ...SANIFICA, ID: 'PER_CLASSE', ASSE: 'CLASSE', AZIONI: '{ non valido' }]);
-  expect(() => drain(service.batchAzioniHandler({ azioneIds: ['PER_CLASSE'], jobId: 'job' }))).toThrow(
-    ConfigurationError
-  );
+  const { service, entries } = wire([
+    { ...SANIFICA, ID: 'PER_CLASSE', ASSE: 'CLASSE', AZIONI: '{ non valido' }
+  ]);
+  expect(() =>
+    drain(service.batchAzioniHandler({ azioneIds: ['PER_CLASSE'], jobId: 'job' }))
+  ).toThrow(ConfigurationError);
   // One FALLITO row for the whole action, logged before any of the (multiple,
   // per the ASSE=CLASSE test above) targets were touched — not N
   // COMPLETATO_CON_ERRORI-with-listaFallimenti rows, one per class.
   expect(entries).toHaveLength(1);
-  expect(entries[0]).toMatchObject({ stato: StatoJob.FALLITO, idConfig: 'PER_CLASSE', totaleTask: 0 });
+  expect(entries[0]).toMatchObject({
+    stato: StatoJob.FALLITO,
+    idConfig: 'PER_CLASSE',
+    totaleTask: 0
+  });
 });
 
 test('a missing CONF_AZIONI id fails the job', () => {
   const { service } = wire([SANIFICA]);
-  expect(() => drain(service.batchAzioniHandler({ azioneIds: ['NON_ESISTE'], jobId: 'job' }))).toThrow(
-    /NON_ESISTE/
-  );
+  expect(() =>
+    drain(service.batchAzioniHandler({ azioneIds: ['NON_ESISTE'], jobId: 'job' }))
+  ).toThrow(/NON_ESISTE/);
 });
 
 test('a failing target is recorded in LISTA_FALLIMENTI and the run continues', () => {
@@ -232,10 +263,14 @@ test('a failing target is recorded in LISTA_FALLIMENTI and the run continues', (
     // `destinatari` first and returns early (0, no error) when it's empty —
     // an `emails` entry is needed to reach the `su` validation this test
     // means to exercise (ConfigurationError: "su" deve essere LOG_DOCS o LOG_FOLD).
-    AZIONI: JSON.stringify([{ tipo: 'AGGIORNA_PERMESSI', su: 'TABELLA_INESISTENTE', emails: ['x@school.it'] }])
+    AZIONI: JSON.stringify([
+      { tipo: 'AGGIORNA_PERMESSI', su: 'TABELLA_INESISTENTE', emails: ['x@school.it'] }
+    ])
   };
   const { service, entries } = wire([azione]);
-  const checkpoints = drain(service.batchAzioniHandler({ azioneIds: ['PER_CLASSE'], jobId: 'job' }));
+  const checkpoints = drain(
+    service.batchAzioniHandler({ azioneIds: ['PER_CLASSE'], jobId: 'job' })
+  );
   expect(checkpoints.length).toBeGreaterThan(0);
   expect(entries[0]).toMatchObject({ stato: StatoJob.COMPLETATO_CON_ERRORI });
   expect(entries[0]!.listaFallimenti.length).toBe(entries[0]!.falliti);
@@ -257,9 +292,20 @@ test('resuming from a checkpoint restarts at the persisted index and keeps the j
 });
 
 test('running several actions in one job writes one LOG_JOB row per action', () => {
-  const seconda = { ...SANIFICA, ID: 'SANIFICA_UPPER', AZIONI: JSON.stringify([{ tipo: 'TRASFORMA_CAMPO', tab: 'DOCENTI', col: 'NOME', operazione: 'UPPER' }]) };
+  const seconda = {
+    ...SANIFICA,
+    ID: 'SANIFICA_UPPER',
+    AZIONI: JSON.stringify([
+      { tipo: 'TRASFORMA_CAMPO', tab: 'DOCENTI', col: 'NOME', operazione: 'UPPER' }
+    ])
+  };
   const { service, db, entries } = wire([SANIFICA, seconda]);
-  drain(service.batchAzioniHandler({ azioneIds: ['SANIFICA_TRIM', 'SANIFICA_UPPER'], jobId: 'azioni_TUTTE' }));
+  drain(
+    service.batchAzioniHandler({
+      azioneIds: ['SANIFICA_TRIM', 'SANIFICA_UPPER'],
+      jobId: 'azioni_TUTTE'
+    })
+  );
   expect(entries.map((e) => e.idConfig)).toEqual(['SANIFICA_TRIM', 'SANIFICA_UPPER']);
   expect(db.tables['DOCENTI']!.getAllRows()[0]!['NOME']).toBe('MARIO');
 });

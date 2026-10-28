@@ -4,10 +4,7 @@ import type { Cdu } from '../../application/context-engine/Cdu';
 import { recipe } from '../../application/context-engine/Recipe';
 import type { RisolutoreRuoliService } from '../../application/services/RisolutoreRuoliService';
 import { getCduMateriaAssignmentIdentity } from '../../application/context-engine/CduInternalMetadata';
-import {
-  type OnlineTestSkippedOutcome,
-  type TestRunner
-} from '../report/OnlineTestReport';
+import { type OnlineTestSkippedOutcome, type TestRunner } from '../report/OnlineTestReport';
 import { classifySyntheticProtectedRangeOutcome } from './protectedRangeOutcome';
 import { ValidationError } from '../../domain/errors/DomainError';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
@@ -23,7 +20,14 @@ import type { ImportService } from '../../application/services/ImportService';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import { MateriaRepository } from '../../infrastructure/repositories/MateriaRepository';
 import { tipoPianoLabel } from '../../application/context-engine/mappers/labels';
-import { TABLE, COL_LOG_DOCS, COL_LOG_FOLD, COL_ASL, COL_LOG_MAIL, COL_ALUNNI } from '../../config/schema';
+import {
+  TABLE,
+  COL_LOG_DOCS,
+  COL_LOG_FOLD,
+  COL_ASL,
+  COL_LOG_MAIL,
+  COL_ALUNNI
+} from '../../config/schema';
 import { GestioneSupplenti, TipoPiano } from '../../domain/value-objects/enums';
 import {
   ALL_CLASSI_E2E,
@@ -112,7 +116,9 @@ function assertRenderedProtectedRanges(
       );
     }
     if (protectionsByIndex.has(index)) {
-      throw new ValidationError(`Protected range duplicato alla colonna ${index + 1} per ${classe}.`);
+      throw new ValidationError(
+        `Protected range duplicato alla colonna ${index + 1} per ${classe}.`
+      );
     }
     protectionsByIndex.set(index, protection);
   }
@@ -122,7 +128,9 @@ function assertRenderedProtectedRanges(
       throw new ValidationError(`Protected range ${column.header} mancante per ${classe}.`);
     }
     if (focal.warningOnly === true) {
-      throw new ValidationError(`Protected range ${column.header} per ${classe} e solo warningOnly.`);
+      throw new ValidationError(
+        `Protected range ${column.header} per ${classe} e solo warningOnly.`
+      );
     }
     const actual = exact(focal.editors.users ?? []);
     if (actual.length === 0) {
@@ -166,13 +174,15 @@ function renderedColumn(
   const materia =
     column.specificita === undefined
       ? materie.findByIdCached(MateriaId.of(column.sigla))
-      : (materie.findSpecifiche(MateriaId.of(column.sigla)).find((item) => item.id === catalogId) ?? null);
+      : (materie.findSpecifiche(MateriaId.of(column.sigla)).find((item) => item.id === catalogId) ??
+        null);
   return { ...column, header: materia?.sintesi.trim() || catalogId };
 }
 
 function generatorColumns(cdu: Cdu, materie: MateriaRepository): ProtectedColumnMetadata[] {
   const classe = cdu.focus.classe;
-  if (classe === undefined) throw new ValidationError('CDU privo di focus.classe per le protezioni.');
+  if (classe === undefined)
+    throw new ValidationError('CDU privo di focus.classe per le protezioni.');
   const groups: ProtectedColumnInput[][] = [[], [], []];
   const articolazione = classe.articolazione;
   if (classe.isArticolata && articolazione !== undefined) {
@@ -492,7 +502,9 @@ export function registerE2eScenarioChecks(
           row[COL_LOG_FOLD.PATH] === doc[COL_LOG_DOCS.PATH]
       );
       if (folder === undefined || !hasMate(folder[COL_LOG_FOLD.MATERIE])) {
-        throw new ValidationError(`Cartella verbale per ${classe} non ha metadata MATERIE configurati`);
+        throw new ValidationError(
+          `Cartella verbale per ${classe} non ha metadata MATERIE configurati`
+        );
       }
     }
   };
@@ -952,7 +964,14 @@ export function registerE2eScenarioChecks(
       const materie = container.get<MateriaRepository>('materie');
       const expectationProvider: ProtectedRangeExpectationProvider = (classe) => {
         const cdu = contextBuilder.build(
-          { target: classe, tipoTarget: 'classe', now: new Date(), configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
+          {
+            target: classe,
+            tipoTarget: 'classe',
+            now: new Date(),
+            configurazioneId: 'ONLINE_CHECK',
+            esecuzioneId: 'ONLINE_CHECK',
+            tipoOperazione: 'GENERAZIONE_DOCUMENTO'
+          },
           recipe('CLASSE_COMPLETA')
         );
         return {

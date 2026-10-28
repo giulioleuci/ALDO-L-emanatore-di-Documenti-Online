@@ -12,7 +12,8 @@ export class PianiProvider implements ContextProvider {
   provide(cdu: Cdu): void {
     const focus = cdu.focus.alunno;
     if (focus === undefined) return;
-    const elenco = this.alunni.getPiani(getAlunnoEntity(cdu))
+    const elenco = this.alunni
+      .getPiani(getAlunnoEntity(cdu))
       .map((piano) => ({
         tipo: piano.tipo,
         tipoLabel: tipoPianoLabel(piano.tipo),

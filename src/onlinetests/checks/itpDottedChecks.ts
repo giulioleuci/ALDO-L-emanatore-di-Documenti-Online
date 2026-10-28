@@ -35,7 +35,14 @@ const CHECK_DATE = new Date('2026-07-15T09:00:00Z');
 
 function classCdu(contextBuilder: ContextBuilder, target: string, now = CHECK_DATE) {
   return contextBuilder.build(
-    { target, tipoTarget: 'classe', now, configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
+    {
+      target,
+      tipoTarget: 'classe',
+      now,
+      configurazioneId: 'ONLINE_CHECK',
+      esecuzioneId: 'ONLINE_CHECK',
+      tipoOperazione: 'GENERAZIONE_DOCUMENTO'
+    },
     recipe('CLASSE_COMPLETA', {
       includiStorico: true,
       profonditaAnniStorico: 2,
@@ -211,14 +218,20 @@ export function registerItpDottedChecks(
           }))
       );
       const student = contextBuilder.build(
-        { target: e2eAlunnoEmail(4), tipoTarget: 'alunno', now: CHECK_DATE, configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
+        {
+          target: e2eAlunnoEmail(4),
+          tipoTarget: 'alunno',
+          now: CHECK_DATE,
+          configurazioneId: 'ONLINE_CHECK',
+          esecuzioneId: 'ONLINE_CHECK',
+          tipoOperazione: 'GENERAZIONE_DOCUMENTO'
+        },
         recipe('ALUNNO_COMPLETO', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
       );
-      const studentChitarra = (student.focus.alunno?.consiglio?.elenco ?? []).flatMap(
-        (docente) =>
-          docente.materie
-            .filter((materia) => materia.sigla === DOTTED_ID)
-            .map((materia) => `${docente.email}:${materia.isItp ? 'ITP' : 'SPECIFICA'}`)
+      const studentChitarra = (student.focus.alunno?.consiglio?.elenco ?? []).flatMap((docente) =>
+        docente.materie
+          .filter((materia) => materia.sigla === DOTTED_ID)
+          .map((materia) => `${docente.email}:${materia.isItp ? 'ITP' : 'SPECIFICA'}`)
       );
       const parent = classCdu(contextBuilder, '3C').focus.classe;
       const parentInf = (parent?.consiglio?.elenco ?? []).flatMap((docente) =>
@@ -374,7 +387,9 @@ export function registerItpDottedChecks(
         'Interpretazione ed esecuzione — indirizzo flauto'
       ];
       const cdu = classCdu(container.get<ContextBuilder>('contextBuilder'), FOCAL_CLASS);
-      const chitarra = cdu.focus.classe?.materie?.elenco.find((materia) => materia.sigla === DOTTED_ID);
+      const chitarra = cdu.focus.classe?.materie?.elenco.find(
+        (materia) => materia.sigla === DOTTED_ID
+      );
       if (
         names.some((name) => countOccurrences(text, name) !== 1) ||
         chitarra?.docentiDescrizione === undefined ||

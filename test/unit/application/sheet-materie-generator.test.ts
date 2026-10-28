@@ -250,11 +250,18 @@ describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
 
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE'));
 
-    const groups = (templates.sheetContextFor('file_1')?.['focus'] as Cdu['focus']).classe?.sheet?.materieColonne.gruppi!;
-    expect(groups[0]!.colonne).toEqual([{ sigla: 'MATE', header: 'Matematica', isSpeciale: false, ruoli: [] }]);
-    expect(groups[1]!.colonne).toEqual([{ sigla: 'FISI', header: 'Fisica', isSpeciale: false, ruoli: [] }]);
+    const groups = (templates.sheetContextFor('file_1')?.['focus'] as Cdu['focus']).classe?.sheet
+      ?.materieColonne.gruppi!;
+    expect(groups[0]!.colonne).toEqual([
+      { sigla: 'MATE', header: 'Matematica', isSpeciale: false, ruoli: [] }
+    ]);
+    expect(groups[1]!.colonne).toEqual([
+      { sigla: 'FISI', header: 'Fisica', isSpeciale: false, ruoli: [] }
+    ]);
     expect(groups[1]!.label).toBe('1F-LSO');
-    expect(groups[2]!.colonne).toEqual([{ sigla: 'FISI', header: 'Fisica', isSpeciale: false, ruoli: [] }]);
+    expect(groups[2]!.colonne).toEqual([
+      { sigla: 'FISI', header: 'Fisica', isSpeciale: false, ruoli: [] }
+    ]);
     expect(groups[2]!.label).toBe('1F-LSS');
   });
 
@@ -272,8 +279,11 @@ describe('SheetMaterieGeneratorStrategy (10 §9)', () => {
 
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE'));
 
-    const groups = (templates.sheetContextFor('file_1')?.['focus'] as Cdu['focus']).classe?.sheet?.materieColonne.gruppi!;
-    expect(groups[0]!.colonne).toEqual([{ sigla: 'MATE', header: 'Matematica', isSpeciale: false, ruoli: [] }]);
+    const groups = (templates.sheetContextFor('file_1')?.['focus'] as Cdu['focus']).classe?.sheet
+      ?.materieColonne.gruppi!;
+    expect(groups[0]!.colonne).toEqual([
+      { sigla: 'MATE', header: 'Matematica', isSpeciale: false, ruoli: [] }
+    ]);
     expect(groups[1]!.colonne).toEqual([]);
     expect(groups[2]!.colonne).toEqual([]);
     expect(groups[1]!.label).toBe('');
@@ -316,9 +326,7 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     const db = new FakeDatabase(tables);
     const cdu = buildCdu(db, '5LAB');
     const sheets = new FakeSpreadsheetService(sheetInfo());
-    const roles = new RecordingRisolutoreRuoliService(
-      composeRisolutoreRuoliDependencies(db)
-    );
+    const roles = new RecordingRisolutoreRuoliService(composeRisolutoreRuoliDependencies(db));
     const templates = new FakeTemplateEngine();
     const strategy = new SheetMaterieConPermessiGeneratorStrategy(
       sheets,
@@ -329,7 +337,8 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
 
     strategy.render('file_1', cdu, confDoc('SHEET_CON_MATERIE_E_PERMESSI'));
 
-    const groups = (templates.sheetContextFor('file_1')?.['focus'] as Cdu['focus']).classe?.sheet?.materieColonne.gruppi!;
+    const groups = (templates.sheetContextFor('file_1')?.['focus'] as Cdu['focus']).classe?.sheet
+      ?.materieColonne.gruppi!;
     expect(groups[0]!.colonne.filter((item) => !item.isSpeciale)).toEqual([
       { sigla: 'LAB', header: 'Lab A', isSpeciale: false, ruoli: [] },
       { sigla: 'LAB', header: 'Lab B', isSpeciale: false, ruoli: [] }
@@ -340,10 +349,7 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     expect(sheets.protectCalls.find((r) => r.range === 'Sheet1!C:C')?.editors?.users).toEqual(
       expect.arrayContaining(['docente-b@school.it'])
     );
-    expect(roles.subjectCduVariants.map((v) => v.meta.materiaCorrente)).toEqual([
-      'LAB',
-      'LAB'
-    ]);
+    expect(roles.subjectCduVariants.map((v) => v.meta.materiaCorrente)).toEqual(['LAB', 'LAB']);
   });
 
   test('keeps MAIN and ITP teachers on one non-specific subject column', () => {
@@ -433,21 +439,15 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
 
     expect(templates.renderedSheets).toHaveLength(1);
     expect(sheets.protectOptions).toEqual({ onError: 'continue' });
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('Sheet1!B:B')
-    );
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('Invalid protected-range editor')
-    );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Sheet1!B:B'));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Invalid protected-range editor'));
   });
 
   test('protects each subject column for its resolved teacher(s) + the coordinator, skipping group-label columns', () => {
     const db = new FakeDatabase(fixtureTables());
     const cdu = buildCdu(db, '5A');
     const sheets = new FakeSpreadsheetService(sheetInfo());
-    const roles = new RecordingRisolutoreRuoliService(
-      composeRisolutoreRuoliDependencies(db)
-    );
+    const roles = new RecordingRisolutoreRuoliService(composeRisolutoreRuoliDependencies(db));
     const templates = new FakeTemplateEngine();
     const strategy = new SheetMaterieConPermessiGeneratorStrategy(
       sheets,
@@ -464,7 +464,8 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       'FISI',
       'MATE'
     ]);
-    const renderedGroups = (templates.sheetContextFor('file_1')?.['focus'] as Cdu['focus']).classe?.sheet?.materieColonne.gruppi!;
+    const renderedGroups = (templates.sheetContextFor('file_1')?.['focus'] as Cdu['focus']).classe
+      ?.sheet?.materieColonne.gruppi!;
     expect(renderedGroups[0]!.colonne[0]).toMatchObject({
       sigla: 'REL',
       header: 'REL',
@@ -477,9 +478,10 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     const colC = sheets.protectCalls.find((r) => r.range === 'Sheet1!C:C');
     expect(colB?.editors?.users?.sort()).toEqual(['bianchi@school.it', 'rossi@school.it']);
     expect(colC?.editors?.users?.sort()).toEqual(['bianchi@school.it', 'rossi@school.it']);
-    expect(
-      roles.subjectCduVariants.map((variant) => variant.meta.materiaCorrente)
-    ).toEqual(['FISI', 'MATE']);
+    expect(roles.subjectCduVariants.map((variant) => variant.meta.materiaCorrente)).toEqual([
+      'FISI',
+      'MATE'
+    ]);
     for (const variant of roles.subjectCduVariants) {
       expect(Object.getOwnPropertyDescriptor(variant, 'tech')).toMatchObject({
         enumerable: false,
@@ -553,9 +555,7 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     const db = new FakeDatabase(fixtureTables());
     const cdu = buildCdu(db, '5A');
     const sheets = new FakeSpreadsheetService(sheetInfo());
-    const roles = new RecordingRisolutoreRuoliService(
-      composeRisolutoreRuoliDependencies(db)
-    );
+    const roles = new RecordingRisolutoreRuoliService(composeRisolutoreRuoliDependencies(db));
     const strategy = new SheetMaterieConPermessiGeneratorStrategy(
       sheets,
       new MateriaRepository(db),
@@ -566,11 +566,15 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     strategy.render(
       'file_1',
       cdu,
-      confDoc('SHEET_CON_MATERIE_E_PERMESSI', {
-        gestioneSupplenti: 'SOLO_TITOLARI'
-      }, {
-        regolaSupplente: { file: 'SOLO_SUPPLENTI' }
-      })
+      confDoc(
+        'SHEET_CON_MATERIE_E_PERMESSI',
+        {
+          gestioneSupplenti: 'SOLO_TITOLARI'
+        },
+        {
+          regolaSupplente: { file: 'SOLO_SUPPLENTI' }
+        }
+      )
     );
 
     const routed = roles.calls.filter(([role]) =>
@@ -582,18 +586,14 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       'DOCENTE_MATERIA'
     ]);
     expect(
-      routed.every(
-        ([, , options]) => options?.regolaSupplente === GestioneSupplenti.SOLO_SUPPLENTI
-      )
+      routed.every(([, , options]) => options?.regolaSupplente === GestioneSupplenti.SOLO_SUPPLENTI)
     ).toBe(true);
   });
 
   test('defaults protected-range routing to ENTRAMBI when PERMESSI.regolaSupplente is absent', () => {
     const db = new FakeDatabase(fixtureTables());
     const cdu = buildCdu(db, '5A');
-    const roles = new RecordingRisolutoreRuoliService(
-      composeRisolutoreRuoliDependencies(db)
-    );
+    const roles = new RecordingRisolutoreRuoliService(composeRisolutoreRuoliDependencies(db));
     const strategy = new SheetMaterieConPermessiGeneratorStrategy(
       new FakeSpreadsheetService(sheetInfo()),
       new MateriaRepository(db),
@@ -656,9 +656,14 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
       'Sheet1!D:D',
       'Sheet1!F:F'
     ]);
-    const groups = (templates.sheetContextFor('file_1')?.['focus'] as Cdu['focus']).classe?.sheet?.materieColonne.gruppi!;
-    expect(groups[1]!.colonne).toEqual([{ sigla: 'FISI', header: 'Fisica', isSpeciale: false, ruoli: [] }]);
-    expect(groups[2]!.colonne).toEqual([{ sigla: 'FISI', header: 'Fisica', isSpeciale: false, ruoli: [] }]);
+    const groups = (templates.sheetContextFor('file_1')?.['focus'] as Cdu['focus']).classe?.sheet
+      ?.materieColonne.gruppi!;
+    expect(groups[1]!.colonne).toEqual([
+      { sigla: 'FISI', header: 'Fisica', isSpeciale: false, ruoli: [] }
+    ]);
+    expect(groups[2]!.colonne).toEqual([
+      { sigla: 'FISI', header: 'Fisica', isSpeciale: false, ruoli: [] }
+    ]);
     expect(
       sheets.protectCalls.find((request) => request.range === 'Sheet1!D:D')?.editors?.users?.sort()
     ).toEqual(['bianchi@school.it', 'rossi@school.it']);
@@ -710,9 +715,7 @@ describe('SheetMaterieConPermessiGeneratorStrategy (10 §9)', () => {
     // never set here but part of the same leak) never reaches the printable
     // classe.sheet.materieColonne contract (02 §4.1 / Cdu.ts CduClasse['sheet']),
     // even though buildGroups()'s own internal return value legitimately carries it.
-    const printableColumns = [
-      ...gruppi.flatMap((gruppo) => gruppo.colonne)
-    ];
+    const printableColumns = [...gruppi.flatMap((gruppo) => gruppo.colonne)];
     expect(printableColumns).toEqual([
       { sigla: 'REL', header: 'REL', isSpeciale: true, ruoli: ['IRC'] },
       { sigla: 'MATE', header: 'Matematica', isSpeciale: false, ruoli: [] },

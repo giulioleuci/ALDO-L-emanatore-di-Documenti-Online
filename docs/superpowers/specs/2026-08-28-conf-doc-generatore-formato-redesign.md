@@ -59,30 +59,31 @@ CONF_DOC.GENERATORE         CONF_DOC.FORMATO           CONF_DOC.PARAMETRI
 
 ### 3.1 Column Definitions
 
-| Column | Type | Nullable | Default | Description / Allowed Values |
-|---|---|---|---|---|
-| `ID` | String | No (PK) | — | Unique configuration code (e.g. `VERBALE_CDC`, `PIANI_PERSONALIZZATI`, `SCHEDA_MATERIA`). |
-| `TIPO` | String | No | — | Free-form categorization label (e.g. `VERBALE`, `PIANO_LAVORO`, `PROGRAMMAZIONE`). Sole reserved value: `PIANO_PERS`. |
-| `NOME` | String | No | — | Human-readable title for UI menus and dialogs. |
-| `GENERATORE` | Enum (`GeneratoreAxis`) | No | — | Batch iteration axis and recipe driver. Allowed values: `CLASSE`, `DOCENTE`, `PIANO_PERSONALIZZATO`, `CLASSE_MATERIA`, `CLASSE_DOCENTE`, `CLASSE_DOCENTE_MATERIA`, `DIPARTIMENTO`, `ALUNNO`. |
-| `FORMATO` | Enum (`FormatoDocumento`) | No | — | Target document format. Allowed values: `GDOC`, `GSHEET`. |
-| `DUPLICAZIONE` | Enum (`DuplicazioneDocumento`) | No | `NEGATA` | Policy for handling re-generation: `NEGATA` (default) or `PERMESSA`. |
-| `GESTIONE_ARTICOLAZIONE` | Enum (`GestioneArticolazione`) | No | `COMPLETA` | `COMPLETA` (default) or `ARTICOLATA`. Evaluated only on class-based axes. |
-| `PATH_OUT` | String | No | — | Folder path pattern with `{{...}}` placeholder expressions and `/` separators. |
-| `FILE_NAME` | String | No | — | Target file name pattern supporting `{{...}}` placeholders. |
-| `MODELLI` | JSON | No | — | Drive template ID (string) or conditional template map. Must match `FORMATO`. |
-| `PERMESSI` | JSON | Yes | `{}` | Role-to-permission mapping object (e.g. `{"COORDINATORI": "SCRITTURA", "DIPART.CAPO": "SCRITTURA"}`). |
-| `PARAMETRI` | JSON | Yes | `{}` | Feature toggles (`aggiungiMaterie`, `aggiungiMaterieConPermessi`, `tabelleImportate`) and generator parameters. |
-| `CONDIZIONE` | String | Yes | `""` | Boolean expression evaluated by `GasExpressionEngineLib`. Empty = always generate. |
-| `POST_PROCESSO` | JSON (Array) | Yes | `[]` | Post-generation actions (`INSERISCI_TIMESTAMP`, `AGGIORNA_CAMPO`, `AGGIORNA_STATO_DOC`). |
-| `REGISTRA_DOC` | JSON | Yes | `{}` | Optional template expressions for `LOG_DOCS` fields (`classi`, `utenti`, `materie`). |
-| `REGISTRA_FOLD` | JSON | Yes | `{}` | Optional template expressions for `LOG_FOLD` fields (`classi`, `utenti`, `materie`). |
+| Column                   | Type                           | Nullable | Default    | Description / Allowed Values                                                                                                                                                                 |
+| ------------------------ | ------------------------------ | -------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ID`                     | String                         | No (PK)  | —          | Unique configuration code (e.g. `VERBALE_CDC`, `PIANI_PERSONALIZZATI`, `SCHEDA_MATERIA`).                                                                                                    |
+| `TIPO`                   | String                         | No       | —          | Free-form categorization label (e.g. `VERBALE`, `PIANO_LAVORO`, `PROGRAMMAZIONE`). Sole reserved value: `PIANO_PERS`.                                                                        |
+| `NOME`                   | String                         | No       | —          | Human-readable title for UI menus and dialogs.                                                                                                                                               |
+| `GENERATORE`             | Enum (`GeneratoreAxis`)        | No       | —          | Batch iteration axis and recipe driver. Allowed values: `CLASSE`, `DOCENTE`, `PIANO_PERSONALIZZATO`, `CLASSE_MATERIA`, `CLASSE_DOCENTE`, `CLASSE_DOCENTE_MATERIA`, `DIPARTIMENTO`, `ALUNNO`. |
+| `FORMATO`                | Enum (`FormatoDocumento`)      | No       | —          | Target document format. Allowed values: `GDOC`, `GSHEET`.                                                                                                                                    |
+| `DUPLICAZIONE`           | Enum (`DuplicazioneDocumento`) | No       | `NEGATA`   | Policy for handling re-generation: `NEGATA` (default) or `PERMESSA`.                                                                                                                         |
+| `GESTIONE_ARTICOLAZIONE` | Enum (`GestioneArticolazione`) | No       | `COMPLETA` | `COMPLETA` (default) or `ARTICOLATA`. Evaluated only on class-based axes.                                                                                                                    |
+| `PATH_OUT`               | String                         | No       | —          | Folder path pattern with `{{...}}` placeholder expressions and `/` separators.                                                                                                               |
+| `FILE_NAME`              | String                         | No       | —          | Target file name pattern supporting `{{...}}` placeholders.                                                                                                                                  |
+| `MODELLI`                | JSON                           | No       | —          | Drive template ID (string) or conditional template map. Must match `FORMATO`.                                                                                                                |
+| `PERMESSI`               | JSON                           | Yes      | `{}`       | Role-to-permission mapping object (e.g. `{"COORDINATORI": "SCRITTURA", "DIPART.CAPO": "SCRITTURA"}`).                                                                                        |
+| `PARAMETRI`              | JSON                           | Yes      | `{}`       | Feature toggles (`aggiungiMaterie`, `aggiungiMaterieConPermessi`, `tabelleImportate`) and generator parameters.                                                                              |
+| `CONDIZIONE`             | String                         | Yes      | `""`       | Boolean expression evaluated by `GasExpressionEngineLib`. Empty = always generate.                                                                                                           |
+| `POST_PROCESSO`          | JSON (Array)                   | Yes      | `[]`       | Post-generation actions (`INSERISCI_TIMESTAMP`, `AGGIORNA_CAMPO`, `AGGIORNA_STATO_DOC`).                                                                                                     |
+| `REGISTRA_DOC`           | JSON                           | Yes      | `{}`       | Optional template expressions for `LOG_DOCS` fields (`classi`, `utenti`, `materie`).                                                                                                         |
+| `REGISTRA_FOLD`          | JSON                           | Yes      | `{}`       | Optional template expressions for `LOG_FOLD` fields (`classi`, `utenti`, `materie`).                                                                                                         |
 
 ---
 
 ## 4. The 8 Generation Axes (`GeneratoreAxis`)
 
 Every axis defines:
+
 - The discrete iteration unit enumerated by `DocumentBatchService`.
 - The activated `ContextEngine` recipe and parameters.
 - The `tipoTarget` written to `meta.parametriInput.tipoTarget`.
@@ -106,18 +107,21 @@ Every axis defines:
 ### 4.1 Detailed Semantics per Axis
 
 #### 1. `CLASSE`
+
 - **Target Unit:** Each active class in `CLASSI` (filtered by `GESTIONE_ARTICOLAZIONE`).
 - **Recipe:** `CLASSE_COMPLETA`.
 - **Target Scope:** Class object (`focus.classe`).
 - **Use cases:** Class council minutes, class report cards, general class-level overviews.
 
 #### 2. `DOCENTE` (Aggregated Teacher Axis)
+
 - **Target Unit:** Each unique teacher email having at least one active teaching assignment across all active classes. Exactly **one aggregate document per teacher** is generated.
 - **Recipe:** `DOCENTE_AGGREGATO`.
 - **Target Scope:** Scoped to the teacher's profile (`focus.docente`), with aggregated subjects across all assigned classes (`destinatario.contesto.cattedre` / `focus.docente.cattedre`).
 - **Use cases:** Teacher comprehensive schedule, individual annual workload summary.
 
 #### 3. `PIANO_PERSONALIZZATO`
+
 - **Target Unit:** Each individual personalized learning plan (PDP/PEI/PFP) belonging to an active student.
 - **Recipe:** `PIANO_PERSONALIZZATO`.
 - **Target Scope:** `focus.alunno` + `focus.piano`.
@@ -125,6 +129,7 @@ Every axis defines:
 - **Use cases:** PDP DSA, PDP BES, PDP Stranieri, PEI, PFP generation.
 
 #### 4. `CLASSE_MATERIA`
+
 - **Target Unit:** Each distinct subject assigned in an active class (regardless of how many teachers teach it).
 - **Recipe:** `CLASSE_MATERIA`.
 - **Target Scope:** `focus.classe` + `focus.materia` + `focus.classiMateria.docenti`.
@@ -132,24 +137,28 @@ Every axis defines:
 - **Use cases:** Subject syllabus for a class, class subject register.
 
 #### 5. `CLASSE_DOCENTE`
+
 - **Target Unit:** Each distinct `(classe, docente)` pair across all active classes. A teacher teaching multiple subjects in the same class receives exactly **one document for that class**.
 - **Recipe:** `CLASSE_DOCENTE` (`CLASSE_COMPLETA` + `docenteClasseFocusProvider`).
 - **Target Scope:** `focus.classe` + `focus.docente` (representing the teacher's role within that specific class).
 - **Use cases:** Teacher's evaluation report for a specific class, subject-agnostic teacher-class assignment letter.
 
 #### 6. `CLASSE_DOCENTE_MATERIA`
+
 - **Target Unit:** Each role-resolved triple `(classe, docente, materia)` in the active teaching assignments.
 - **Recipe:** `CLASSE_DOCENTE_MATERIA`.
 - **Target Scope:** `focus.classe` + `focus.docente` + `focus.materia`.
 - **Use cases:** Final subject program per teacher per class ("Programma svolto").
 
 #### 7. `DIPARTIMENTO`
+
 - **Target Unit:** Each row in the `DIPART` table.
 - **Recipe:** `DIPARTIMENTO_COMPLETO`.
 - **Target Scope:** `focus.dipartimento` (`anagrafica`, `capo`, `materie`, `docenti`, `didattica.documenti`). No class dimension.
 - **Use cases:** Department minutes, department curriculum planning.
 
 #### 8. `ALUNNO`
+
 - **Target Unit:** Each active student in `ALUNNI`.
 - **Recipe:** `ALUNNO_COMPLETO`.
 - **Target Scope:** `focus.alunno` (with complete profile, curriculum, didattica, plans, grades/carenze).
@@ -188,7 +197,7 @@ The previous static Strategy Registry is replaced by a deterministic **Strategy 
 
 ```typescript
 export interface MateriePermessiConfig {
-  sheetName?: string;                 // Optional: target tab name (default: active/first tab)
+  sheetName?: string; // Optional: target tab name (default: active/first tab)
   gestioneSupplenti?: GestioneSupplenti; // Optional override for column ACL resolution
 }
 
@@ -201,7 +210,7 @@ export interface DocumentoParametri {
 
   /** Enables {{TABELLA:<sheetFileId>}} placeholder replacement in Google Docs. */
   tabelleImportate?: boolean;
-  
+
   /** Extensible key-value pairs for domain-specific parameters */
   [key: string]: unknown;
 }
@@ -264,6 +273,7 @@ CAPO_ISTITUTO and VICEPRESIDE (not in table) are always valid.
 ## 7. Implementation Breakdown & Code Changes
 
 ### 7.1 Domain Layer
+
 - **`src/domain/value-objects/enums.ts`**:
   - Add `GeneratoreAxis` enum (`CLASSE`, `DOCENTE`, `PIANO_PERSONALIZZATO`, `CLASSE_MATERIA`, `CLASSE_DOCENTE`, `CLASSE_DOCENTE_MATERIA`, `DIPARTIMENTO`, `ALUNNO`).
   - Update `FormatoOutput` or declare `FormatoDocumento` (`GDOC`, `GSHEET`).
@@ -274,6 +284,7 @@ CAPO_ISTITUTO and VICEPRESIDE (not in table) are always valid.
   - Validate `generatore` and `formato` in `fromData()`.
 
 ### 7.2 Application Layer
+
 - **`src/application/strategies/`**:
   - Delete `VerbaleGeneratorStrategy.ts`.
   - Ensure `DocumentoGenericoGeneratorStrategy`, `FoglioGenericoGeneratorStrategy`, `DocumentoConTabelleImportateGeneratorStrategy`, and `SheetMaterieConPermessiGeneratorStrategy` accept modular invocation options.
@@ -303,6 +314,7 @@ CAPO_ISTITUTO and VICEPRESIDE (not in table) are always valid.
   - Add recipe `CLASSE_DOCENTE` for the `CLASSE_DOCENTE` axis.
 
 ### 7.3 Infrastructure & Composition Root
+
 - **`src/config/Bootstrap.ts` & `src/config/ApplicationComposition.ts`**:
   - Wire `DocumentStrategyFactory` and remove legacy strategy registrations.
 - **`SPECS_ALDO/01_SCHEMA_DATABASE.md` & `03_VALUE_OBJECTS_ED_ENUM.md`**:

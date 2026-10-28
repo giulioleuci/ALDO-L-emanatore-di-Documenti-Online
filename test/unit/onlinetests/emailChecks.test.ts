@@ -148,44 +148,51 @@ describe('registerEmailChecks', () => {
   });
 
   it.each([
-    ['multiple recipients', `${AUTHENTICATED_OPERATOR}, production@example.test`, 'SUCCESS', 'target:mail'],
-    ['a production recipient different from the authenticated operator', 'production@example.test', 'SUCCESS', 'target:mail'],
+    [
+      'multiple recipients',
+      `${AUTHENTICATED_OPERATOR}, production@example.test`,
+      'SUCCESS',
+      'target:mail'
+    ],
+    [
+      'a production recipient different from the authenticated operator',
+      'production@example.test',
+      'SUCCESS',
+      'target:mail'
+    ],
     ['a non-success result', AUTHENTICATED_OPERATOR, 'ERROR', 'target:mail'],
     ['an empty logical target ID', AUTHENTICATED_OPERATOR, 'SUCCESS', '']
-  ])(
-    'rejects LOG_MAIL rows with %s',
-    (_caseName, recipients, status, logicalTargetId) => {
-      const rows: Record<string, unknown>[] = [];
-      const db = databaseFor(rows, [
-        {
-          [COL_LOG_DOCS.ID]: 'document-id',
-          [COL_LOG_DOCS.ID_GEN]: 'E2E_VERBALE',
-          [COL_LOG_DOCS.TIPO]: 'VERBALE',
-          [COL_LOG_DOCS.LINK]: 'https://drive.example/document-id'
-        }
-      ]);
-      const container = { get: jest.fn(() => db) } as unknown as ServiceContainer;
-      jest.mocked(avviaInvioNotificheDataDriven).mockImplementation((_container, patternId) => {
-        rows.push({
-          [COL_LOG_MAIL.PATTERN]: patternId,
-          [COL_LOG_MAIL.DESTINATARI]: recipients,
-          [COL_LOG_MAIL.STATO]: status,
-          [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({
-            testMode: true,
-            logicalTargetId,
-            docs: [],
-            folders: [],
-            attach: []
-          })
-        });
+  ])('rejects LOG_MAIL rows with %s', (_caseName, recipients, status, logicalTargetId) => {
+    const rows: Record<string, unknown>[] = [];
+    const db = databaseFor(rows, [
+      {
+        [COL_LOG_DOCS.ID]: 'document-id',
+        [COL_LOG_DOCS.ID_GEN]: 'E2E_VERBALE',
+        [COL_LOG_DOCS.TIPO]: 'VERBALE',
+        [COL_LOG_DOCS.LINK]: 'https://drive.example/document-id'
+      }
+    ]);
+    const container = { get: jest.fn(() => db) } as unknown as ServiceContainer;
+    jest.mocked(avviaInvioNotificheDataDriven).mockImplementation((_container, patternId) => {
+      rows.push({
+        [COL_LOG_MAIL.PATTERN]: patternId,
+        [COL_LOG_MAIL.DESTINATARI]: recipients,
+        [COL_LOG_MAIL.STATO]: status,
+        [COL_LOG_MAIL.ALLEGATI]: JSON.stringify({
+          testMode: true,
+          logicalTargetId,
+          docs: [],
+          folders: [],
+          attach: []
+        })
       });
+    });
 
-      const runner = new ImmediateRunner();
-      registerEmailChecks(runner as never, container, sample, AUTHENTICATED_OPERATOR);
+    const runner = new ImmediateRunner();
+    registerEmailChecks(runner as never, container, sample, AUTHENTICATED_OPERATOR);
 
-      expect(runner.checks[1]?.error?.message).toContain('LOG_MAIL testMode non sicuro o incompleto');
-    }
-  );
+    expect(runner.checks[1]?.error?.message).toContain('LOG_MAIL testMode non sicuro o incompleto');
+  });
 
   it('rejects verbale logs whose document and folder IDs do not resolve to the expected persisted artifacts', () => {
     const rows: Record<string, unknown>[] = [];

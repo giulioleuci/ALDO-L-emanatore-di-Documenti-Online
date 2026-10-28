@@ -36,9 +36,18 @@ interface AssignmentMatrixSample {
   sampleSpreadsheetUrl: string;
 }
 
-function buildCdu(builder: ContextBuilder, params: { target: string; tipoTarget: 'classe' | 'alunno'; now: Date }, spec: ReturnType<typeof recipe>) {
+function buildCdu(
+  builder: ContextBuilder,
+  params: { target: string; tipoTarget: 'classe' | 'alunno'; now: Date },
+  spec: ReturnType<typeof recipe>
+) {
   return builder.build(
-    { ...params, configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
+    {
+      ...params,
+      configurazioneId: 'ONLINE_CHECK',
+      esecuzioneId: 'ONLINE_CHECK',
+      tipoOperazione: 'GENERAZIONE_DOCUMENTO'
+    },
     spec
   );
 }
@@ -150,7 +159,8 @@ interface MaterieColonneGroups {
  * needs `classeId` to verify per-partner column ownership, so it reads the root key.
  */
 function materieColonneOf(context: Record<string, unknown>): MaterieColonneGroups {
-  const focus = context['focus'] as { classe?: { sheet?: { materieColonne?: unknown } } } | undefined;
+  const focus = context['focus'] as
+    { classe?: { sheet?: { materieColonne?: unknown } } } | undefined;
   return (focus?.classe?.sheet?.materieColonne ?? { gruppi: [] }) as MaterieColonneGroups;
 }
 
@@ -254,7 +264,12 @@ function assertCouncilTuples(
 
   for (const tupleStr of allTuples) {
     const parts = tupleStr.split('|');
-    if (parts.length < 5 || parts[1] === undefined || parts[3] === undefined || parts[4] === undefined) {
+    if (
+      parts.length < 5 ||
+      parts[1] === undefined ||
+      parts[3] === undefined ||
+      parts[4] === undefined
+    ) {
       dedupedTuples.push(tupleStr);
       continue;
     }
@@ -359,7 +374,8 @@ export function registerEffectiveAssignmentConsumerChecks(
     routingPolicy: RoutingPolicy.BOTH_EQUAL
   });
   const expected = assignmentRecipients(assignments);
-  const cdu = buildCdu(contextBuilder,
+  const cdu = buildCdu(
+    contextBuilder,
     { target: CLASSE_A, tipoTarget: 'classe', now: ASSIGNMENT_MATRIX_DATE_E2E },
     recipe('CLASSE_COMPLETA', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
   );
@@ -368,58 +384,95 @@ export function registerEffectiveAssignmentConsumerChecks(
   const renderedSheetHeaders = (sheetCdu: ReturnType<ContextBuilder['build']>): string[] => {
     const sheets = {
       getSheetInfo: (): SpreadsheetSheetInfo[] => [
-        { name: 'Sheet1', sheetId: 0, index: 0, hidden: false, gridProperties: { rowCount: 20, columnCount: 20 } }
+        {
+          name: 'Sheet1',
+          sheetId: 0,
+          index: 0,
+          hidden: false,
+          gridProperties: { rowCount: 20, columnCount: 20 }
+        }
       ],
       protectRanges: (): SpreadsheetProtectResult => ({
-        spreadsheetId: 'header-sheet', protectedCount: 0, protectedRangeIds: [], replies: []
+        spreadsheetId: 'header-sheet',
+        protectedCount: 0,
+        protectedRangeIds: [],
+        replies: []
       })
     } as unknown as SpreadsheetService;
     const rendered: SheetColumnLayout[] = [];
     const templates = {
-      processSheet: (_spreadsheetId: string, context: Record<string, unknown>): SheetColumnLayout[] => {
+      processSheet: (
+        _spreadsheetId: string,
+        context: Record<string, unknown>
+      ): SheetColumnLayout[] => {
         const groups = materieColonneOf(context);
-        const layout = groups.gruppi.flatMap((group) => group.colonne).map(
-          (item, index) => ({
+        const layout = groups.gruppi
+          .flatMap((group) => group.colonne)
+          .map((item, index) => ({
             sheetName: 'Sheet1',
             column: index + 1,
             header: typeof item['header'] === 'string' ? item['header'] : '',
             isLabel: false,
             item
-          })
-        );
+          }));
         rendered.push(...layout);
         return layout;
       }
     } as unknown as ITemplateEngine;
     const config = ConfigurazioneDocumento.fromData({
-      ID: 'MATRIX_HEADERS', TIPO: 'MATRIX', GENERATORE: 'CLASSE',
-      CONDIZIONE: null, MODELLI: '{"templateId":"matrix"}', FILE_NAME: 'matrix', PATH_OUT: 'matrix',
-      DUPLICAZIONE: 'NEGATA', PERMESSI: null, POST_PROCESSO: null, PARAMETRI: null,
-      GESTIONE_ARTICOLAZIONE: 'COMPLETA', FORMATO: 'GSHEET'
+      ID: 'MATRIX_HEADERS',
+      TIPO: 'MATRIX',
+      GENERATORE: 'CLASSE',
+      CONDIZIONE: null,
+      MODELLI: '{"templateId":"matrix"}',
+      FILE_NAME: 'matrix',
+      PATH_OUT: 'matrix',
+      DUPLICAZIONE: 'NEGATA',
+      PERMESSI: null,
+      POST_PROCESSO: null,
+      PARAMETRI: null,
+      GESTIONE_ARTICOLAZIONE: 'COMPLETA',
+      FORMATO: 'GSHEET'
     });
-    new SheetMaterieConPermessiGeneratorStrategy(sheets, new MateriaRepository(db), templates, roles).render(
-      'header-sheet', sheetCdu, config
-    );
+    new SheetMaterieConPermessiGeneratorStrategy(
+      sheets,
+      new MateriaRepository(db),
+      templates,
+      roles
+    ).render('header-sheet', sheetCdu, config);
     return rendered.map((column) => String(column.header));
   };
 
-  runner.add('Effective assignment consumers: rendered sheet header REL/ALT', sample.sampleSpreadsheetUrl, () => {
-    const headers = renderedSheetHeaders(cdu);
-    if (headers[0] !== 'REL/ALT') {
-      throw new ValidationError(`expected rendered REL/ALT header, actual=${JSON.stringify(headers)}`);
+  runner.add(
+    'Effective assignment consumers: rendered sheet header REL/ALT',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const headers = renderedSheetHeaders(cdu);
+      if (headers[0] !== 'REL/ALT') {
+        throw new ValidationError(
+          `expected rendered REL/ALT header, actual=${JSON.stringify(headers)}`
+        );
+      }
     }
-  });
+  );
 
-  runner.add('Effective assignment consumers: rendered articulated sheet header REL/ALT', sample.sampleSpreadsheetUrl, () => {
-    const noAltCdu = buildCdu(contextBuilder,
-      { target: CLASSE_C, tipoTarget: 'classe', now: ASSIGNMENT_MATRIX_DATE_E2E },
-      recipe('CLASSE_COMPLETA', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
-    );
-    const headers = renderedSheetHeaders(noAltCdu);
-    if (headers[0] !== 'REL/ALT') {
-      throw new ValidationError(`expected rendered REL/ALT header, actual=${JSON.stringify(headers)}`);
+  runner.add(
+    'Effective assignment consumers: rendered articulated sheet header REL/ALT',
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const noAltCdu = buildCdu(
+        contextBuilder,
+        { target: CLASSE_C, tipoTarget: 'classe', now: ASSIGNMENT_MATRIX_DATE_E2E },
+        recipe('CLASSE_COMPLETA', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
+      );
+      const headers = renderedSheetHeaders(noAltCdu);
+      if (headers[0] !== 'REL/ALT') {
+        throw new ValidationError(
+          `expected rendered REL/ALT header, actual=${JSON.stringify(headers)}`
+        );
+      }
     }
-  });
+  );
 
   runner.add(
     'Effective assignment consumers: full CDU council',
@@ -510,9 +563,12 @@ export function registerEffectiveAssignmentConsumerChecks(
       ctx.set('cdu', cdu);
       ctx.set('shouldGenerate', true);
       ctx.set('newFileId', 'matrix-document');
-      new ApplyPermissionsStep(new LoggerService(), drive, roles, new ExpressionEngineFacade()).execute(
-        ctx
-      );
+      new ApplyPermissionsStep(
+        new LoggerService(),
+        drive,
+        roles,
+        new ExpressionEngineFacade()
+      ).execute(ctx);
       assertSameRecipients('document ACL recipients', expected, permissions, assignments);
     }
   );
@@ -545,8 +601,9 @@ export function registerEffectiveAssignmentConsumerChecks(
           context: Record<string, unknown>
         ): SheetColumnLayout[] => {
           const groups = materieColonneOf(context);
-          const layout = groups.gruppi.flatMap((group) => group.colonne).map(
-            (item, index) => {
+          const layout = groups.gruppi
+            .flatMap((group) => group.colonne)
+            .map((item, index) => {
               const header =
                 typeof item['header'] === 'string'
                   ? item['header']
@@ -560,8 +617,7 @@ export function registerEffectiveAssignmentConsumerChecks(
                 isLabel: false,
                 item
               };
-            }
-          );
+            });
           capturedLayout = layout;
           return layout;
         }
@@ -642,7 +698,9 @@ export function registerEffectiveAssignmentConsumerChecks(
       () => {
         const partner = classi.findById(classeId);
         if (partner === null) {
-          throw new ValidationError(`class=${classeId}, expectedActor=partner, actualActor=missing`);
+          throw new ValidationError(
+            `class=${classeId}, expectedActor=partner, actualActor=missing`
+          );
         }
         const partnerAssignments = resolver.resolveConsiglio(partner, ASSIGNMENT_MATRIX_DATE_E2E, {
           includeReligioneAlt: true,
@@ -656,11 +714,12 @@ export function registerEffectiveAssignmentConsumerChecks(
             `consumer=partner ownership, class=${classeId}, expectedActor=partner-assignment, actualActor=missing`
           );
         }
-        const partnerCdu = buildCdu(contextBuilder,
+        const partnerCdu = buildCdu(
+          contextBuilder,
           { target: classeId, tipoTarget: 'classe', now: ASSIGNMENT_MATRIX_DATE_E2E },
           recipe('CLASSE_COMPLETA', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
         );
-      const materieComuni = new Set(
+        const materieComuni = new Set(
           (partnerCdu.focus.classe?.articolazione?.materieComuni ?? []).map(
             (materia) => materia.sigla
           )
@@ -704,7 +763,12 @@ export function registerEffectiveAssignmentConsumerChecks(
             )
           );
         }
-        assertSameRecipients(`email recipients ${classeId}`, expectedRecipients, emailRecipients, partnerAssignments);
+        assertSameRecipients(
+          `email recipients ${classeId}`,
+          expectedRecipients,
+          emailRecipients,
+          partnerAssignments
+        );
 
         const permissions: string[] = [];
         const drive = {
@@ -713,12 +777,25 @@ export function registerEffectiveAssignmentConsumerChecks(
           }
         } as unknown as IDriveFacade;
         const row = {
-          ID: 'MATRIX_PARTNER_DOCUMENT', TIPO: 'MATRIX', GENERATORE: 'CLASSE',
-          CONDIZIONE: null, MODELLI: '{"templateId":"matrix"}', FILE_NAME: 'matrix', PATH_OUT: 'matrix',
+          ID: 'MATRIX_PARTNER_DOCUMENT',
+          TIPO: 'MATRIX',
+          GENERATORE: 'CLASSE',
+          CONDIZIONE: null,
+          MODELLI: '{"templateId":"matrix"}',
+          FILE_NAME: 'matrix',
+          PATH_OUT: 'matrix',
           DUPLICAZIONE: 'NEGATA',
-          PERMESSI: JSON.stringify({ file: [{ ruolo: 'CDC', permesso: 'SCRITTURA' }], folder: [], regolaSupplente: { file: 'ENTRAMBI' } }),
-          POST_PROCESSO: null, PARAMETRI: null, GESTIONE_ARTICOLAZIONE: 'COMPLETA', FORMATO: 'GDOC',
-          REGISTRA_DOC: '{}', REGISTRA_FOLD: '{}'
+          PERMESSI: JSON.stringify({
+            file: [{ ruolo: 'CDC', permesso: 'SCRITTURA' }],
+            folder: [],
+            regolaSupplente: { file: 'ENTRAMBI' }
+          }),
+          POST_PROCESSO: null,
+          PARAMETRI: null,
+          GESTIONE_ARTICOLAZIONE: 'COMPLETA',
+          FORMATO: 'GDOC',
+          REGISTRA_DOC: '{}',
+          REGISTRA_FOLD: '{}'
         };
         const documentCtx = new PipelineContext();
         documentCtx.set('config', row);
@@ -732,37 +809,77 @@ export function registerEffectiveAssignmentConsumerChecks(
           roles,
           new ExpressionEngineFacade()
         ).execute(documentCtx);
-        assertSameRecipients(`document ACL recipients ${classeId}`, expectedRecipients, permissions, partnerAssignments);
+        assertSameRecipients(
+          `document ACL recipients ${classeId}`,
+          expectedRecipients,
+          permissions,
+          partnerAssignments
+        );
 
         const columnItems: Array<Record<string, unknown>> = [];
         let capturedLayout: SheetColumnLayout[] = [];
         const sheets = {
-          getSheetInfo: (): SpreadsheetSheetInfo[] => [{ name: 'Sheet1', sheetId: 0, index: 0, hidden: false, gridProperties: { rowCount: 20, columnCount: 20 } }],
+          getSheetInfo: (): SpreadsheetSheetInfo[] => [
+            {
+              name: 'Sheet1',
+              sheetId: 0,
+              index: 0,
+              hidden: false,
+              gridProperties: { rowCount: 20, columnCount: 20 }
+            }
+          ],
           protectRanges: (): SpreadsheetProtectResult => ({
-            spreadsheetId: 'matrix-sheet', protectedCount: 0, protectedRangeIds: [], replies: []
+            spreadsheetId: 'matrix-sheet',
+            protectedCount: 0,
+            protectedRangeIds: [],
+            replies: []
           })
         } as unknown as SpreadsheetService;
         const templates = {
-          processSheet: (_spreadsheetId: string, context: Record<string, unknown>): SheetColumnLayout[] => {
+          processSheet: (
+            _spreadsheetId: string,
+            context: Record<string, unknown>
+          ): SheetColumnLayout[] => {
             const groups = materieColonneOf(context);
             const items = groups.gruppi.flatMap((group) => group.colonne);
             columnItems.push(...items);
             const layout = items.map((item, index) => ({
-              sheetName: 'Sheet1', column: index + 1,
-              header: typeof item['header'] === 'string' ? item['header'] : typeof item['sigla'] === 'string' ? item['sigla'] : '',
-              isLabel: false, item
+              sheetName: 'Sheet1',
+              column: index + 1,
+              header:
+                typeof item['header'] === 'string'
+                  ? item['header']
+                  : typeof item['sigla'] === 'string'
+                    ? item['sigla']
+                    : '',
+              isLabel: false,
+              item
             }));
             capturedLayout = layout;
             return layout;
           }
         } as unknown as ITemplateEngine;
         const sheetConfig = ConfigurazioneDocumento.fromData({
-          ID: 'MATRIX_PARTNER_SHEET', TIPO: 'MATRIX', GENERATORE: 'CLASSE',
-          CONDIZIONE: null, MODELLI: '{"templateId":"matrix"}', FILE_NAME: 'matrix', PATH_OUT: 'matrix',
-          DUPLICAZIONE: 'NEGATA', PERMESSI: null, POST_PROCESSO: null, PARAMETRI: null,
-          GESTIONE_ARTICOLAZIONE: 'COMPLETA', FORMATO: 'GSHEET'
+          ID: 'MATRIX_PARTNER_SHEET',
+          TIPO: 'MATRIX',
+          GENERATORE: 'CLASSE',
+          CONDIZIONE: null,
+          MODELLI: '{"templateId":"matrix"}',
+          FILE_NAME: 'matrix',
+          PATH_OUT: 'matrix',
+          DUPLICAZIONE: 'NEGATA',
+          PERMESSI: null,
+          POST_PROCESSO: null,
+          PARAMETRI: null,
+          GESTIONE_ARTICOLAZIONE: 'COMPLETA',
+          FORMATO: 'GSHEET'
         });
-        const partnerStrategy = new SheetMaterieConPermessiGeneratorStrategy(sheets, new MateriaRepository(db), templates, roles);
+        const partnerStrategy = new SheetMaterieConPermessiGeneratorStrategy(
+          sheets,
+          new MateriaRepository(db),
+          templates,
+          roles
+        );
         partnerStrategy.render(`matrix-sheet-${classeId}`, partnerCdu, sheetConfig);
         // Pure resolution, independent of the synthetic-principal skip in `protectColumns`
         // (2026-08-21 Task 9) — this check verifies assignment routing reaches the ACL layer
@@ -774,9 +891,13 @@ export function registerEffectiveAssignmentConsumerChecks(
           capturedLayout,
           protectionGestioneSupplenti(sheetConfig)
         );
-        const coordinators = classi.getCoordinatori(partner).flatMap((docente) => docente.id === null ? [] : [docente.id]);
+        const coordinators = classi
+          .getCoordinatori(partner)
+          .flatMap((docente) => (docente.id === null ? [] : [docente.id]));
         if (requests.length !== columnItems.length) {
-          throw new ValidationError(`consumer=spreadsheet column ACL ${classeId}, expectedColumns=${columnItems.length}, actualColumns=${requests.length}`);
+          throw new ValidationError(
+            `consumer=spreadsheet column ACL ${classeId}, expectedColumns=${columnItems.length}, actualColumns=${requests.length}`
+          );
         }
         if (columnItems.length !== EXPECTED_ARTICULATED_COLUMNS.length) {
           throw new ValidationError(
@@ -797,14 +918,14 @@ export function registerEffectiveAssignmentConsumerChecks(
             );
           }
           const expectedSubjects: readonly string[] = expectedColumn.subjects;
-          const expectedEditors = emails(unique([
-            ...coordinators,
-            ...assignmentTuples(partnerAssignments)
-              .filter(
-                (tuple) => expectedSubjects.includes(tuple.materia)
-              )
-              .map((tuple) => tuple.actor)
-          ]));
+          const expectedEditors = emails(
+            unique([
+              ...coordinators,
+              ...assignmentTuples(partnerAssignments)
+                .filter((tuple) => expectedSubjects.includes(tuple.materia))
+                .map((tuple) => tuple.actor)
+            ])
+          );
           const actualEditors = emails(requests[index]?.editors?.users ?? []);
           if (JSON.stringify(expectedEditors) !== JSON.stringify(actualEditors)) {
             throw new ValidationError(
@@ -821,13 +942,14 @@ export function registerEffectiveAssignmentConsumerChecks(
       `Effective assignment consumers: student-filtered CDU council ${studentEmail}`,
       sample.sampleSpreadsheetUrl,
       () => {
-        const studentCdu = buildCdu(contextBuilder,
+        const studentCdu = buildCdu(
+          contextBuilder,
           { target: studentEmail, tipoTarget: 'alunno', now: ASSIGNMENT_MATRIX_DATE_E2E },
           recipe('ALUNNO_COMPLETO', { gestioneSupplenti: GestioneSupplenti.ENTRAMBI })
         );
         const projected =
-          studentCdu.focus.alunno?.consiglio
-            ?.elenco.map((docente) => docente.email)
+          studentCdu.focus.alunno?.consiglio?.elenco
+            .map((docente) => docente.email)
             .filter((email): email is string => email !== null) ?? [];
         const roleProjected = roles
           .risolvi('CDC_FILTER_ALUNNO', studentCdu, {
@@ -859,7 +981,8 @@ export function registerEffectiveAssignmentConsumerChecks(
     'ContextEngine CDU: focus.alunno.curriculum is an array, not a "[MateriaId]" map (02 §2.13/§8.8)',
     sample.sampleSpreadsheetUrl,
     () => {
-      const studentCdu = buildCdu(contextBuilder,
+      const studentCdu = buildCdu(
+        contextBuilder,
         { target: e2eAlunnoEmail(1), tipoTarget: 'alunno', now: new Date() },
         recipe('ALUNNO_COMPLETO')
       );
@@ -881,7 +1004,8 @@ export function registerEffectiveAssignmentConsumerChecks(
     'ContextEngine CDU: focus.classe.studenti.perSpecificita is a 3-level array (02 §2.14/§8.9)',
     sample.sampleSpreadsheetUrl,
     () => {
-      const specificitaCdu = buildCdu(contextBuilder,
+      const specificitaCdu = buildCdu(
+        contextBuilder,
         { target: CLASSE_A, tipoTarget: 'classe', now: new Date() },
         recipe('CLASSE_COMPLETA')
       );
@@ -909,7 +1033,8 @@ export function registerEffectiveAssignmentConsumerChecks(
     'ContextEngine CDU: focus.classe.esame prima/seconda prova partitions (02 §2.9/§4.1)',
     sample.sampleSpreadsheetUrl,
     () => {
-      const esameCdu = buildCdu(contextBuilder,
+      const esameCdu = buildCdu(
+        contextBuilder,
         { target: CLASSE_A, tipoTarget: 'classe', now: new Date() },
         recipe('CLASSE_COMPLETA')
       );
@@ -934,7 +1059,8 @@ export function registerEffectiveAssignmentConsumerChecks(
     'ContextEngine CDU: focus.classe.coordinatori.elenco/progetti/religioneLabel/tipoLabel precomposed strings (02 §2.6/§2.10/§2.12/§8.1)',
     sample.sampleSpreadsheetUrl,
     () => {
-      const classeCdu = buildCdu(contextBuilder,
+      const classeCdu = buildCdu(
+        contextBuilder,
         { target: CLASSE_A, tipoTarget: 'classe', now: new Date() },
         recipe('CLASSE_COMPLETA')
       );
@@ -955,11 +1081,13 @@ export function registerEffectiveAssignmentConsumerChecks(
       const pianoTipoLabel = conPiano?.piani.elenco.find(
         (item) => item.tipo === (TipoPiano.PDP_BES as string)
       )?.tipoLabel;
-      const pei = buildCdu(contextBuilder,
+      const pei = buildCdu(
+        contextBuilder,
         { target: e2eAlunnoEmail(25), tipoTarget: 'alunno', now: new Date() },
         recipe('ALUNNO_COMPLETO')
       ).focus.alunno;
-      const pfp = buildCdu(contextBuilder,
+      const pfp = buildCdu(
+        contextBuilder,
         { target: e2eAlunnoEmail(30), tipoTarget: 'alunno', now: new Date() },
         recipe('ALUNNO_COMPLETO')
       ).focus.alunno;
@@ -1009,7 +1137,8 @@ export function registerContextEngineChecks(
     'ContextEngine CDU: focus.classe.nome resolves to the seeded classe',
     sample.sampleSpreadsheetUrl,
     () => {
-      const cdu = buildCdu(contextBuilder,
+      const cdu = buildCdu(
+        contextBuilder,
         { target: CDU_FOCUS_CLASSE, tipoTarget: 'classe', now: new Date() },
         recipe('CLASSE_COMPLETA')
       );
@@ -1026,7 +1155,8 @@ export function registerContextEngineChecks(
     'ContextEngine CDU: focus.alunno.email resolves to the seeded alunno',
     sample.sampleSpreadsheetUrl,
     () => {
-      const cdu = buildCdu(contextBuilder,
+      const cdu = buildCdu(
+        contextBuilder,
         { target: CDU_FOCUS_ALUNNO, tipoTarget: 'alunno', now: new Date() },
         recipe('ALUNNO_COMPLETO')
       );

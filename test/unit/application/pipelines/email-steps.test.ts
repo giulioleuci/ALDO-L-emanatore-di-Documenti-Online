@@ -176,23 +176,16 @@ function buildStep(w: Wiring): BuildCDUStep {
 function runThroughRender(w: Wiring, aggregatoreDati?: AggregatoreDati): string[] {
   buildStep(w).execute(w.ctx);
   new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
-  new RenderBoxesStep(
-    logger,
-    new MateriaRepository(w.db),
-    w.templates,
-    aggregatoreDati
-  ).execute(w.ctx);
+  new RenderBoxesStep(logger, new MateriaRepository(w.db), w.templates, aggregatoreDati).execute(
+    w.ctx
+  );
   return w.ctx.get<string[]>('boxHtmlOrdered')!;
 }
 
 function runThroughCompose(w: Wiring, drive = new FakeDriveFacade()): FakeDriveFacade {
   const aggregatoreDati = new AggregatoreDati(w.db);
   runThroughRender(w, aggregatoreDati);
-  new ComposeEmailStep(
-    logger,
-    w.templates,
-    drive
-  ).execute(w.ctx);
+  new ComposeEmailStep(logger, w.templates, drive).execute(w.ctx);
   return drive;
 }
 
@@ -210,11 +203,7 @@ function runFilteredSourcesThroughCompose(
     w.templates,
     aggregatoreDati
   ).execute(w.ctx);
-  new ComposeEmailStep(
-    stepLogger,
-    w.templates,
-    drive
-  ).execute(w.ctx);
+  new ComposeEmailStep(stepLogger, w.templates, drive).execute(w.ctx);
   return drive;
 }
 
@@ -321,7 +310,9 @@ describe('email pipeline operational log details', () => {
     const w = wire(
       {
         PROCESSO: 'PER_COORDINATORE',
-        BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_da_inviare', ARRICCHISCI_CON_STORICO: false }])
+        BOX_CFG: JSON.stringify([
+          { TIPO_BOX: 'piani_pers_da_inviare', ARRICCHISCI_CON_STORICO: false }
+        ])
       },
       docenteTarget(),
       tables
@@ -377,11 +368,9 @@ describe('email pipeline operational log details', () => {
     const w = wire({ OGGETTO: 'Convocazione consiglio', ALLEGATI_STATICI: '["file-1","file-2"]' });
     runThroughRender(w);
 
-    const composed = new ComposeEmailStep(
-      logger,
-      w.templates,
-      new FakeDriveFacade()
-    ).execute(w.ctx);
+    const composed = new ComposeEmailStep(logger, w.templates, new FakeDriveFacade()).execute(
+      w.ctx
+    );
 
     expect(logDetails(composed)).toEqual({ Subject: 'Convocazione consiglio', Attachments: 2 });
     expect(JSON.stringify(logDetails(composed))).not.toContain('<!DOCTYPE html>');
@@ -562,30 +551,33 @@ test.each([
   ['SOS', true],
   ['SOS.PEI', true],
   ['SOSIA', false]
-] as const)('BuildCDUStep derives support status from subject %s (audit §6 coverage)', (materiaId, expected) => {
-  const tables = fixtureTables();
-  (tables['MATERIE'] as Row[]).push(
-    { ID: 'SOS', NOME: 'Sostegno', SINTESI: 'Sostegno', ESAME_CFG: null },
-    { ID: 'SOS.PEI', NOME: 'Sostegno PEI', SINTESI: 'Sostegno PEI', ESAME_CFG: null },
-    { ID: 'SOSIA', NOME: 'Sosia', SINTESI: 'Sosia', ESAME_CFG: null }
-  );
-  (tables['CLASSI'] as Row[]).push({
-    ID: '2S',
-    ANNO: 2,
-    INDIRIZZO: 'SCIENTIFICO',
-    ARTICOLAZIONE: null,
-    RUOLI: null,
-    ATTIVA: true,
-    COORD: '',
-    [materiaId]: 'rossi@school.it'
-  });
-  const target = { ...docenteTarget(), target: '2S', classiCompetenza: ['2S'] };
+] as const)(
+  'BuildCDUStep derives support status from subject %s (audit §6 coverage)',
+  (materiaId, expected) => {
+    const tables = fixtureTables();
+    (tables['MATERIE'] as Row[]).push(
+      { ID: 'SOS', NOME: 'Sostegno', SINTESI: 'Sostegno', ESAME_CFG: null },
+      { ID: 'SOS.PEI', NOME: 'Sostegno PEI', SINTESI: 'Sostegno PEI', ESAME_CFG: null },
+      { ID: 'SOSIA', NOME: 'Sosia', SINTESI: 'Sosia', ESAME_CFG: null }
+    );
+    (tables['CLASSI'] as Row[]).push({
+      ID: '2S',
+      ANNO: 2,
+      INDIRIZZO: 'SCIENTIFICO',
+      ARTICOLAZIONE: null,
+      RUOLI: null,
+      ATTIVA: true,
+      COORD: '',
+      [materiaId]: 'rossi@school.it'
+    });
+    const target = { ...docenteTarget(), target: '2S', classiCompetenza: ['2S'] };
 
-  const w = wire({ PROCESSO: 'PER_DOCENTE' }, target, tables);
-  buildStep(w).execute(w.ctx);
+    const w = wire({ PROCESSO: 'PER_DOCENTE' }, target, tables);
+    buildStep(w).execute(w.ctx);
 
-  expect(w.ctx.get<Cdu>('cdu')!.destinatario!.isDocenteSostegno).toBe(expected);
-});
+    expect(w.ctx.get<Cdu>('cdu')!.destinatario!.isDocenteSostegno).toBe(expected);
+  }
+);
 
 test('BuildCDUStep finds orientation-only tutoring in a later competence class (audit §6 coverage)', () => {
   const tables = fixtureTables();
@@ -966,9 +958,7 @@ test('BuildCDUStep tolerates a resolver error on one competenza class: that clas
   // '1F-LSO' itself.
   expect(destinatario.cattedre.elenco.map((c) => c.classe.nome)).toEqual(['1F']);
   expect(destinatario.materie.elenco.map((m) => m.sigla)).toEqual(['MATE']);
-  expect(warnSpy).toHaveBeenCalledWith(
-    expect.stringContaining('rossi@school.it')
-  );
+  expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('rossi@school.it'));
   expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('1F'));
   warnSpy.mockRestore();
 });
@@ -1026,7 +1016,9 @@ test('BuildCDUStep memoizes resolveConsiglio per (classe, when) across docente t
   const rossiCdu = ctxRossi.get<Cdu>('cdu')!;
   const bianchiCdu = ctxBianchi.get<Cdu>('cdu')!;
   expect(rossiCdu.destinatario!.cattedre.elenco[0]!.materie.map((m) => m.sigla)).toEqual(['MATE']);
-  expect(bianchiCdu.destinatario!.cattedre.elenco[0]!.materie.map((m) => m.sigla)).toEqual(['FISI']);
+  expect(bianchiCdu.destinatario!.cattedre.elenco[0]!.materie.map((m) => m.sigla)).toEqual([
+    'FISI'
+  ]);
 });
 
 test('BuildCDUStep enables includiStorico when BOX_CFG has an explicit arricchisciConStorico:true documenti box', () => {
@@ -1068,7 +1060,9 @@ test('BuildCDUStep always enables history for piani_pers_da_inviare despite an e
   const w = wire(
     {
       PROCESSO: 'PER_COORDINATORE',
-      BOX_CFG: JSON.stringify([{ TIPO_BOX: 'piani_pers_da_inviare', ARRICCHISCI_CON_STORICO: false }])
+      BOX_CFG: JSON.stringify([
+        { TIPO_BOX: 'piani_pers_da_inviare', ARRICCHISCI_CON_STORICO: false }
+      ])
     },
     docenteTarget()
   );
@@ -1332,11 +1326,7 @@ test('ComposeEmailStep HTML-escapes raw CDU values interpolated via CONF_MAIL.TE
   cdu.focus.alunno!.nomeCompleto = '<script>alert(1)</script>';
   new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
   new RenderBoxesStep(logger, new MateriaRepository(w.db), w.templates).execute(w.ctx);
-  new ComposeEmailStep(
-    logger,
-    w.templates,
-    new FakeDriveFacade()
-  ).execute(w.ctx);
+  new ComposeEmailStep(logger, w.templates, new FakeDriveFacade()).execute(w.ctx);
   const html = w.ctx.get<string>('corpoHtml')!;
   expect(html).not.toContain('<script>alert(1)</script>');
   expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
@@ -1385,11 +1375,7 @@ test('ComposeEmailStep warns and omits replyTo when RISPONDI_A resolves to an in
     warn: warnMock,
     error: jest.fn()
   } as unknown as LoggerService;
-  new ComposeEmailStep(
-    mockLogger,
-    w.templates,
-    new FakeDriveFacade()
-  ).execute(w.ctx);
+  new ComposeEmailStep(mockLogger, w.templates, new FakeDriveFacade()).execute(w.ctx);
 
   expect(w.ctx.get('replyTo')).toBeNull(); // PipelineContext.get default when the key was never set
   expect(warnMock).toHaveBeenCalledWith(expect.stringContaining('RISPONDI_A'));
@@ -1411,11 +1397,7 @@ test('ComposeEmailStep HTML-escapes raw CDU values interpolated via CONF_MAIL.TE
   cdu.focus.alunno!.nomeCompleto = '<script>alert(1)</script>';
   new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
   new RenderBoxesStep(logger, new MateriaRepository(w.db), w.templates).execute(w.ctx);
-  new ComposeEmailStep(
-    logger,
-    w.templates,
-    new FakeDriveFacade()
-  ).execute(w.ctx);
+  new ComposeEmailStep(logger, w.templates, new FakeDriveFacade()).execute(w.ctx);
   const html = w.ctx.get<string>('corpoHtml')!;
   expect(html).not.toContain('<script>alert(1)</script>');
   expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
@@ -1453,11 +1435,7 @@ test('ComposeEmailStep resolves a static CONF_MAIL.ALLEGATI_STATICI file without
   const drive = new FakeDriveFacade();
   const getFileBlob = jest.spyOn(drive, 'getFileBlob');
 
-  new ComposeEmailStep(
-    logger,
-    w.templates,
-    drive
-  ).execute(w.ctx);
+  new ComposeEmailStep(logger, w.templates, drive).execute(w.ctx);
 
   expect(w.ctx.get('allegatiIds')).toEqual(['static id/1?']);
   expect(w.ctx.get('allegati')).toEqual(['blob:static id/1?']);
@@ -2637,11 +2615,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     const built = w.ctx.get<Cdu>('cdu')! as unknown as Record<string, unknown>;
     delete built['render'];
     delete built['destinatario'];
-    new ComposeEmailStep(
-      logger,
-      w.templates,
-      new FakeDriveFacade()
-    ).execute(w.ctx);
+    new ComposeEmailStep(logger, w.templates, new FakeDriveFacade()).execute(w.ctx);
     const html = w.ctx.get<string>('corpoHtml')!;
     expect(html).toContain('Gentile Utente'); // default saluto (line 227)
     expect(built['render']).toBeUndefined();
@@ -2655,11 +2629,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     new RenderBoxesStep(logger, new MateriaRepository(w.db), w.templates).execute(w.ctx);
     const built = w.ctx.get<Cdu>('cdu')!;
     delete (built.focus as unknown as Record<string, unknown>)['classe'];
-    new ComposeEmailStep(
-      logger,
-      w.templates,
-      new FakeDriveFacade()
-    ).execute(w.ctx);
+    new ComposeEmailStep(logger, w.templates, new FakeDriveFacade()).execute(w.ctx);
     expect(w.ctx.get('allegati')).toEqual([]);
   });
 
@@ -2723,11 +2693,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     buildStep(w).execute(w.ctx);
     new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
     w.ctx.set('oggettoRisolto', undefined);
-    new ComposeEmailStep(
-      logger,
-      w.templates,
-      new FakeDriveFacade()
-    ).execute(w.ctx);
+    new ComposeEmailStep(logger, w.templates, new FakeDriveFacade()).execute(w.ctx);
     const html = w.ctx.get<string>('corpoHtml')!;
     expect(html).not.toContain('undefined');
     expect(html).toContain('font-weight:bold;"></div>'); // empty header title
@@ -2738,11 +2704,7 @@ describe('emailSteps — remaining uncovered branches (A18)', () => {
     buildStep(w).execute(w.ctx);
     new ValutaCondizioniInvioStep(logger, new ExpressionEngineFacade()).execute(w.ctx);
     w.ctx.set('oggettoRisolto', 'S'); // normally set by RenderBoxesStep, which we deliberately skip here
-    new ComposeEmailStep(
-      logger,
-      w.templates,
-      new FakeDriveFacade()
-    ).execute(w.ctx);
+    new ComposeEmailStep(logger, w.templates, new FakeDriveFacade()).execute(w.ctx);
     const html = w.ctx.get<string>('corpoHtml')!;
     expect(html).toContain('per la classe 5A.'); // TESTO still rendered; no box HTML appended
   });

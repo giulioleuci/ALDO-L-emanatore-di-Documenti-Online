@@ -68,7 +68,11 @@ test('ClasseProvider: coordinatori as a PersonaVM elenco with aggregate declensi
     expect.objectContaining({ appellativo: 'Prof.', articolo: 'Il', coordinamento: 'Coordinatore' })
   );
   expect(c.coordinatori?.elenco).toEqual([
-    expect.objectContaining({ nomeCompleto: 'ROSSI MARIO', email: 'rossi@school.it', appellativo: 'Prof.' })
+    expect.objectContaining({
+      nomeCompleto: 'ROSSI MARIO',
+      email: 'rossi@school.it',
+      appellativo: 'Prof.'
+    })
   ]);
   expect(c.coordinatori).toMatchObject({
     elencoDescrizioneElenco: 'Prof. ROSSI MARIO',
@@ -79,13 +83,17 @@ test('ClasseProvider: coordinatori as a PersonaVM elenco with aggregate declensi
 
 test('ClasseProvider: coordinatori.elenco is empty when there is no coordinator', () => {
   const tables = fixtureTables();
-  (tables.CLASSI!.find((r) => r.ID === '5A')!).COORD = '';
+  tables.CLASSI!.find((r) => r.ID === '5A')!.COORD = '';
   const db = new FakeDatabase(tables);
   const classi = new ClasseRepository(db);
   const materie = new MateriaRepository(db);
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi, undefined, materie));
-  const params: BuildParams = { target: '5A', tipoTarget: 'classe', now: new Date('2026-07-01T09:00:00Z') } as BuildParams;
+  const params: BuildParams = {
+    target: '5A',
+    tipoTarget: 'classe',
+    now: new Date('2026-07-01T09:00:00Z')
+  } as BuildParams;
   const recipe: Recipe = { providers: ['class'], options: makeOptions() };
   const c = b.build(params, recipe).focus.classe!;
   expect(c.coordinatori?.elenco).toEqual([]);
@@ -105,7 +113,11 @@ test('TutorProvider: focus.classe.tutor from CLASSI.RUOLI as PersonaVM, with agg
 test('RappresentantiProvider: student reps with email, no parent reps in fixtures (02 §4.1)', () => {
   const c = build('5A').focus.classe!;
   expect(c.rappresentanti?.studenti.elenco).toEqual([
-    { studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' }, indirizzo: null, hasIndirizzo: false }
+    {
+      studente: { nomeCompleto: 'VERDI ANNA', email: 'a1@school.it' },
+      indirizzo: null,
+      hasIndirizzo: false
+    }
   ]);
   expect(c.rappresentanti?.genitori.elenco).toEqual([]);
 });
@@ -172,7 +184,10 @@ test('ClasseProvider: articulated parent flags + materie split (02 §4.1, 09 §9
   expect(c.articolazione?.materieSeparatePrimo).toHaveLength(1);
   expect(c.articolazione?.materieSeparatePrimo[0]).toMatchObject({ sigla: 'FISI', nome: 'Fisica' });
   expect(c.articolazione?.materieSeparateSecondo).toHaveLength(1);
-  expect(c.articolazione?.materieSeparateSecondo[0]).toMatchObject({ sigla: 'FISI', nome: 'Fisica' });
+  expect(c.articolazione?.materieSeparateSecondo[0]).toMatchObject({
+    sigla: 'FISI',
+    nome: 'Fisica'
+  });
 });
 
 test('ClasseProvider: articulated partner points to descriptive parent + counterpart (02 §4.1, 09 §9)', () => {
@@ -183,7 +198,13 @@ test('ClasseProvider: articulated partner points to descriptive parent + counter
     nome: '1F',
     anno: 1,
     indirizzi: [
-      { sigla: 'SCIENTIFICO', nome: 'Liceo scientifico', nomeSintetico: 'Scientifico', tipo: 'LICEO', tipoLabel: 'Liceo' },
+      {
+        sigla: 'SCIENTIFICO',
+        nome: 'Liceo scientifico',
+        nomeSintetico: 'Scientifico',
+        tipo: 'LICEO',
+        tipoLabel: 'Liceo'
+      },
       {
         sigla: 'LSSA',
         nome: 'Liceo scientifico scienze applicate',
@@ -229,7 +250,10 @@ test('RappresentantiProvider: articulated parent merges reps across partners, ta
   expect(c.rappresentanti?.studenti.elenco).toEqual([
     {
       studente: { nomeCompleto: 'DUE REP', email: 'r2@school.it' },
-      indirizzo: expect.objectContaining({ nome: 'Liceo scientifico scienze applicate', tipoLabel: 'Liceo' }),
+      indirizzo: expect.objectContaining({
+        nome: 'Liceo scientifico scienze applicate',
+        tipoLabel: 'Liceo'
+      }),
       hasIndirizzo: true
     },
     {

@@ -35,6 +35,7 @@
 ## File Structure
 
 **GasLibraryFactory (library growth):**
+
 - `GasSchemaValidatorLib/src/DatasetValidator.js` — new. Generic cross-table dataset validation engine; no ALDO/SGSA knowledge.
 - `GasSchemaValidatorLib/src/__tests__/DatasetValidator.test.js` — new.
 - `GasSchemaValidatorLib/index.js` — modify: export `DatasetValidator`.
@@ -42,6 +43,7 @@
 - `GoogleApiWrapper/src/services/__tests__/PermissionService.test.js` — modify.
 
 **ALDO:**
+
 - `src/application/email/boxes.ts` — modify: templated `TITOLO` (line 832). The `cattedre` box already exists; no new box type needed.
 - `src/config/validationRules.ts` — new. The SGSA rule table (FK map, JSON columns, required columns, ENUM sets, dynamic-column and predicate rules) + Italian message formatter.
 - `src/application/services/DatabaseValidationService.ts` — new. Reads every table, runs `DatasetValidator`, formats rows, writes the report sheet.
@@ -81,10 +83,12 @@ the CDU. Use `processString` (not `processStringEscaped`): `wrapBox` already
 HTML-escapes the title, so escaping twice would turn `&` into `&amp;amp;`.
 
 **Files:**
+
 - Modify: `src/application/email/boxes.ts` (line 832)
 - Test: `test/unit/application/email-boxes.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing from earlier tasks.
 - Produces: `BOX_CFG.TITOLO` is a Mustache template rendered against the CDU. Task 2's CONF_MAIL row depends on this.
 
@@ -129,18 +133,17 @@ Expected: FAIL — received `"Note per {{focus.classe.anagrafica.nome}}"`.
 In `boxes.ts`, inside the `for (const { cfg, index, tipo, sourceItems } of orderedCfg)` loop (line 812), replace line 832:
 
 ```typescript
-    const titolo = str(cfg['TITOLO']) !== '' ? str(cfg['TITOLO']) : DEFAULT_TITLES[tipo]!;
+const titolo = str(cfg['TITOLO']) !== '' ? str(cfg['TITOLO']) : DEFAULT_TITLES[tipo]!;
 ```
 
 with:
 
 ```typescript
-    // TITOLO is a Mustache template over the CDU (11 §5) — e.g. the
-    // cattedre box titles itself with the class name. `wrapBox` escapes
-    // the result, so interpolate UNescaped here to avoid double-escaping.
-    const titoloCfg = str(cfg['TITOLO']);
-    const titolo =
-      titoloCfg !== '' ? templates.processString(titoloCfg, cdu) : DEFAULT_TITLES[tipo]!;
+// TITOLO is a Mustache template over the CDU (11 §5) — e.g. the
+// cattedre box titles itself with the class name. `wrapBox` escapes
+// the result, so interpolate UNescaped here to avoid double-escaping.
+const titoloCfg = str(cfg['TITOLO']);
+const titolo = titoloCfg !== '' ? templates.processString(titoloCfg, cdu) : DEFAULT_TITLES[tipo]!;
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -162,10 +165,12 @@ git commit -m "feat(email): interpolate BOX_CFG.TITOLO against the CDU"
 Seed the pattern in the online-test database so the E2E suite can exercise it end to end. Uses the **existing** `cattedre` TIPO_BOX (not a new `materie_classe` type).
 
 **Files:**
+
 - Modify: `src/onlinetests/data/SharedTestDatabaseBuilder.ts` (`seedConfMail` at line 1319), `src/onlinetests/data/fixtures.ts` (id constant)
 - Test: `test/unit/onlinetests/shared-test-database-builder-migration.test.ts`
 
 **Interfaces:**
+
 - Consumes: existing `cattedre` TIPO_BOX, templated `TITOLO` (Task 1).
 - Produces: exported `CONF_MAIL_ELENCO_MATERIE = 'ELENCO_MATERIE'` in `src/onlinetests/data/fixtures.ts`.
 
@@ -207,27 +212,27 @@ export const CONF_MAIL_ELENCO_MATERIE = 'ELENCO_MATERIE';
 Import it in `SharedTestDatabaseBuilder.ts` alongside the other CONF_MAIL constants, then append inside `seedConfMail` (line 1319):
 
 ```typescript
-    sample.appendRow(TABLE.CONF_MAIL, {
-      [COL_CONF_MAIL.ID]: CONF_MAIL_ELENCO_MATERIE,
-      // Root-level `destinatario` (BuildCDUStep.buildDestinatario), NOT
-      // focus.destinatario — the design doc's path was wrong.
-      [COL_CONF_MAIL.OGGETTO]:
-        "[E2E] Ipotesi assegnazione cattedre per l'anno scolastico appena iniziato " +
-        '(prof/prof.ssa {{destinatario.anagrafica.nome}} {{destinatario.anagrafica.cognome}})',
-      [COL_CONF_MAIL.PROCESSO]: 'PER_DOCENTE',
-      [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
-        { TIPO_BOX: 'cattedre', TITOLO: '{{focus.classe.anagrafica.nome}}' }
-      ]),
-      [COL_CONF_MAIL.TESTO]: '',
-      [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
-      [COL_CONF_MAIL.NOREPLY]: true,
-      [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
-      [COL_CONF_MAIL.CONDIZIONE]: '',
-      [COL_CONF_MAIL.POST_PROCESSO]: null,
-      [COL_CONF_MAIL.DUPLICAZIONE]: 'PERMESSA',
-      [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
-      [COL_CONF_MAIL.ALLEGATI]: '[]'
-    });
+sample.appendRow(TABLE.CONF_MAIL, {
+  [COL_CONF_MAIL.ID]: CONF_MAIL_ELENCO_MATERIE,
+  // Root-level `destinatario` (BuildCDUStep.buildDestinatario), NOT
+  // focus.destinatario — the design doc's path was wrong.
+  [COL_CONF_MAIL.OGGETTO]:
+    "[E2E] Ipotesi assegnazione cattedre per l'anno scolastico appena iniziato " +
+    '(prof/prof.ssa {{destinatario.anagrafica.nome}} {{destinatario.anagrafica.cognome}})',
+  [COL_CONF_MAIL.PROCESSO]: 'PER_DOCENTE',
+  [COL_CONF_MAIL.BOX_CFG]: JSON.stringify([
+    { TIPO_BOX: 'cattedre', TITOLO: '{{focus.classe.anagrafica.nome}}' }
+  ]),
+  [COL_CONF_MAIL.TESTO]: '',
+  [COL_CONF_MAIL.SUPPLENTI]: 'SOLO_TITOLARI',
+  [COL_CONF_MAIL.NOREPLY]: true,
+  [COL_CONF_MAIL.COLORE_HEADER]: '#1565C0',
+  [COL_CONF_MAIL.CONDIZIONE]: '',
+  [COL_CONF_MAIL.POST_PROCESSO]: null,
+  [COL_CONF_MAIL.DUPLICAZIONE]: 'PERMESSA',
+  [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: 'COMPLETA',
+  [COL_CONF_MAIL.ALLEGATI]: '[]'
+});
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -251,10 +256,12 @@ git commit -m "test(onlinetests): seed ELENCO_MATERIE CONF_MAIL pattern (cattedr
 One column per `INDIRIZZI.ID` on MATERIE, holding a CSV of course years (1–5) in which the subject is mandatory for that address. Empty means "not applicable". No production code reads these yet — Task 6's curriculum rule is the first consumer.
 
 **Files:**
+
 - Modify: `src/onlinetests/data/fixtures.ts`, `src/onlinetests/data/SharedTestHeaders.ts`, `src/onlinetests/data/SharedTestDatabaseBuilder.ts` (`buildMaterieRows` at line 106)
 - Test: `test/unit/onlinetests/shared-test-database-builder-migration.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces:
   - `export const MATERIE_ANNI_PER_INDIRIZZO: Record<string, Record<string, number[]>>` in `fixtures.ts` — keyed `[indirizzoId][materiaId] -> anni`.
@@ -307,13 +314,15 @@ In `src/onlinetests/data/fixtures.ts`, after `MATERIE_PER_INDIRIZZO`:
  * applicable for this address". Derived from MATERIE_PER_INDIRIZZO so the
  * fixture cannot drift from the class layouts.
  */
-export const MATERIE_ANNI_PER_INDIRIZZO: Record<string, Record<string, number[]>> =
-  Object.fromEntries(
-    Object.entries(MATERIE_PER_INDIRIZZO).map(([indirizzo, materie]) => [
-      indirizzo,
-      Object.fromEntries(materie.map((sigla) => [sigla, [1, 2, 3, 4, 5]]))
-    ])
-  );
+export const MATERIE_ANNI_PER_INDIRIZZO: Record<
+  string,
+  Record<string, number[]>
+> = Object.fromEntries(
+  Object.entries(MATERIE_PER_INDIRIZZO).map(([indirizzo, materie]) => [
+    indirizzo,
+    Object.fromEntries(materie.map((sigla) => [sigla, [1, 2, 3, 4, 5]]))
+  ])
+);
 ```
 
 In `src/onlinetests/data/SharedTestHeaders.ts`, add `INDIRIZZI` to the existing `fixtures` import and change the MATERIE header line:
@@ -380,26 +389,28 @@ git commit -m "feat(schema): add per-indirizzo curriculum columns to MATERIE"
 A generic, ALDO-agnostic engine: given `datasets` (`{ TABLE: rows[] }`) and `rules`, return violations. It owns iteration, target-value indexing, CSV splitting, wildcard/empty handling and the violation shape. Callers own vocabulary and messages.
 
 **Files:**
+
 - Create: `GasLibraryFactory/GasSchemaValidatorLib/src/DatasetValidator.js`
 - Create: `GasLibraryFactory/GasSchemaValidatorLib/src/__tests__/DatasetValidator.test.js`
 - Modify: `GasLibraryFactory/GasSchemaValidatorLib/index.js`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces (used by Tasks 6–8):
 
 ```js
-new DatasetValidator({ logger }).validate(datasets, rules) // -> { violations: Violation[] }
+new DatasetValidator({ logger }).validate(datasets, rules); // -> { violations: Violation[] }
 ```
 
-  - `Violation`: `{ ruleId: string, type: string, table: string, rowIndex: number, column: string, value: string, details: object }` — `rowIndex` is 0-based within the dataset array.
-  - Rule types:
-    - `{ id, type: 'required', table, columns: string[] }`
-    - `{ id, type: 'enum', table, column, values: string[], allowEmpty?: boolean }` (default `allowEmpty: true`)
-    - `{ id, type: 'json', table, column }` (empty cells skipped)
-    - `{ id, type: 'foreignKey', table, column, targetTable, targetColumn, csv?: boolean, allowWildcard?: boolean, allowEmpty?: boolean }` (defaults: `csv:false`, `allowWildcard:false`, `allowEmpty:true`; wildcard token is `'*'`)
-    - `{ id, type: 'columnName', table, targetTable, targetColumn, ignore?: string[], normalize?: (columnName) => string }` — every column of `table` not in `ignore` and not in `knownColumns` must normalize to a value present in the target set. Requires `knownColumns: string[]` on the rule (the static schema columns).
-    - `{ id, type: 'rowPredicate', table, check: (row, ctx) => null | { column, value, details? } }` — `ctx` is `{ datasets, index(table, column) -> Set<string> }`.
+- `Violation`: `{ ruleId: string, type: string, table: string, rowIndex: number, column: string, value: string, details: object }` — `rowIndex` is 0-based within the dataset array.
+- Rule types:
+  - `{ id, type: 'required', table, columns: string[] }`
+  - `{ id, type: 'enum', table, column, values: string[], allowEmpty?: boolean }` (default `allowEmpty: true`)
+  - `{ id, type: 'json', table, column }` (empty cells skipped)
+  - `{ id, type: 'foreignKey', table, column, targetTable, targetColumn, csv?: boolean, allowWildcard?: boolean, allowEmpty?: boolean }` (defaults: `csv:false`, `allowWildcard:false`, `allowEmpty:true`; wildcard token is `'*'`)
+  - `{ id, type: 'columnName', table, targetTable, targetColumn, ignore?: string[], normalize?: (columnName) => string }` — every column of `table` not in `ignore` and not in `knownColumns` must normalize to a value present in the target set. Requires `knownColumns: string[]` on the rule (the static schema columns).
+  - `{ id, type: 'rowPredicate', table, check: (row, ctx) => null | { column, value, details? } }` — `ctx` is `{ datasets, index(table, column) -> Set<string> }`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -425,13 +436,28 @@ function run(rules) {
 test('required flags empty cells only', () => {
   const v = run([{ id: 'R1', type: 'required', table: 'ALUNNI', columns: ['EMAIL'] }]);
   expect(v).toEqual([
-    { ruleId: 'R1', type: 'required', table: 'ALUNNI', rowIndex: 1, column: 'EMAIL', value: '', details: {} }
+    {
+      ruleId: 'R1',
+      type: 'required',
+      table: 'ALUNNI',
+      rowIndex: 1,
+      column: 'EMAIL',
+      value: '',
+      details: {}
+    }
   ]);
 });
 
 test('foreignKey resolves against the target column set', () => {
   const v = run([
-    { id: 'FK1', type: 'foreignKey', table: 'ALUNNI', column: 'CLASSE', targetTable: 'CLASSI', targetColumn: 'ID' }
+    {
+      id: 'FK1',
+      type: 'foreignKey',
+      table: 'ALUNNI',
+      column: 'CLASSE',
+      targetTable: 'CLASSI',
+      targetColumn: 'ID'
+    }
   ]);
   expect(v).toHaveLength(1);
   expect(v[0].rowIndex).toBe(1);
@@ -442,7 +468,15 @@ test('foreignKey resolves against the target column set', () => {
 test('foreignKey csv checks every token and reports the offending one', () => {
   const withCsv = { ...datasets, CLASSI: [{ ID: '1A', COORD: 'p@x.it, ghost@x.it' }] };
   const v = new DatasetValidator().validate(withCsv, [
-    { id: 'FK2', type: 'foreignKey', table: 'CLASSI', column: 'COORD', targetTable: 'DOCENTI', targetColumn: 'EMAIL', csv: true }
+    {
+      id: 'FK2',
+      type: 'foreignKey',
+      table: 'CLASSI',
+      column: 'COORD',
+      targetTable: 'DOCENTI',
+      targetColumn: 'EMAIL',
+      csv: true
+    }
   ]).violations;
   expect(v).toHaveLength(1);
   expect(v[0].value).toBe('ghost@x.it');
@@ -451,7 +485,16 @@ test('foreignKey csv checks every token and reports the offending one', () => {
 test('foreignKey allowWildcard accepts *', () => {
   const withStar = { ...datasets, SUPPLENZE: [{ CLASSI: '*' }] };
   const v = new DatasetValidator().validate(withStar, [
-    { id: 'FK3', type: 'foreignKey', table: 'SUPPLENZE', column: 'CLASSI', targetTable: 'CLASSI', targetColumn: 'ID', csv: true, allowWildcard: true }
+    {
+      id: 'FK3',
+      type: 'foreignKey',
+      table: 'SUPPLENZE',
+      column: 'CLASSI',
+      targetTable: 'CLASSI',
+      targetColumn: 'ID',
+      csv: true,
+      allowWildcard: true
+    }
   ]).violations;
   expect(v).toEqual([]);
 });
@@ -463,10 +506,9 @@ test('json reports unparsable non-empty cells', () => {
 });
 
 test('enum reports values outside the set, empty allowed by default', () => {
-  const v = new DatasetValidator().validate(
-    { T: [{ S: 'OK' }, { S: 'NOPE' }, { S: '' }] },
-    [{ id: 'E1', type: 'enum', table: 'T', column: 'S', values: ['OK'] }]
-  ).violations;
+  const v = new DatasetValidator().validate({ T: [{ S: 'OK' }, { S: 'NOPE' }, { S: '' }] }, [
+    { id: 'E1', type: 'enum', table: 'T', column: 'S', values: ['OK'] }
+  ]).violations;
   expect(v).toHaveLength(1);
   expect(v[0].value).toBe('NOPE');
   expect(v[0].details.values).toEqual(['OK']);
@@ -489,9 +531,22 @@ test('columnName validates dynamic columns against a target set', () => {
 });
 
 test('columnName reports an unknown dynamic column once, not once per row', () => {
-  const withGhost = { ...datasets, CLASSI: [{ ID: '1A', GHOST: 'x' }, { ID: '2A', GHOST: 'y' }] };
+  const withGhost = {
+    ...datasets,
+    CLASSI: [
+      { ID: '1A', GHOST: 'x' },
+      { ID: '2A', GHOST: 'y' }
+    ]
+  };
   const v = new DatasetValidator().validate(withGhost, [
-    { id: 'C2', type: 'columnName', table: 'CLASSI', knownColumns: ['ID'], targetTable: 'MATERIE', targetColumn: 'ID' }
+    {
+      id: 'C2',
+      type: 'columnName',
+      table: 'CLASSI',
+      knownColumns: ['ID'],
+      targetTable: 'MATERIE',
+      targetColumn: 'ID'
+    }
   ]).violations;
   expect(v).toHaveLength(1);
   expect(v[0].column).toBe('GHOST');
@@ -505,7 +560,9 @@ test('rowPredicate receives datasets and an index helper', () => {
       type: 'rowPredicate',
       table: 'CLASSI',
       check: (row, ctx) =>
-        ctx.index('DOCENTI', 'EMAIL').has(String(row.ALT)) ? null : { column: 'ALT', value: String(row.ALT) }
+        ctx.index('DOCENTI', 'EMAIL').has(String(row.ALT))
+          ? null
+          : { column: 'ALT', value: String(row.ALT) }
     }
   ]);
   expect(v).toHaveLength(1);
@@ -763,11 +820,13 @@ cd ..
 ### Task 5: Vendor the new library build into ALDO
 
 **Files:**
+
 - Modify (generated): `vendor/gaslibs.Code.js`, `vendor/CHECKSUM`, `vendor/VERSION`
 - Modify: `types/gaslibs/index.d.ts`
 - Test: `test/unit/harness/gaslibs.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 4's `DatasetValidator`.
 - Produces: ambient `DatasetValidator` class declaration usable from ALDO TypeScript:
 
@@ -788,10 +847,9 @@ Append to `test/unit/harness/gaslibs.test.ts`:
 ```typescript
 test('vendored bundle exposes DatasetValidator (Feature 2)', () => {
   const validator = new DatasetValidator();
-  const { violations } = validator.validate(
-    { T: [{ A: '' }] },
-    [{ id: 'R', type: 'required', table: 'T', columns: ['A'] }]
-  );
+  const { violations } = validator.validate({ T: [{ A: '' }] }, [
+    { id: 'R', type: 'required', table: 'T', columns: ['A'] }
+  ]);
   expect(violations).toHaveLength(1);
   expect(violations[0]!.ruleId).toBe('R');
 });
@@ -809,65 +867,72 @@ Run: `npm run refresh:vendor && npm run verify:vendor`
 Then add to `types/gaslibs/index.d.ts`, in the GasSchemaValidatorLib area (create the section if absent — search for `GasResilienceLib` to find the L1 block):
 
 ```typescript
-  // --- GasSchemaValidatorLib (L1): declarative dataset validation ---
-  interface DatasetViolation {
-    ruleId: string;
-    type: string;
-    table: string;
-    /** 0-based index into the dataset array (sheet row = index + 2). */
-    rowIndex: number;
-    column: string;
-    value: string;
-    details: Record<string, unknown>;
-  }
+// --- GasSchemaValidatorLib (L1): declarative dataset validation ---
+interface DatasetViolation {
+  ruleId: string;
+  type: string;
+  table: string;
+  /** 0-based index into the dataset array (sheet row = index + 2). */
+  rowIndex: number;
+  column: string;
+  value: string;
+  details: Record<string, unknown>;
+}
 
-  interface DatasetRuleContext {
-    datasets: Record<string, Array<Record<string, unknown>>>;
-    index(table: string, column: string): Set<string>;
-  }
+interface DatasetRuleContext {
+  datasets: Record<string, Array<Record<string, unknown>>>;
+  index(table: string, column: string): Set<string>;
+}
 
-  type DatasetValidationRule =
-    | { id: string; type: 'required'; table: string; columns: string[] }
-    | { id: string; type: 'enum'; table: string; column: string; values: string[]; allowEmpty?: boolean }
-    | { id: string; type: 'json'; table: string; column: string }
-    | {
-        id: string;
-        type: 'foreignKey';
-        table: string;
-        column: string;
-        targetTable: string;
-        targetColumn: string;
-        csv?: boolean;
-        allowWildcard?: boolean;
-        allowEmpty?: boolean;
-      }
-    | {
-        id: string;
-        type: 'columnName';
-        table: string;
-        knownColumns: string[];
-        targetTable: string;
-        targetColumn: string;
-        ignore?: string[];
-        normalize?: (columnName: string) => string;
-      }
-    | {
-        id: string;
-        type: 'rowPredicate';
-        table: string;
-        check: (
-          row: Record<string, unknown>,
-          ctx: DatasetRuleContext
-        ) => null | { column: string; value: unknown; details?: Record<string, unknown> };
-      };
+type DatasetValidationRule =
+  | { id: string; type: 'required'; table: string; columns: string[] }
+  | {
+      id: string;
+      type: 'enum';
+      table: string;
+      column: string;
+      values: string[];
+      allowEmpty?: boolean;
+    }
+  | { id: string; type: 'json'; table: string; column: string }
+  | {
+      id: string;
+      type: 'foreignKey';
+      table: string;
+      column: string;
+      targetTable: string;
+      targetColumn: string;
+      csv?: boolean;
+      allowWildcard?: boolean;
+      allowEmpty?: boolean;
+    }
+  | {
+      id: string;
+      type: 'columnName';
+      table: string;
+      knownColumns: string[];
+      targetTable: string;
+      targetColumn: string;
+      ignore?: string[];
+      normalize?: (columnName: string) => string;
+    }
+  | {
+      id: string;
+      type: 'rowPredicate';
+      table: string;
+      check: (
+        row: Record<string, unknown>,
+        ctx: DatasetRuleContext
+      ) => null | { column: string; value: unknown; details?: Record<string, unknown> };
+    };
 
-  class DatasetValidator {
-    constructor(deps?: { logger?: LoggerService });
-    validate(
-      datasets: Record<string, Array<Record<string, unknown>>>,
-      rules: DatasetValidationRule[]
-    ): { violations: DatasetViolation[] };
-  }
+class DatasetValidator {
+  constructor(deps?: { logger?: LoggerService });
+  validate(
+    datasets: Record<string, Array<Record<string, unknown>>>,
+    rules: DatasetValidationRule[]
+  ): { violations: DatasetViolation[] };
+}
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -889,17 +954,19 @@ git commit -m "chore(vendor): refresh gaslibs bundle with DatasetValidator"
 All rules from the spec, as data, plus the Italian message formatter. Pure module: no I/O, no GAS, trivially testable.
 
 **Files:**
+
 - Create: `src/config/validationRules.ts`
 - Test: `test/unit/config/validation-rules.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 5's ambient `DatasetValidationRule` / `DatasetViolation` types; `src/config/schema.ts` constants; `src/domain/value-objects/enums.ts`.
 - Produces:
 
 ```typescript
-export const VALIDATION_TABLES: string[];               // every table the validator must read
+export const VALIDATION_TABLES: string[]; // every table the validator must read
 export function regoleValidazione(): DatasetValidationRule[];
-export function messaggioErrore(v: DatasetViolation): string;   // Italian ERRORE text
+export function messaggioErrore(v: DatasetViolation): string; // Italian ERRORE text
 ```
 
 - [ ] **Step 1: Write the failing test**
@@ -907,7 +974,11 @@ export function messaggioErrore(v: DatasetViolation): string;   // Italian ERROR
 Create `test/unit/config/validation-rules.test.ts`:
 
 ```typescript
-import { regoleValidazione, messaggioErrore, VALIDATION_TABLES } from '../../../src/config/validationRules';
+import {
+  regoleValidazione,
+  messaggioErrore,
+  VALIDATION_TABLES
+} from '../../../src/config/validationRules';
 import { TABLE } from '../../../src/config/schema';
 
 test('every rule targets a table the service will load', () => {
@@ -949,31 +1020,73 @@ test('SUPPLENZE/VARIAZIONI class and subject lists accept the * wildcard', () =>
 
 test('ENUM rules use the domain enums', () => {
   const genere = regoleValidazione().find((r) => r.id === 'ENUM_DOCENTI_GENERE');
-  expect(genere).toMatchObject({ type: 'enum', table: TABLE.DOCENTI, column: 'GENERE', values: ['M', 'F'] });
+  expect(genere).toMatchObject({
+    type: 'enum',
+    table: TABLE.DOCENTI,
+    column: 'GENERE',
+    values: ['M', 'F']
+  });
 });
 
 test('messaggioErrore renders Italian text per violation type', () => {
   expect(
     messaggioErrore({
-      ruleId: 'FK', type: 'foreignKey', table: 'ALUNNI', rowIndex: 3, column: 'CLASSE', value: '99X',
+      ruleId: 'FK',
+      type: 'foreignKey',
+      table: 'ALUNNI',
+      rowIndex: 3,
+      column: 'CLASSE',
+      value: '99X',
       details: { targetTable: 'CLASSI', targetColumn: 'ID' }
     })
   ).toBe('FK violata: CLASSE "99X" non esiste in CLASSI.ID');
 
   expect(
-    messaggioErrore({ ruleId: 'J', type: 'json', table: 'CONF_DOC', rowIndex: 0, column: 'MODELLI', value: '{', details: {} })
+    messaggioErrore({
+      ruleId: 'J',
+      type: 'json',
+      table: 'CONF_DOC',
+      rowIndex: 0,
+      column: 'MODELLI',
+      value: '{',
+      details: {}
+    })
   ).toBe('JSON non valido nel campo MODELLI');
 
   expect(
-    messaggioErrore({ ruleId: 'R', type: 'required', table: 'DOCENTI', rowIndex: 0, column: 'NOME', value: '', details: {} })
+    messaggioErrore({
+      ruleId: 'R',
+      type: 'required',
+      table: 'DOCENTI',
+      rowIndex: 0,
+      column: 'NOME',
+      value: '',
+      details: {}
+    })
   ).toBe('Campo obbligatorio vuoto: NOME');
 
   expect(
-    messaggioErrore({ ruleId: 'E', type: 'enum', table: 'DOCENTI', rowIndex: 0, column: 'GENERE', value: 'X', details: { values: ['M', 'F'] } })
+    messaggioErrore({
+      ruleId: 'E',
+      type: 'enum',
+      table: 'DOCENTI',
+      rowIndex: 0,
+      column: 'GENERE',
+      value: 'X',
+      details: { values: ['M', 'F'] }
+    })
   ).toBe('Valore non ammesso per GENERE: "X" (ammessi: M, F)');
 
   expect(
-    messaggioErrore({ ruleId: 'ITP_CLASSI', type: 'rowPredicate', table: 'CLASSI', rowIndex: 0, column: 'INF.itp', value: 'x@y.it', details: {} })
+    messaggioErrore({
+      ruleId: 'ITP_CLASSI',
+      type: 'rowPredicate',
+      table: 'CLASSI',
+      rowIndex: 0,
+      column: 'INF.itp',
+      value: 'x@y.it',
+      details: {}
+    })
   ).toBe('Colonna ITP INF.itp: il docente "x@y.it" non ha DOCENTI.ITP = true');
 });
 ```
@@ -1076,33 +1189,113 @@ export function regoleValidazione(): DatasetValidationRule[] {
   return [
     // --- 1. Foreign keys ---
     fk('FK_ALUNNI_CLASSE', TABLE.ALUNNI, COL_ALUNNI.CLASSE, TABLE.CLASSI, COL_CLASSI.ID),
-    fk('FK_CLASSI_INDIRIZZO', TABLE.CLASSI, COL_CLASSI.INDIRIZZO, TABLE.INDIRIZZI, COL_INDIRIZZI.ID),
-    fk('FK_CLASSI_COORD', TABLE.CLASSI, COL_CLASSI.COORD, TABLE.DOCENTI, COL_DOCENTI.EMAIL, { csv: true }),
-    fk('FK_CLASSI_IRC', TABLE.CLASSI, COL_CLASSI.IRC, TABLE.DOCENTI, COL_DOCENTI.EMAIL, { csv: true }),
-    fk('FK_CLASSI_ALT', TABLE.CLASSI, COL_CLASSI.ALT, TABLE.DOCENTI, COL_DOCENTI.EMAIL, { csv: true }),
+    fk(
+      'FK_CLASSI_INDIRIZZO',
+      TABLE.CLASSI,
+      COL_CLASSI.INDIRIZZO,
+      TABLE.INDIRIZZI,
+      COL_INDIRIZZI.ID
+    ),
+    fk('FK_CLASSI_COORD', TABLE.CLASSI, COL_CLASSI.COORD, TABLE.DOCENTI, COL_DOCENTI.EMAIL, {
+      csv: true
+    }),
+    fk('FK_CLASSI_IRC', TABLE.CLASSI, COL_CLASSI.IRC, TABLE.DOCENTI, COL_DOCENTI.EMAIL, {
+      csv: true
+    }),
+    fk('FK_CLASSI_ALT', TABLE.CLASSI, COL_CLASSI.ALT, TABLE.DOCENTI, COL_DOCENTI.EMAIL, {
+      csv: true
+    }),
     fk('FK_DOCENTI_DIPART', TABLE.DOCENTI, COL_DOCENTI.DIPART, TABLE.DIPART, COL_DIPART.ID),
     fk('FK_DIPART_CAPO', TABLE.DIPART, COL_DIPART.CAPO, TABLE.DOCENTI, COL_DOCENTI.EMAIL),
-    fk('FK_DIPART_MATERIE', TABLE.DIPART, COL_DIPART.MATERIE, TABLE.MATERIE, COL_MATERIE.ID, { csv: true }),
-    fk('FK_RUOLI_DOCENTE', TABLE.RUOLI, COL_RUOLI.DOCENTE, TABLE.DOCENTI, COL_DOCENTI.EMAIL, { csv: true }),
-    fk('FK_SUPPLENZE_TITOLARE', TABLE.SUPPLENZE, COL_SUPPLENZE.TITOLARE, TABLE.DOCENTI, COL_DOCENTI.EMAIL),
-    fk('FK_SUPPLENZE_SUPPLENTE', TABLE.SUPPLENZE, COL_SUPPLENZE.SUPPLENTE, TABLE.DOCENTI, COL_DOCENTI.EMAIL),
-    fk('FK_SUPPLENZE_CLASSI', TABLE.SUPPLENZE, COL_SUPPLENZE.CLASSI, TABLE.CLASSI, COL_CLASSI.ID, { csv: true, allowWildcard: true }),
-    fk('FK_SUPPLENZE_MATERIE', TABLE.SUPPLENZE, COL_SUPPLENZE.MATERIE, TABLE.MATERIE, COL_MATERIE.ID, { csv: true, allowWildcard: true }),
-    fk('FK_VARIAZIONI_TITOLARE', TABLE.VARIAZIONI_CATTEDRA, COL_VARIAZIONI_CATTEDRA.TITOLARE, TABLE.DOCENTI, COL_DOCENTI.EMAIL),
-    fk('FK_VARIAZIONI_NUOVO_TITOLARE', TABLE.VARIAZIONI_CATTEDRA, COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE, TABLE.DOCENTI, COL_DOCENTI.EMAIL),
-    fk('FK_VARIAZIONI_CLASSI', TABLE.VARIAZIONI_CATTEDRA, COL_VARIAZIONI_CATTEDRA.CLASSI, TABLE.CLASSI, COL_CLASSI.ID, { csv: true, allowWildcard: true }),
-    fk('FK_VARIAZIONI_MATERIE', TABLE.VARIAZIONI_CATTEDRA, COL_VARIAZIONI_CATTEDRA.MATERIE, TABLE.MATERIE, COL_MATERIE.ID, { csv: true, allowWildcard: true }),
+    fk('FK_DIPART_MATERIE', TABLE.DIPART, COL_DIPART.MATERIE, TABLE.MATERIE, COL_MATERIE.ID, {
+      csv: true
+    }),
+    fk('FK_RUOLI_DOCENTE', TABLE.RUOLI, COL_RUOLI.DOCENTE, TABLE.DOCENTI, COL_DOCENTI.EMAIL, {
+      csv: true
+    }),
+    fk(
+      'FK_SUPPLENZE_TITOLARE',
+      TABLE.SUPPLENZE,
+      COL_SUPPLENZE.TITOLARE,
+      TABLE.DOCENTI,
+      COL_DOCENTI.EMAIL
+    ),
+    fk(
+      'FK_SUPPLENZE_SUPPLENTE',
+      TABLE.SUPPLENZE,
+      COL_SUPPLENZE.SUPPLENTE,
+      TABLE.DOCENTI,
+      COL_DOCENTI.EMAIL
+    ),
+    fk('FK_SUPPLENZE_CLASSI', TABLE.SUPPLENZE, COL_SUPPLENZE.CLASSI, TABLE.CLASSI, COL_CLASSI.ID, {
+      csv: true,
+      allowWildcard: true
+    }),
+    fk(
+      'FK_SUPPLENZE_MATERIE',
+      TABLE.SUPPLENZE,
+      COL_SUPPLENZE.MATERIE,
+      TABLE.MATERIE,
+      COL_MATERIE.ID,
+      { csv: true, allowWildcard: true }
+    ),
+    fk(
+      'FK_VARIAZIONI_TITOLARE',
+      TABLE.VARIAZIONI_CATTEDRA,
+      COL_VARIAZIONI_CATTEDRA.TITOLARE,
+      TABLE.DOCENTI,
+      COL_DOCENTI.EMAIL
+    ),
+    fk(
+      'FK_VARIAZIONI_NUOVO_TITOLARE',
+      TABLE.VARIAZIONI_CATTEDRA,
+      COL_VARIAZIONI_CATTEDRA.NUOVO_TITOLARE,
+      TABLE.DOCENTI,
+      COL_DOCENTI.EMAIL
+    ),
+    fk(
+      'FK_VARIAZIONI_CLASSI',
+      TABLE.VARIAZIONI_CATTEDRA,
+      COL_VARIAZIONI_CATTEDRA.CLASSI,
+      TABLE.CLASSI,
+      COL_CLASSI.ID,
+      { csv: true, allowWildcard: true }
+    ),
+    fk(
+      'FK_VARIAZIONI_MATERIE',
+      TABLE.VARIAZIONI_CATTEDRA,
+      COL_VARIAZIONI_CATTEDRA.MATERIE,
+      TABLE.MATERIE,
+      COL_MATERIE.ID,
+      { csv: true, allowWildcard: true }
+    ),
     fk('FK_CARENZE_STUDENTE', TABLE.CARENZE, COL_CARENZE.STUDENTE, TABLE.ALUNNI, COL_ALUNNI.EMAIL),
     fk('FK_CARENZE_CLASSE', TABLE.CARENZE, COL_CARENZE.CLASSE, TABLE.CLASSI, COL_CLASSI.ID),
     fk('FK_PIANI_STUDENTE', TABLE.PIANI, COL_PIANI.STUDENTE, TABLE.ALUNNI, COL_ALUNNI.EMAIL),
     fk('FK_PROGETTI_CLASSE', TABLE.PROGETTI, COL_PROGETTI.CLASSE, TABLE.CLASSI, COL_CLASSI.ID),
-    fk('FK_MOV_ALUNNI_STUDENTE', TABLE.MOV_ALUNNI, COL_MOV_ALUNNI.STUDENTE, TABLE.ALUNNI, COL_ALUNNI.EMAIL),
+    fk(
+      'FK_MOV_ALUNNI_STUDENTE',
+      TABLE.MOV_ALUNNI,
+      COL_MOV_ALUNNI.STUDENTE,
+      TABLE.ALUNNI,
+      COL_ALUNNI.EMAIL
+    ),
     fk('FK_ASL_STUDENTE', TABLE.ASL, COL_ASL.STUDENTE, TABLE.ALUNNI, COL_ALUNNI.EMAIL),
     fk('FK_LOG_DOCS_ID_GEN', TABLE.LOG_DOCS, COL_LOG_DOCS.ID_GEN, TABLE.CONF_DOC, COL_CONF_DOC.ID),
-    fk('FK_LOG_DOCS_CLASSI', TABLE.LOG_DOCS, COL_LOG_DOCS.CLASSI, TABLE.CLASSI, COL_CLASSI.ID, { csv: true }),
-    fk('FK_LOG_DOCS_MATERIE', TABLE.LOG_DOCS, COL_LOG_DOCS.MATERIE, TABLE.MATERIE, COL_MATERIE.ID, { csv: true }),
+    fk('FK_LOG_DOCS_CLASSI', TABLE.LOG_DOCS, COL_LOG_DOCS.CLASSI, TABLE.CLASSI, COL_CLASSI.ID, {
+      csv: true
+    }),
+    fk('FK_LOG_DOCS_MATERIE', TABLE.LOG_DOCS, COL_LOG_DOCS.MATERIE, TABLE.MATERIE, COL_MATERIE.ID, {
+      csv: true
+    }),
     fk('FK_LOG_FOLD_TIPO', TABLE.LOG_FOLD, COL_LOG_FOLD.TIPO, TABLE.CONF_DOC, COL_CONF_DOC.ID),
-    fk('FK_LOG_MAIL_PATTERN', TABLE.LOG_MAIL, COL_LOG_MAIL.PATTERN, TABLE.CONF_MAIL, COL_CONF_MAIL.ID),
+    fk(
+      'FK_LOG_MAIL_PATTERN',
+      TABLE.LOG_MAIL,
+      COL_LOG_MAIL.PATTERN,
+      TABLE.CONF_MAIL,
+      COL_CONF_MAIL.ID
+    ),
 
     // --- 2. JSON fields ---
     json(TABLE.ALUNNI, COL_ALUNNI.CURRICULUM),
@@ -1136,21 +1329,76 @@ export function regoleValidazione(): DatasetValidationRule[] {
     required(TABLE.LOG_DOCS, [COL_LOG_DOCS.ID]),
 
     // --- 4. ENUM values ---
-    enumRule('ENUM_ALUNNI_RELIGIONE', TABLE.ALUNNI, COL_ALUNNI.RELIGIONE, Object.values(ReligioneScelta)),
+    enumRule(
+      'ENUM_ALUNNI_RELIGIONE',
+      TABLE.ALUNNI,
+      COL_ALUNNI.RELIGIONE,
+      Object.values(ReligioneScelta)
+    ),
     enumRule('ENUM_DOCENTI_GENERE', TABLE.DOCENTI, COL_DOCENTI.GENERE, Object.values(Genere)),
-    enumRule('ENUM_LOG_DOCS_STATO', TABLE.LOG_DOCS, COL_LOG_DOCS.STATO, Object.values(StatoDocumento)),
-    enumRule('ENUM_CONF_DOC_DUPLICAZIONE', TABLE.CONF_DOC, COL_CONF_DOC.DUPLICAZIONE, Object.values(DuplicazioneDocumento)),
-    enumRule('ENUM_CONF_DOC_FORMATO', TABLE.CONF_DOC, COL_CONF_DOC.FORMATO, Object.values(FormatoOutput)),
-    enumRule('ENUM_CONF_DOC_ARTICOLAZIONE', TABLE.CONF_DOC, COL_CONF_DOC.GESTIONE_ARTICOLAZIONE, Object.values(GestioneArticolazione)),
-    enumRule('ENUM_CONF_MAIL_ARTICOLAZIONE', TABLE.CONF_MAIL, COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE, Object.values(GestioneArticolazione)),
-    enumRule('ENUM_CONF_MAIL_DUPLICAZIONE', TABLE.CONF_MAIL, COL_CONF_MAIL.DUPLICAZIONE, Object.values(DuplicazioneDocumento)),
-    enumRule('ENUM_CONF_MAIL_SUPPLENTI', TABLE.CONF_MAIL, COL_CONF_MAIL.SUPPLENTI, Object.values(GestioneSupplenti)),
-    enumRule('ENUM_CONF_MAIL_PROCESSO', TABLE.CONF_MAIL, COL_CONF_MAIL.PROCESSO, Object.values(ProcessoInvio)),
+    enumRule(
+      'ENUM_LOG_DOCS_STATO',
+      TABLE.LOG_DOCS,
+      COL_LOG_DOCS.STATO,
+      Object.values(StatoDocumento)
+    ),
+    enumRule(
+      'ENUM_CONF_DOC_DUPLICAZIONE',
+      TABLE.CONF_DOC,
+      COL_CONF_DOC.DUPLICAZIONE,
+      Object.values(DuplicazioneDocumento)
+    ),
+    enumRule(
+      'ENUM_CONF_DOC_FORMATO',
+      TABLE.CONF_DOC,
+      COL_CONF_DOC.FORMATO,
+      Object.values(FormatoOutput)
+    ),
+    enumRule(
+      'ENUM_CONF_DOC_ARTICOLAZIONE',
+      TABLE.CONF_DOC,
+      COL_CONF_DOC.GESTIONE_ARTICOLAZIONE,
+      Object.values(GestioneArticolazione)
+    ),
+    enumRule(
+      'ENUM_CONF_MAIL_ARTICOLAZIONE',
+      TABLE.CONF_MAIL,
+      COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE,
+      Object.values(GestioneArticolazione)
+    ),
+    enumRule(
+      'ENUM_CONF_MAIL_DUPLICAZIONE',
+      TABLE.CONF_MAIL,
+      COL_CONF_MAIL.DUPLICAZIONE,
+      Object.values(DuplicazioneDocumento)
+    ),
+    enumRule(
+      'ENUM_CONF_MAIL_SUPPLENTI',
+      TABLE.CONF_MAIL,
+      COL_CONF_MAIL.SUPPLENTI,
+      Object.values(GestioneSupplenti)
+    ),
+    enumRule(
+      'ENUM_CONF_MAIL_PROCESSO',
+      TABLE.CONF_MAIL,
+      COL_CONF_MAIL.PROCESSO,
+      Object.values(ProcessoInvio)
+    ),
     enumRule('ENUM_LOG_MAIL_STATO', TABLE.LOG_MAIL, COL_LOG_MAIL.STATO, Object.values(StatoEmail)),
-    enumRule('ENUM_INDIRIZZI_TIPO', TABLE.INDIRIZZI, COL_INDIRIZZI.TIPO, Object.values(TipoIstituto)),
+    enumRule(
+      'ENUM_INDIRIZZI_TIPO',
+      TABLE.INDIRIZZI,
+      COL_INDIRIZZI.TIPO,
+      Object.values(TipoIstituto)
+    ),
     enumRule('ENUM_PIANI_TIPO', TABLE.PIANI, COL_PIANI.TIPO, Object.values(TipoPiano)),
     enumRule('ENUM_PROGETTI_TIPO', TABLE.PROGETTI, COL_PROGETTI.TIPO, Object.values(TipoProgetto)),
-    enumRule('ENUM_MOV_ALUNNI_TIPO', TABLE.MOV_ALUNNI, COL_MOV_ALUNNI.TIPO, Object.values(TipoMovimento)),
+    enumRule(
+      'ENUM_MOV_ALUNNI_TIPO',
+      TABLE.MOV_ALUNNI,
+      COL_MOV_ALUNNI.TIPO,
+      Object.values(TipoMovimento)
+    ),
 
     // --- 5. Dynamic column integrity ---
     {
@@ -1184,7 +1432,10 @@ export function regoleValidazione(): DatasetValidationRule[] {
         for (const [column, value] of Object.entries(row)) {
           if (!column.endsWith('.itp')) continue;
           const raw = value === null || value === undefined ? '' : String(value);
-          for (const email of raw.split(',').map((s) => s.trim()).filter((s) => s !== '')) {
+          for (const email of raw
+            .split(',')
+            .map((s) => s.trim())
+            .filter((s) => s !== '')) {
             itpEmails.add(`${column}|${email}`);
           }
         }
@@ -1293,12 +1544,14 @@ git commit -m "feat(validation): declare the SGSA database validation rule table
 ### Task 7: `DatabaseValidationService` + report facade
 
 **Files:**
+
 - Create: `src/infrastructure/facades/SpreadsheetReportFacade.ts`
 - Create: `test/fakes/FakeSpreadsheetReportFacade.ts`
 - Create: `src/application/services/DatabaseValidationService.ts`
 - Test: `test/unit/application/database-validation-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 5's `DatasetValidator`; Task 6's `regoleValidazione` / `messaggioErrore` / `VALIDATION_TABLES`; `IDatabase` (`src/infrastructure/db/Database.ts`); `IMasterSheetRepository`.
 - Produces:
 
@@ -1308,8 +1561,18 @@ export interface ISpreadsheetReportFacade {
   creaReport(nome: string, folderId: string, righe: string[][]): string;
 }
 
-export interface ValidationRow { tabella: string; riga: number; campo: string; valore: string; errore: string }
-export interface ValidationReport { violazioni: ValidationRow[]; spreadsheetId: string; nome: string }
+export interface ValidationRow {
+  tabella: string;
+  riga: number;
+  campo: string;
+  valore: string;
+  errore: string;
+}
+export interface ValidationReport {
+  violazioni: ValidationRow[];
+  spreadsheetId: string;
+  nome: string;
+}
 
 export class DatabaseValidationService {
   constructor(deps: {
@@ -1397,7 +1660,10 @@ test('a clean database produces no violations and a TUTTO OK report', () => {
 
 test('a broken FK is reported with the sheet row number (index + 2)', () => {
   const tabelle = tabelleValide();
-  tabelle['ALUNNI'] = [{ EMAIL: 'a@x.it', CLASSE: '1A' }, { EMAIL: 'b@x.it', CLASSE: '99X' }];
+  tabelle['ALUNNI'] = [
+    { EMAIL: 'a@x.it', CLASSE: '1A' },
+    { EMAIL: 'b@x.it', CLASSE: '99X' }
+  ];
   const { service, report } = servizio(tabelle);
   const esito = service.esegui();
   const violazione = esito.violazioni.find((v) => v.tabella === 'ALUNNI' && v.campo === 'CLASSE');
@@ -1410,14 +1676,23 @@ test('a broken FK is reported with the sheet row number (index + 2)', () => {
   });
   expect(report.reports[0]!.righe[0]).toEqual(['TABELLA', 'RIGA', 'CAMPO', 'VALORE', 'ERRORE']);
   expect(report.reports[0]!.righe).toContainEqual([
-    'ALUNNI', '3', 'CLASSE', '99X', 'FK violata: CLASSE "99X" non esiste in CLASSI.ID'
+    'ALUNNI',
+    '3',
+    'CLASSE',
+    '99X',
+    'FK violata: CLASSE "99X" non esiste in CLASSI.ID'
   ]);
 });
 
 test('an ITP column assigned to a non-ITP docente is reported', () => {
   const tabelle = tabelleValide();
-  tabelle['MATERIE'] = [{ ID: 'MAT', NOME: 'Matematica', LS: '1' }, { ID: 'INF', NOME: 'Informatica' }];
-  tabelle['CLASSI'] = [{ ID: '1A', ANNO: '1', INDIRIZZO: 'LS', MAT: 'p@x.it', 'INF.itp': 'p@x.it' }];
+  tabelle['MATERIE'] = [
+    { ID: 'MAT', NOME: 'Matematica', LS: '1' },
+    { ID: 'INF', NOME: 'Informatica' }
+  ];
+  tabelle['CLASSI'] = [
+    { ID: '1A', ANNO: '1', INDIRIZZO: 'LS', MAT: 'p@x.it', 'INF.itp': 'p@x.it' }
+  ];
   const { service } = servizio(tabelle);
   expect(service.esegui().violazioni.map((v) => v.errore)).toContain(
     'Colonna ITP INF.itp: il docente "p@x.it" non ha DOCENTI.ITP = true'
@@ -1432,7 +1707,7 @@ test('a curriculum subject with no CLASSI column is reported (Feature 4)', () =>
   ];
   const { service } = servizio(tabelle);
   expect(service.esegui().violazioni.map((v) => v.errore)).toContain(
-    "Materia \"ITA\" obbligatoria per l'indirizzo LS anno 1: colonna assente in CLASSI"
+    'Materia "ITA" obbligatoria per l\'indirizzo LS anno 1: colonna assente in CLASSI'
   );
 });
 
@@ -1495,7 +1770,11 @@ Create `src/application/services/DatabaseValidationService.ts`:
 import type { IDatabase } from '../../infrastructure/db/Database';
 import type { IMasterSheetRepository } from '../../domain/repositories/IMasterSheetRepository';
 import type { ISpreadsheetReportFacade } from '../../infrastructure/facades/SpreadsheetReportFacade';
-import { VALIDATION_TABLES, regoleValidazione, messaggioErrore } from '../../config/validationRules';
+import {
+  VALIDATION_TABLES,
+  regoleValidazione,
+  messaggioErrore
+} from '../../config/validationRules';
 
 /** One row of the report sheet (design doc Feature 2 §Output Format). */
 export interface ValidationRow {
@@ -1562,7 +1841,10 @@ export class DatabaseValidationService {
     const righe =
       violazioni.length === 0
         ? [HEADER, [NESSUN_ERRORE, '', '', '', '']]
-        : [HEADER, ...violazioni.map((v) => [v.tabella, String(v.riga), v.campo, v.valore, v.errore])];
+        : [
+            HEADER,
+            ...violazioni.map((v) => [v.tabella, String(v.riga), v.campo, v.valore, v.errore])
+          ];
 
     const spreadsheetId = this.deps.report.creaReport(nome, anno.idCartellaRoot, righe);
     this.logger.info(`Validazione DB: ${violazioni.length} violazioni, report ${spreadsheetId}`);
@@ -1600,10 +1882,12 @@ git commit -m "feat(validation): add DatabaseValidationService and report facade
 Adds the confirmation-based wrapper scheme (`avvioConConferma`) that Feature 3 reuses in Task 13.
 
 **Files:**
+
 - Modify: `src/presentation/Menu.ts`, `src/config/Bootstrap.ts`, `src/index.ts`, `src/entrypoints/EntryPoints_Menu.ts`
 - Test: `test/unit/presentation/menu.test.ts`, `test/unit/config/bootstrap.test.ts`, `test/unit/index.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 7's `DatabaseValidationService`.
 - Produces:
 
@@ -1620,14 +1904,18 @@ export function menuValidazioneDatabase(ui: IUiFacade, esegui: () => string): vo
 export function avviaValidazioneDatabase(c: ServiceContainer): ValidationReport;
 ```
 
-  Confirmation is a typed word: the user must type `CONFERMA` (`IUiFacade` has no yes/no dialog, and adding one would need the native `SpreadsheetApp.getUi().ButtonSet` enum, which ALDO may not touch). `esegui` returns the Italian summary shown to the user afterwards.
+Confirmation is a typed word: the user must type `CONFERMA` (`IUiFacade` has no yes/no dialog, and adding one would need the native `SpreadsheetApp.getUi().ButtonSet` enum, which ALDO may not touch). `esegui` returns the Italian summary shown to the user afterwards.
 
 - [ ] **Step 1: Write the failing test**
 
 Append to `test/unit/presentation/menu.test.ts`:
 
 ```typescript
-import { avvioConConferma, menuValidazioneDatabase, vociMenu } from '../../../src/presentation/Menu';
+import {
+  avvioConConferma,
+  menuValidazioneDatabase,
+  vociMenu
+} from '../../../src/presentation/Menu';
 
 test('vociMenu exposes the five launchers', () => {
   expect(vociMenu().map((v) => v.funzione)).toEqual([
@@ -1759,8 +2047,14 @@ In `src/config/Bootstrap.ts`:
 Add imports:
 
 ```typescript
-import { DatabaseValidationService, type ValidationReport } from '../application/services/DatabaseValidationService';
-import { SpreadsheetReportFacade, type ISpreadsheetReportFacade } from '../infrastructure/facades/SpreadsheetReportFacade';
+import {
+  DatabaseValidationService,
+  type ValidationReport
+} from '../application/services/DatabaseValidationService';
+import {
+  SpreadsheetReportFacade,
+  type ISpreadsheetReportFacade
+} from '../infrastructure/facades/SpreadsheetReportFacade';
 ```
 
 Add to `BootstrapDeps`:
@@ -1776,14 +2070,13 @@ Add to `BootstrapDeps`:
 Register in `buildAldoContainer`, next to `reportService`:
 
 ```typescript
-  if (deps.report !== undefined) {
-    const report = deps.report;
-    c.register(
-      'databaseValidationService',
-      () =>
-        new DatabaseValidationService({ db: deps.db, master: deps.master, report, logger })
-    );
-  }
+if (deps.report !== undefined) {
+  const report = deps.report;
+  c.register(
+    'databaseValidationService',
+    () => new DatabaseValidationService({ db: deps.db, master: deps.master, report, logger })
+  );
+}
 ```
 
 Add the launcher near the other launchers:
@@ -1811,7 +2104,13 @@ In `initAldo`, pass the facade into `buildAldoContainer({...})`:
 In `src/index.ts`, extend the imports and assignments:
 
 ```typescript
-import { costruisciMenu, menuGenerazioneDocumenti, menuComunicazioniEmail, menuImportazioni, menuValidazioneDatabase } from './presentation/Menu';
+import {
+  costruisciMenu,
+  menuGenerazioneDocumenti,
+  menuComunicazioniEmail,
+  menuImportazioni,
+  menuValidazioneDatabase
+} from './presentation/Menu';
 ```
 
 ```typescript
@@ -1867,8 +2166,12 @@ Append to `test/unit/index.test.ts` (matching how that file asserts the other gl
 
 ```typescript
 test('menu_validazioneDatabase and its launcher are exposed as globals', () => {
-  expect(typeof (globalThis as Record<string, unknown>)['menuValidazioneDatabase']).toBe('function');
-  expect(typeof (globalThis as Record<string, unknown>)['avviaValidazioneDatabase']).toBe('function');
+  expect(typeof (globalThis as Record<string, unknown>)['menuValidazioneDatabase']).toBe(
+    'function'
+  );
+  expect(typeof (globalThis as Record<string, unknown>)['avviaValidazioneDatabase']).toBe(
+    'function'
+  );
 });
 ```
 
@@ -1893,19 +2196,21 @@ git commit -m "feat(menu): add VALIDAZIONE DATABASE launcher"
 `changeRoles` resolves permissions by `emailAddress`, so `type: 'anyone'` / `'domain'` grants (no email) can never be targeted. Add a permission-id-level sibling.
 
 **Files:**
+
 - Modify: `GasLibraryFactory/GoogleApiWrapper/src/services/PermissionService.js`
 - Modify: `GasLibraryFactory/GoogleApiWrapper/src/services/__tests__/PermissionService.test.js`
 
 **Interfaces:**
+
 - Consumes: existing `getPermissions(fileId)` → `Array<{ id, emailAddress, role, type, domain }>`.
 - Produces:
 
 ```js
-permissionService.changeRolesByPermissionId(fileIds, [{ permissionId, newRole }])
+permissionService.changeRolesByPermissionId(fileIds, [{ permissionId, newRole }]);
 // -> { successful: [{fileId, permissionId, newRole, statusCode}], failed: [{fileId, permissionId, error, statusCode}] }
 ```
 
-  Must invalidate the same `getPermissions` cache key `changeRoles` clears.
+Must invalidate the same `getPermissions` cache key `changeRoles` clears.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1935,10 +2240,13 @@ describe('changeRolesByPermissionId', () => {
       return {};
     });
 
-    const result = service.changeRolesByPermissionId(['file1'], [
-      { permissionId: 'p1', newRole: 'reader' },
-      { permissionId: 'p2', newRole: 'reader' }
-    ]);
+    const result = service.changeRolesByPermissionId(
+      ['file1'],
+      [
+        { permissionId: 'p1', newRole: 'reader' },
+        { permissionId: 'p2', newRole: 'reader' }
+      ]
+    );
 
     expect(result.failed).toHaveLength(1);
     expect(result.failed[0].permissionId).toBe('p1');
@@ -2036,11 +2344,13 @@ cd ..
 ### Task 10: Vendor refresh + Drive facade permission methods
 
 **Files:**
+
 - Modify (generated): `vendor/gaslibs.Code.js`, `vendor/CHECKSUM`, `vendor/VERSION`
 - Modify: `types/gaslibs/index.d.ts`, `src/infrastructure/facades/DriveServiceFacade.ts`, `test/fakes/FakeDriveFacade.ts`
 - Test: `test/unit/infrastructure/drive-facade.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 9's `changeRolesByPermissionId`, existing `getPermissions`.
 - Produces, on `IDriveFacade`:
 
@@ -2250,10 +2560,12 @@ git commit -m "feat(drive): expose permission listing and role downgrade on the 
 ### Task 11: `LockDocumentsService`
 
 **Files:**
+
 - Create: `src/application/services/LockDocumentsService.ts`
 - Test: `test/unit/application/lock-documents-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `ILogDocumentoRepository.findAll()`; Task 10's `listPermissions` / `changePermissionRoles`.
 - Produces:
 
@@ -2265,7 +2577,11 @@ export interface LockOutcome {
   falliti: Array<{ fileId: string; permissionId: string | null; errore: string }>;
 }
 export class LockDocumentsService {
-  constructor(deps: { logDocs: ILogDocumentoRepository; drive: IDriveFacade; logger?: LoggerService });
+  constructor(deps: {
+    logDocs: ILogDocumentoRepository;
+    drive: IDriveFacade;
+    logger?: LoggerService;
+  });
   bloccaTutti(): LockOutcome;
 }
 ```
@@ -2295,13 +2611,18 @@ function drive(): FakeDriveFacade {
     { id: 'p3', email: 'owner@x.it', role: 'owner', tipo: 'user' },
     { id: 'p4', email: null, role: 'writer', tipo: 'anyone' }
   ]);
-  facade.permissionsPerFile.set('f2', [{ id: 'q1', email: 'c@x.it', role: 'reader', tipo: 'user' }]);
+  facade.permissionsPerFile.set('f2', [
+    { id: 'q1', email: 'c@x.it', role: 'reader', tipo: 'user' }
+  ]);
   return facade;
 }
 
 test('downgrades every writer, including link-wide grants, and leaves owners alone', () => {
   const facade = drive();
-  const esito = new LockDocumentsService({ logDocs: logDocs(['f1', 'f2']), drive: facade }).bloccaTutti();
+  const esito = new LockDocumentsService({
+    logDocs: logDocs(['f1', 'f2']),
+    drive: facade
+  }).bloccaTutti();
 
   expect(facade.roleChanges).toEqual([
     { fileId: 'f1', permissionId: 'p1', role: 'reader' },
@@ -2318,7 +2639,10 @@ test('downgrades every writer, including link-wide grants, and leaves owners alo
 test('a per-permission failure is reported without aborting the run', () => {
   const facade = drive();
   facade.permissionFailures.set('p1', 'quota');
-  const esito = new LockDocumentsService({ logDocs: logDocs(['f1', 'f2']), drive: facade }).bloccaTutti();
+  const esito = new LockDocumentsService({
+    logDocs: logDocs(['f1', 'f2']),
+    drive: facade
+  }).bloccaTutti();
 
   expect(esito.permessiDeclassati).toBe(1);
   expect(esito.falliti).toEqual([{ fileId: 'f1', permissionId: 'p1', errore: 'quota' }]);
@@ -2330,7 +2654,10 @@ test('a file whose permissions cannot be read is reported and the run continues'
     if (fileId === 'f1') throw new Error('File not found');
     return [];
   };
-  const esito = new LockDocumentsService({ logDocs: logDocs(['f1', 'f2']), drive: facade }).bloccaTutti();
+  const esito = new LockDocumentsService({
+    logDocs: logDocs(['f1', 'f2']),
+    drive: facade
+  }).bloccaTutti();
 
   expect(esito.totaleDocumenti).toBe(2);
   expect(esito.falliti).toEqual([{ fileId: 'f1', permissionId: null, errore: 'File not found' }]);
@@ -2338,9 +2665,18 @@ test('a file whose permissions cannot be read is reported and the run continues'
 
 test('rows without a Drive file id are skipped', () => {
   const facade = drive();
-  const docs = { findAll: () => [new LogDocumento({ NOME: 'senza id' })], findByClasse: () => [], findByUtente: () => [] };
+  const docs = {
+    findAll: () => [new LogDocumento({ NOME: 'senza id' })],
+    findByClasse: () => [],
+    findByUtente: () => []
+  };
   const esito = new LockDocumentsService({ logDocs: docs as never, drive: facade }).bloccaTutti();
-  expect(esito).toEqual({ totaleDocumenti: 1, documentiModificati: 0, permessiDeclassati: 0, falliti: [] });
+  expect(esito).toEqual({
+    totaleDocumenti: 1,
+    documentiModificati: 0,
+    permessiDeclassati: 0,
+    falliti: []
+  });
 });
 ```
 
@@ -2422,7 +2758,11 @@ export class LockDocumentsService {
           );
         }
         for (const fallito of falliti) {
-          esito.falliti.push({ fileId, permissionId: fallito.permissionId, errore: fallito.errore });
+          esito.falliti.push({
+            fileId,
+            permissionId: fallito.permissionId,
+            errore: fallito.errore
+          });
           this.logger.warn(
             `Blocco documenti: ${fileId}/${fallito.permissionId} non declassato — ${fallito.errore}`
           );
@@ -2455,16 +2795,18 @@ git commit -m "feat(drive): add LockDocumentsService"
 ### Task 12: Menu entry + wiring for document lock
 
 **Files:**
+
 - Modify: `src/presentation/Menu.ts`, `src/config/Bootstrap.ts`, `src/index.ts`, `src/entrypoints/EntryPoints_Menu.ts`
 - Test: `test/unit/presentation/menu.test.ts`, `test/unit/config/bootstrap.test.ts`, `test/unit/index.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 8's `avvioConConferma`; Task 11's `LockDocumentsService`.
 - Produces:
 
 ```typescript
-export function menuBloccaDocumenti(ui: IUiFacade, esegui: () => string): void;   // Menu.ts
-export function avviaBloccoDocumenti(c: ServiceContainer): LockOutcome;           // Bootstrap.ts
+export function menuBloccaDocumenti(ui: IUiFacade, esegui: () => string): void; // Menu.ts
+export function avviaBloccoDocumenti(c: ServiceContainer): LockOutcome; // Bootstrap.ts
 ```
 
 - [ ] **Step 1: Write the failing test**
@@ -2530,21 +2872,24 @@ export function menuBloccaDocumenti(ui: IUiFacade, esegui: () => string): void {
 In `src/config/Bootstrap.ts`, add the import:
 
 ```typescript
-import { LockDocumentsService, type LockOutcome } from '../application/services/LockDocumentsService';
+import {
+  LockDocumentsService,
+  type LockOutcome
+} from '../application/services/LockDocumentsService';
 ```
 
 Register in `buildAldoContainer` next to `alberoCartelle` (no optional dependency — `deps.drive` is always present):
 
 ```typescript
-  c.register(
-    'lockDocumentsService',
-    (container) =>
-      new LockDocumentsService({
-        logDocs: container.get<LogDocumentoRepository>('logDocumenti'),
-        drive: deps.drive,
-        logger
-      })
-  );
+c.register(
+  'lockDocumentsService',
+  (container) =>
+    new LockDocumentsService({
+      logDocs: container.get<LogDocumentoRepository>('logDocumenti'),
+      drive: deps.drive,
+      logger
+    })
+);
 ```
 
 Add the launcher:

@@ -20,18 +20,22 @@
 ### Task 1: Correct Item 4 — DocumentGenerationService target-concept claim is overstated
 
 **Files:**
+
 - Modify: `ARTICOLAZIONE.md:31-36` (Item 4 section)
 
 **Context (verified):** Item 4 currently claims generation "relies on targeting the parent class ID and depending on context data providers (CDU) to expand and aggregate partner class data internally" — phrased as if CDU expansion is uniform. It is not. Two different expansion mechanisms coexist:
+
 - `ClasseProvider`, `StudentiProvider`, `RappresentantiProvider`, `ConsiglioClasseProvider` self-expand internally via `classi.getArticolazione(classe)?.isParent()` + `getClassiPartner(classe)`, independent of `BuildParams`.
 - `DocumentiClasseProvider` (`src/application/context-engine/providers/DocumentiClasseProvider.ts:17-47`) and `PianiPersClasseProvider` (`src/application/context-engine/providers/PianiPersClasseProvider.ts:20-59`) do **not** self-expand — they read `params.classiCompetenza ?? [params.target]`. `classiCompetenza` is only ever populated by `EmailNotificationService.classiCompetenza` (`src/application/services/EmailNotificationService.ts:292-297`, via `getGruppoArticolazione`). `DocumentGenerationService.generateForClasse` (`src/application/services/DocumentGenerationService.ts:88-141`) builds `BuildParams` without setting `classiCompetenza` at all — so for that entry point the fallback `[params.target]` (the parent's own id alone) is what's actually used.
 
 - [ ] **Step 1: Verify the four self-expanding providers still use `isParent()`/`getClassiPartner` unconditionally**
 
 Run:
+
 ```
 mcp__codebase-memory-mcp__get_code_snippet(project="home-giulio-Desktop-ALDO-implementing", qualified_name="home-giulio-Desktop-ALDO-implementing.src.application.context-engine.providers.ClasseProvider.ClasseProvider")
 ```
+
 Expected: `buildCoordinatori` still branches on `config?.isParent() === true`. Repeat spot-check for `StudentiProvider.provide`, `RappresentantiProvider.provide`, `ConsiglioClasseProvider.provide`.
 
 - [ ] **Step 2: Verify the two `classiCompetenza`-dependent providers and the two call sites**
@@ -62,6 +66,7 @@ git commit -m "docs: correct ARTICOLAZIONE.md Item 4 (CDU expansion is not unifo
 ### Task 2: Extend Item 2 to cover TUTOR_ASL / TUTOR_ORIENT role strategies
 
 **Files:**
+
 - Modify: `ARTICOLAZIONE.md:15-20` (Item 2 section)
 
 **Context (verified):** Item 2 currently names only `genitoriClasse` and `rappresentantiStudenti`. `RisolutoreRuoliService.buildRegistro` (`src/application/services/RisolutoreRuoliService.ts:138-157`) registers `TUTOR_ASL` and `TUTOR_ORIENT` as `(c) => this.emailsOf(this.classi.getDocentiRuolo(c.classe, 'TUTOR_ASL'/'TUTOR_ORIENT'))` — same pattern, same silent-failure mode: `getDocentiRuolo` reads `c.classe`'s own `RUOLI` column directly, with no `isParent()`/partner-expansion check, exactly like `genitoriClasse`/`rappresentantiStudenti` at lines 267-275 of the same file. `SEGRETARIO_CDC` uses the identical unguarded pattern but is a single-holder role (`getRuolo` shortcut) that may be intentionally set per-class rather than per-group — flag as an open question, not folded into the same claim.
@@ -94,6 +99,7 @@ git commit -m "docs: extend ARTICOLAZIONE.md Item 2 to cover TUTOR_ASL/TUTOR_ORI
 ### Task 3: Add Item 6 — TutorProvider CDU field not expanded for parent classes
 
 **Files:**
+
 - Modify: `ARTICOLAZIONE.md` (append after current Item 5, i.e. after line 44)
 
 **Context (verified):** `TutorProvider.provide` (`src/application/context-engine/providers/TutorProvider.ts:14-30`) sets `focusClasse.tutor.asl`/`.orientamento` via `this.classi.getDocentiRuolo(classe, RUOLO_TUTOR_ASL/RUOLO_TUTOR_ORIENT)` called on the CDU's own `classe` entity, with no `isParent()` branch — unlike its sibling providers `RappresentantiProvider`, `StudentiProvider`, `ClasseProvider.buildCoordinatori`, all of which explicitly check `config?.isParent() === true` and iterate `getClassiPartner(classe)` before falling back to the single-class path. This is a distinct manifestation (CDU field, not email routing) of the same root cause as Item 2 (Task 2 above): a `RUOLI`-column lookup that is never routed through partner expansion.
@@ -107,7 +113,6 @@ Run `get_code_snippet` on both `TutorProvider.TutorProvider` and `Rappresentanti
 Append at end of file:
 
 ```markdown
-
 ## 6. `TutorProvider` Does Not Expand to Partner Classes on the Parent Focus
 
 - **Status**: Open
@@ -127,9 +132,10 @@ git commit -m "docs: add ARTICOLAZIONE.md Item 6 (TutorProvider parent-class exp
 ### Task 4: Add Item 7 — DocumentGenerationService never sets classiCompetenza
 
 **Files:**
+
 - Modify: `ARTICOLAZIONE.md` (append after new Item 6)
 
-**Context (verified):** `DocumentGenerationService.generateForClasse` (`src/application/services/DocumentGenerationService.ts:88-141`) calls `this.contextBuilder.build({ target: target.value, tipoTarget: 'classe', now: this.now, idConfigurazione: confDocId, tipoOperazione: 'GENERAZIONE_DOCUMENTO' }, recipe('CLASSE_COMPLETA'))` — the `BuildParams` object has no `classiCompetenza` key. Contrast with `EmailNotificationService.classiCompetenza` (`EmailNotificationService.ts:292-297`), whose docstring states explicitly: *"An articulated parent is the email entry point, but the CDU must include documents owned by every partner class in its group."* That fix was applied only on the email path.
+**Context (verified):** `DocumentGenerationService.generateForClasse` (`src/application/services/DocumentGenerationService.ts:88-141`) calls `this.contextBuilder.build({ target: target.value, tipoTarget: 'classe', now: this.now, idConfigurazione: confDocId, tipoOperazione: 'GENERAZIONE_DOCUMENTO' }, recipe('CLASSE_COMPLETA'))` — the `BuildParams` object has no `classiCompetenza` key. Contrast with `EmailNotificationService.classiCompetenza` (`EmailNotificationService.ts:292-297`), whose docstring states explicitly: _"An articulated parent is the email entry point, but the CDU must include documents owned by every partner class in its group."_ That fix was applied only on the email path.
 
 - [ ] **Step 1: Verify `generateForClasse`'s `BuildParams` literal has no `classiCompetenza` key**
 
@@ -144,7 +150,6 @@ Run `mcp__codebase-memory-mcp__search_graph(project="home-giulio-Desktop-ALDO-im
 Append at end of file:
 
 ```markdown
-
 ## 7. `DocumentGenerationService.generateForClasse` Omits `classiCompetenza` for Articulated Parents
 
 - **Status**: Open
@@ -164,9 +169,11 @@ git commit -m "docs: add ARTICOLAZIONE.md Item 7 (DocumentGenerationService miss
 ### Task 5: Full-document citation re-verification pass
 
 **Files:**
+
 - Modify: `ARTICOLAZIONE.md` (whole file, citation fixes only)
 
 **Interfaces:**
+
 - Consumes: the final 7-item document produced by Tasks 1-4.
 
 - [ ] **Step 1: Re-read the full file top to bottom**

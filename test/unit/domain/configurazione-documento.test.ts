@@ -46,9 +46,9 @@ describe('ConfigurazioneDocumento.PERMESSI', () => {
       regolaSupplente: { file: 'SOLO_SUPPLENTI' }
     };
 
-    expect(
-      config({ [COL_CONF_DOC.PERMESSI]: JSON.stringify(permessi) }).getPermessi()
-    ).toEqual(permessi);
+    expect(config({ [COL_CONF_DOC.PERMESSI]: JSON.stringify(permessi) }).getPermessi()).toEqual(
+      permessi
+    );
   });
 
   test.each([null, ''])('returns an empty object for an unset Sheets value %p', (raw) => {
@@ -67,16 +67,16 @@ describe('ConfigurazioneDocumento — GENERATORE/FORMATO validation', () => {
 
   it('accepts every documented GeneratoreAxis value', () => {
     for (const axis of Object.values(GeneratoreAxis)) {
-      expect(ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.GENERATORE]: axis })).generatore).toBe(
-        axis
-      );
+      expect(
+        ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.GENERATORE]: axis })).generatore
+      ).toBe(axis);
     }
   });
 
   it('rejects an unknown GENERATORE', () => {
-    expect(() => ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.GENERATORE]: 'BOH' }))).toThrow(
-      ConfigurationError
-    );
+    expect(() =>
+      ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.GENERATORE]: 'BOH' }))
+    ).toThrow(ConfigurationError);
   });
 
   it('rejects a missing GENERATORE', () => {
@@ -86,15 +86,15 @@ describe('ConfigurazioneDocumento — GENERATORE/FORMATO validation', () => {
   });
 
   it('accepts GDOC/GSHEET and rejects PDF/TEXT/unknown FORMATO', () => {
-    expect(ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.FORMATO]: 'GSHEET' })).formato).toBe(
-      'GSHEET'
-    );
-    expect(() => ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.FORMATO]: 'PDF' }))).toThrow(
-      ConfigurationError
-    );
-    expect(() => ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.FORMATO]: undefined }))).toThrow(
-      ConfigurationError
-    );
+    expect(
+      ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.FORMATO]: 'GSHEET' })).formato
+    ).toBe('GSHEET');
+    expect(() =>
+      ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.FORMATO]: 'PDF' }))
+    ).toThrow(ConfigurationError);
+    expect(() =>
+      ConfigurazioneDocumento.fromData(validRow({ [COL_CONF_DOC.FORMATO]: undefined }))
+    ).toThrow(ConfigurationError);
   });
 
   it('rejects tabelleImportate=true on GSHEET', () => {
@@ -130,7 +130,10 @@ describe('ConfigurazioneDocumento — GENERATORE/FORMATO validation', () => {
   it('rejects aggiungiMaterie and aggiungiMaterieConPermessi both truthy', () => {
     const row = validRow({
       [COL_CONF_DOC.FORMATO]: 'GSHEET',
-      [COL_CONF_DOC.PARAMETRI]: JSON.stringify({ aggiungiMaterie: true, aggiungiMaterieConPermessi: true })
+      [COL_CONF_DOC.PARAMETRI]: JSON.stringify({
+        aggiungiMaterie: true,
+        aggiungiMaterieConPermessi: true
+      })
     });
     expect(() => ConfigurazioneDocumento.fromData(row)).toThrow(
       'aggiungiMaterie e aggiungiMaterieConPermessi sono mutuamente esclusivi'

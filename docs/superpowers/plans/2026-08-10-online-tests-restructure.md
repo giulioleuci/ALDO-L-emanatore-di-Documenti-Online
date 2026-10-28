@@ -63,11 +63,13 @@ scripts/build-and-prepare.cjs              # MODIFICATO — EntryPointOnlineTest
 ### Task 1: Entry webpack `entrypoints-onlinetests` → `EntryPointOnlineTests.gs`
 
 **Files:**
+
 - Modify: `webpack.config.cjs:93-111`
 - Modify: `scripts/build-and-prepare.cjs` (step 1 summary ~:101-124, webpack online gate ~:43, cleanup ~:176-177, online branch ~:316-329, patch pass ~:485-575, gas-source-map ~:950, summary ~:1022)
 - Test: `test/build/` (verifica shape di output; vedere `test/build/` esistente)
 
 **Interfaces:**
+
 - Consumes: entry online esistente `./src/onlinetests/OnlineTestsEntry.ts`; pattern `makeEntrypointsConfig`.
 - Produces: file `dist/EntryPointOnlineTests.gs` in `--mode=online`; assente negli altri mode.
 
@@ -76,21 +78,21 @@ scripts/build-and-prepare.cjs              # MODIFICATO — EntryPointOnlineTest
 In `module.exports`, dopo `onlinetestsConfig`:
 
 ```js
-  const onlineEntrypointsConfig = makeEntrypointsConfig(
-    'entrypoints-onlinetests',
-    './src/onlinetests/entrypoints/EntryPointOnlineTests.ts',
-    'EntryPointOnlineTests.js'
-  );
+const onlineEntrypointsConfig = makeEntrypointsConfig(
+  'entrypoints-onlinetests',
+  './src/onlinetests/entrypoints/EntryPointOnlineTests.ts',
+  'EntryPointOnlineTests.js'
+);
 ```
 
 E nella lista finale, dentro il gate `online`:
 
 ```js
-  const configs = [coreConfig, ...entrypointsConfigs];
-  if (online) {
-    configs.push(onlinetestsConfig, onlineEntrypointsConfig);
-  }
-  return configs;
+const configs = [coreConfig, ...entrypointsConfigs];
+if (online) {
+  configs.push(onlinetestsConfig, onlineEntrypointsConfig);
+}
+return configs;
 ```
 
 Nota: `makeEntrypointsConfig` usa `babelRule` (NON `instrumentedBabelRule`) — i launcher non sono strumentati.
@@ -126,24 +128,24 @@ export function dumpOnlineCoverage(): void {
 Nel branch online (~riga 316-329), dopo la scrittura di `OnlineTests.js`, aggiungi:
 
 ```js
-      const onlineEntrypointsBundle = path.join(distDir, 'EntryPointOnlineTests.js');
-      if (!fs.existsSync(onlineEntrypointsBundle)) {
-        fail('dist/EntryPointOnlineTests.js was not produced by Webpack');
-        process.exit(1);
-      }
-      // Launcher leggibili con commenti conservati (stesso trattamento dei
-      // productionEntryPoints); il .js intermedio viene rimosso.
-      fs.copyFileSync(onlineEntrypointsBundle, path.join(distDir, 'EntryPointOnlineTests.gs'));
-      fs.rmSync(onlineEntrypointsBundle, { force: true });
-      fs.rmSync(onlineEntrypointsBundle + '.map', { force: true });
-      ok('Wrote dist/EntryPointOnlineTests.gs (readable launchers, kept separate)');
+const onlineEntrypointsBundle = path.join(distDir, 'EntryPointOnlineTests.js');
+if (!fs.existsSync(onlineEntrypointsBundle)) {
+  fail('dist/EntryPointOnlineTests.js was not produced by Webpack');
+  process.exit(1);
+}
+// Launcher leggibili con commenti conservati (stesso trattamento dei
+// productionEntryPoints); il .js intermedio viene rimosso.
+fs.copyFileSync(onlineEntrypointsBundle, path.join(distDir, 'EntryPointOnlineTests.gs'));
+fs.rmSync(onlineEntrypointsBundle, { force: true });
+fs.rmSync(onlineEntrypointsBundle + '.map', { force: true });
+ok('Wrote dist/EntryPointOnlineTests.gs (readable launchers, kept separate)');
 ```
 
 Nel blocco cleanup non-online (~riga 176-177), accanto alla rimozione di `OnlineTests.js`:
 
 ```js
-    fs.rmSync(path.join(distDir, 'EntryPointOnlineTests.js'), { force: true });
-    fs.rmSync(path.join(distDir, 'EntryPointOnlineTests.gs'), { force: true });
+fs.rmSync(path.join(distDir, 'EntryPointOnlineTests.js'), { force: true });
+fs.rmSync(path.join(distDir, 'EntryPointOnlineTests.gs'), { force: true });
 ```
 
 - [ ] **Step 4: Applica il pass di patch V8-compat anche a `EntryPointOnlineTests.gs`**
@@ -179,10 +181,12 @@ git commit -m "build: entry EntryPointOnlineTests.gs per gli online test (launch
 ### Task 2: Scheletro `OnlineTestsEntry.ts` — tutti i global di scenario esposti
 
 **Files:**
+
 - Modify: `src/onlinetests/OnlineTestsEntry.ts`
 - Create: `src/onlinetests/index.ts` (ristrutturato nei task successivi — qui solo gli export che servono alla build)
 
 **Interfaces:**
+
 - Consumes: `index.ts` (funzioni orchestratore per gruppo).
 - Produces: globalThis con TUTTE le funzioni scenario: `creaDatiMockDrive`, `testDocumentiStandard`, `testDocumentiArticolati`, `testDocumentiTabelleImportate`, `testDuplicazioneDocumenti`, `testInvioEmail`, `testEmailSicurezza`, `testJobRunnerDocGen`, `testJobRunnerEmail`, `testJobRunnerTriggerReale`, `testImportFileSingolo`, `testImportCartelleClasse`, `testImportCercaDocumenti`, `testImportChunked`, `testRecuperoStoricoAlunno`, `testRecuperoStoricoClasse`, `testRecuperoStoricoDocumenti`, `testArticolazione`, `testITPeMateriePuntate`, `testSupplenzeERuoli`, `testACLReali`, `testCacheIsolamento`, `testPermessiAttivi`, `runFullOnlineTests`, `dumpOnlineCoverage`.
 
@@ -276,9 +280,11 @@ git commit -m "feat(onlinetests): scheletro global di scenario (launcher zero-ar
 ### Task 3: `data/fixtures.ts` — costanti del nuovo dataset
 
 **Files:**
+
 - Create: `src/onlinetests/data/fixtures.ts`
 
 **Interfaces:**
+
 - Produces: costanti riusabili dai seeder e dai checks: `ALL_CLASSI`, `INDIRIZZI`, `MATERIE_PER_INDIRIZZO`, `CLASS_LAYOUTS`, `STUDENT_TOTALE`, `ANNI_PRECEDENTI`, `CONF_DOC_*`, `CONF_IMP_*`, `CONF_MAIL_*` nuovi, `JOBRUNNER_DOC`, `TEMPLATE_*`.
 
 - [ ] **Step 1: Scrivi `data/fixtures.ts`**
@@ -290,16 +296,36 @@ export const INDIRIZZO_SCIENTIFICO = 'IND_SCIENTIFICO';
 export const INDIRIZZO_SCIENTIFICO_APPLICATE = 'IND_SCIENTIFICO_APPLICATE';
 
 export const ALL_CLASSI = [
-  '1A', '2A', '4A',                    // classico
-  '1B', '2B', '5B', '5B-S', '5B-C',    // scienze umane (+ articolata 5B)
-  '3C', '3C-S', '3C-C', '4D', '5E'     // scientifico (+ articolata 3C)
+  '1A',
+  '2A',
+  '4A', // classico
+  '1B',
+  '2B',
+  '5B',
+  '5B-S',
+  '5B-C', // scienze umane (+ articolata 5B)
+  '3C',
+  '3C-S',
+  '3C-C',
+  '4D',
+  '5E' // scientifico (+ articolata 3C)
 ] as const; // 13 classi
 
 export const MATERIE_BASE = ['MAT', 'ITA', 'ING', 'STO', 'IRC', 'ALT'];
 export const MATERIE_CLASSICO = [...MATERIE_BASE, 'GRECO', 'LATINO', 'FILOSOFIA'];
-export const MATERIE_SCIENZE_UMANE = [...MATERIE_BASE, 'PSICOLOGIA', 'SCIENZE_UMANE', 'DIRITTO_ECONOMIA'];
+export const MATERIE_SCIENZE_UMANE = [
+  ...MATERIE_BASE,
+  'PSICOLOGIA',
+  'SCIENZE_UMANE',
+  'DIRITTO_ECONOMIA'
+];
 export const MATERIE_SCIENTIFICO = [...MATERIE_BASE, 'SCIENZE', 'FISICA', 'INFORMATICA'];
-export const MATERIE_PUNTATE = ['LAB.GRUPPO_A', 'LAB.SEMINARIO_POMERIDIANO', 'INTERPRET.CHITARRA', 'INTERPRET.FLAUTO'];
+export const MATERIE_PUNTATE = [
+  'LAB.GRUPPO_A',
+  'LAB.SEMINARIO_POMERIDIANO',
+  'INTERPRET.CHITARRA',
+  'INTERPRET.FLAUTO'
+];
 
 export const CLASSI_CLASSICO = ['1A', '2A', '4A'];
 export const CLASSI_SCIENZE_UMANE = ['1B', '2B', '5B', '5B-S', '5B-C'];
@@ -345,9 +371,11 @@ git commit -m "feat(onlinetests): costanti dataset condiviso (13 classi, 3 indir
 ### Task 4: `data/Seeders.ts` — seeder per anni precedenti, LOG_FOLD, conf dedicate
 
 **Files:**
+
 - Create: `src/onlinetests/data/Seeders.ts`
 
 **Interfaces:**
+
 - Consumes: `fixtures.ts`, `ISampleSpreadsheet`, `IDriveFacade`, `E2eTemplateIds`.
 - Produces: `seedAnniPrecedenti(sample, master)`, `seedLogFold(sample, drive, templateIds)`, `seedConfDedicated(sample, templateIds)`, `seedStorico(sample)`.
 
@@ -366,17 +394,23 @@ import { TABLE } from '../../config/schema';
  * PIANI, MOV_ALUNNI, PROGETTI, LOG_DOCS. La doc comment del vecchio builder che
  * definiva queste tabelle "dead weight" è falsa per i provider storici.
  */
-export function seedAnniPrecedenti(
-  master: ISampleSpreadsheet,
-  sample: ISampleSpreadsheet
-): void {
+export function seedAnniPrecedenti(master: ISampleSpreadsheet, sample: ISampleSpreadsheet): void {
   for (const anno of ANNI_PRECEDENTI) {
     const prior = sample.createSpreadsheet(`_ALDO_E2E_PRIOR_${anno}`);
-    const tables = [TABLE.CLASSI, TABLE.ALUNNI, TABLE.DOCENTI, TABLE.MATERIE,
-      TABLE.CARENZE, TABLE.PIANI, TABLE.MOV_ALUNNI, TABLE.PROGETTI, TABLE.LOG_DOCS];
+    const tables = [
+      TABLE.CLASSI,
+      TABLE.ALUNNI,
+      TABLE.DOCENTI,
+      TABLE.MATERIE,
+      TABLE.CARENZE,
+      TABLE.PIANI,
+      TABLE.MOV_ALUNNI,
+      TABLE.PROGETTI,
+      TABLE.LOG_DOCS
+    ];
     for (const t of tables) prior.addSheet(t, /* header per tabella come in HEADERS */ []);
     // righe: vedi step 2/3 (promozioni, RITIRATO, GST→STO, progetti con/referee)
-    master.addRow(TABLE.MASTER, { /* ANNO, ID_SPREADSHEET, TEST_MODE=true, ... */ });
+    master.addRow(TABLE.MASTER, {/* ANNO, ID_SPREADSHEET, TEST_MODE=true, ... */});
   }
 }
 ```
@@ -406,17 +440,20 @@ git commit -m "feat(onlinetests): seeder anni precedenti, LOG_FOLD, CONF dedicat
 ### Task 5: `data/SharedTestDatabaseBuilder` — builder unico (evolve `E2eSampleDatabaseBuilder`)
 
 **Files:**
+
 - Create: `src/onlinetests/data/SharedTestDatabaseBuilder.ts`
 - Delete: `src/onlinetests/E2eSampleDatabaseBuilder.ts` (dopo la migrazione dei call-site: `index.ts`, `E2eTemplateProvisioner.ts`, `checks/*`)
 - Modify: `src/onlinetests/index.ts` (usa il nuovo builder)
 
 **Interfaces:**
+
 - Consumes: `fixtures.ts`, `Seeders.ts`, `E2eTemplateIds`, `ISampleSpreadsheetFactory`, `IDriveFacade`.
 - Produces: `class SharedTestDatabaseBuilder { constructor(spreadsheets, drive); build(templateIds, master, opts?: {force?: boolean}): SharedTestDatabase }`; `SharedTestDatabase` estende la vecchia `E2eSampleDatabase` aggiungendo `priorSampleSpreadsheetId2`, `logFoldFolderUrl`, `jobRunnerDocConfigId`, ecc. Espone TUTTI gli export del vecchio builder che i checks importano (`CLASSE_A`, `e2eDocenteEmail`, `CARENZA_ALUNNO_1`, `CONF_DOC_PIANI`, `E2eTemplateIds`, ...) — ri-esportati da `fixtures.ts` o da un `data/index.ts` per non rompere gli import.
 
 - [ ] **Step 1: Migra `E2eSampleDatabaseBuilder` in `data/SharedTestDatabaseBuilder.ts`**
 
 Copia il file, rinomina la classe, aggiorna `build()`:
+
 - usa `ALL_CLASSI`/`CLASS_LAYOUTS` da `fixtures.ts` (13 classi, layouts con `coordIndex`, `articolazione`, conteggi alunni che sommano a `STUDENT_TOTALE`);
 - seeda 3 indirizzi con materie specifiche (assegnazioni cattedra per classe/materia coerentemente con le materie dell'indirizzo);
 - `seedSupplenzeEVariazioni` esteso: casi boundary (`SUPPLENZA_INIZIO`/`SUPPLENZA_FINE`), sovrapposizione su classe diversa, `SOLO_TITOLARI`/`SOLO_SUPPLENTI`/`ENTRAMBI`, variazione su `LAB.SEMINARIO_POMERIDIANO`, ITP su `INTERPRET.CHITARRA`;
@@ -446,10 +483,12 @@ git commit -m "feat(onlinetests): SharedTestDatabaseBuilder — dataset condivis
 ### Task 6: `E2eTemplateProvisioner` esteso — template tabelle importate, storico, dotted
 
 **Files:**
+
 - Modify: `src/onlinetests/E2eTemplateProvisioner.ts`
 - Modify: `src/onlinetests/data/SharedTestDatabaseBuilder.ts` (tipi `E2eTemplateIds`)
 
 **Interfaces:**
+
 - Consumes: `IArtifactFactory` (invariato), `E2eDocumentTable`, `E2eDocumentParagraphInput`.
 - Produces: `E2eTemplateIds` con campi nuovi: `tabelleImportate: string`, `tabellaSorgenteDati: string`, `tabellaSorgenteVuota: string`, `storico: string`, `dotted: string`, `storicoEmail: string`.
 
@@ -488,9 +527,11 @@ git commit -m "feat(onlinetests): template tabelle importate, storico, dotted/IT
 ### Task 7: `creaDatiMockDrive` — provisioning idempotente
 
 **Files:**
+
 - Modify: `src/onlinetests/index.ts` (nuova orchestratrice `executeCreaDatiMockDrive` + `creaDatiMockDrive` launcher)
 
 **Interfaces:**
+
 - Consumes: `SharedTestDatabaseBuilder`, `E2eTemplateProvisioner`, `mintE2eRootFolder` (esistente), `PROP_ONLINETEST_MASTER_SPREADSHEET_ID`.
 - Produces: `creaDatiMockDrive(): unknown` — provvede l'intero dataset e ritorna un riepilogo; idempotente per nome; opzione `force` via `ScriptProperties.get('ALDO_E2E_FORCE_REBUILD') === 'true'` (i launcher GAS sono zero-arg).
 
@@ -502,27 +543,39 @@ export function executeCreaDatiMockDrive(overrides: Partial<E2eTestDeps> = {}): 
   const force = properties.get('ALDO_E2E_FORCE_REBUILD') === 'true';
   const clock = overrides.clock ?? ((): Date => new Date());
   const rootFolder = overrides.drive === undefined ? mintE2eRootFolder() : null;
-  const drive = overrides.drive ?? new DriveServiceFacade(
-    ServiceFactory.getDriveService(),
-    ServiceFactory.getPermissionService(),
-    (rootFolder as NonNullable<typeof rootFolder>).getId()
-  );
-  const spreadsheetFactory = overrides.spreadsheetFactory ?? new GasSampleSpreadsheetFactory(rootFolder);
-  const artifactFactory = overrides.artifactFactory ?? new GasArtifactFactory(
-    ServiceFactory.getDocumentService(),
-    ServiceFactory.getSpreadsheetService()
-  );
+  const drive =
+    overrides.drive ??
+    new DriveServiceFacade(
+      ServiceFactory.getDriveService(),
+      ServiceFactory.getPermissionService(),
+      (rootFolder as NonNullable<typeof rootFolder>).getId()
+    );
+  const spreadsheetFactory =
+    overrides.spreadsheetFactory ?? new GasSampleSpreadsheetFactory(rootFolder);
+  const artifactFactory =
+    overrides.artifactFactory ??
+    new GasArtifactFactory(
+      ServiceFactory.getDocumentService(),
+      ServiceFactory.getSpreadsheetService()
+    );
 
   const configuredMaster = properties.get(PROP_ONLINETEST_MASTER_SPREADSHEET_ID)?.trim();
-  const masterSpreadsheetId = configuredMaster === undefined || configuredMaster === '' || force
-    ? ServiceFactory.getSpreadsheetService().getActiveStandard().getId()
-    : configuredMaster;
+  const masterSpreadsheetId =
+    configuredMaster === undefined || configuredMaster === '' || force
+      ? ServiceFactory.getSpreadsheetService().getActiveStandard().getId()
+      : configuredMaster;
   const master = spreadsheetFactory.openExistingSpreadsheet(masterSpreadsheetId);
 
   // riuso per nome: template e cartelle sono idempotenti (reuse-by-fixed-name)
   const templateFolderId = drive.createFolder('_ALDO_E2E_TEMPLATES');
-  const templateIds: E2eTemplateIds = new E2eTemplateProvisioner(artifactFactory, drive).provision(templateFolderId);
-  const sample = new SharedTestDatabaseBuilder(spreadsheetFactory, drive).build(templateIds, master, { force });
+  const templateIds: E2eTemplateIds = new E2eTemplateProvisioner(artifactFactory, drive).provision(
+    templateFolderId
+  );
+  const sample = new SharedTestDatabaseBuilder(spreadsheetFactory, drive).build(
+    templateIds,
+    master,
+    { force }
+  );
 
   properties.set(PROP_ONLINETEST_MASTER_SPREADSHEET_ID, sample.masterSpreadsheetId);
   return sample;
@@ -561,10 +614,12 @@ git commit -m "feat(onlinetests): creaDatiMockDrive — provisioning idempotente
 ### Task 8: `TestRunner` con group + fixture URLs; helper `materializeLazyRef`
 
 **Files:**
+
 - Create: `src/onlinetests/report/OnlineTestReport.ts` (spostato da `src/onlinetests/OnlineTestReport.ts`; aggiorna gli import)
 - Create: `src/onlinetests/report/MaterializeHelper.ts`
 
 **Interfaces:**
+
 - Consumes: `EnhancedTestRunner` (GasOnlineTestFramework).
 - Produces: `TestRunner.add(name, artifactUrl?, fn)` invariato + `group` nel `name` (prefisso `group::`); `OnlineTestResult` invariato; `materializeLazyRef(ref): unknown` che chiama `.get()` se presente e ritorna il valore materializzato.
 
@@ -590,7 +645,11 @@ Aggiorna gli import in `index.ts` e nei checks (`import { TestRunner } from './O
  * invoca; altrimenti ritorna l'oggetto stesso.
  */
 export function materializeLazyRef(ref: unknown): unknown {
-  if (ref !== null && typeof ref === 'object' && typeof (ref as { get?: () => unknown }).get === 'function') {
+  if (
+    ref !== null &&
+    typeof ref === 'object' &&
+    typeof (ref as { get?: () => unknown }).get === 'function'
+  ) {
     return (ref as { get: () => unknown }).get();
   }
   return ref;
@@ -614,10 +673,12 @@ git commit -m "feat(onlinetests): TestRunner con nomi di gruppo + helper materia
 ### Task 9: `runFullOnlineTests` — runner aggregato documentato; rimozione vecchi runner
 
 **Files:**
+
 - Modify: `src/onlinetests/index.ts`
 - Modify: `src/onlinetests/OnlineTestsEntry.ts`
 
 **Interfaces:**
+
 - Consumes: `executeCreaDatiMockDrive`, tutti i `register*Checks` delle fasi successive, `runReportedSuite`.
 - Produces: `runFullOnlineTests(): OnlineTestReport` — ordine deterministico: `creaDatiMockDrive(force)` → documenti → email → jobrunner → import → storico → articolazione/ITP/supplenze → ACL/cache/permessi. `runOnlineTests`/`runE2eScenarios`/`runArticolazioneScenarios` RIMOSSI.
 
@@ -678,11 +739,13 @@ git commit -m "feat(onlinetests): runFullOnlineTests aggregato; rimossi vecchi r
 ### Task 10: `checks/documentiChecks.ts` — testDocumentiStandard, testDocumentiArticolati
 
 **Files:**
+
 - Create: `src/onlinetests/checks/documentiChecks.ts`
 - Modify: `src/onlinetests/index.ts` (orchestratori + launcher)
 - Modify: `src/onlinetests/OnlineTestsEntry.ts` (se necessario)
 
 **Interfaces:**
+
 - Consumes: `TestRunner`, `SharedTestDatabase`, `ServiceContainer`, `initAldo`.
 - Produces: `registerDocumentiChecks(runner, container, sample)` con checks per doc standard (verbale, condotta, riepilogo, CDC, PDP/PEI, template Sheets, protected ranges, interop: paragrafi/liste/tabelle/condizionali/unicode/link) e articolati (COMPLETA/ARTICOLATA, CdC split). Riusa le asserzioni esistenti di `e2eScenarioChecks.ts` (non sostituirle — estenderle): importare e ri-registrare i check già verdi e aggiungere i nuovi.
 
@@ -698,9 +761,13 @@ export function registerDocumentiChecks(
 ): void {
   // doc standard esistenti (da e2eScenarioChecks)
   // + nuovi: interop template (unicode, liste, link, tabelle), protected ranges read-back
-  runner.add(groupName('documenti.standard', 'template interop unicode'), sample.sampleSpreadsheetUrl, () => {
-    // genera doc dal template RIEPILOGO e verifica testo unicode/liste/link presenti
-  });
+  runner.add(
+    groupName('documenti.standard', 'template interop unicode'),
+    sample.sampleSpreadsheetUrl,
+    () => {
+      // genera doc dal template RIEPILOGO e verifica testo unicode/liste/link presenti
+    }
+  );
 }
 ```
 
@@ -711,10 +778,18 @@ I check nuovi devono generare un documento reale via il solito percorso (`CONF_D
 In `index.ts`:
 
 ```ts
-export function executeDocumentiStandard(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport { /* setup sample+container come executeE2eScenarios, registra solo i check standard */ }
-export function testDocumentiStandard(): OnlineTestReport { return runReportedSuite('documenti_standard', 'DOC_SCENARIO', executeDocumentiStandard); }
-export function executeDocumentiArticolati(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport { /* solo check articolati */ }
-export function testDocumentiArticolati(): OnlineTestReport { return runReportedSuite('documenti_articolati', 'DOC_SCENARIO', executeDocumentiArticolati); }
+export function executeDocumentiStandard(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
+  /* setup sample+container come executeE2eScenarios, registra solo i check standard */
+}
+export function testDocumentiStandard(): OnlineTestReport {
+  return runReportedSuite('documenti_standard', 'DOC_SCENARIO', executeDocumentiStandard);
+}
+export function executeDocumentiArticolati(overrides: Partial<E2eTestDeps> = {}): OnlineTestReport {
+  /* solo check articolati */
+}
+export function testDocumentiArticolati(): OnlineTestReport {
+  return runReportedSuite('documenti_articolati', 'DOC_SCENARIO', executeDocumentiArticolati);
+}
 ```
 
 `testDocumentiStandard`/`testDocumentiArticolati` assumono il dataset già provveduto da `creaDatiMockDrive` (riusano `PROP_ONLINETEST_MASTER_SPREADSHEET_ID`; se assente, lanciano errore chiaro "esegui prima creaDatiMockDrive").
@@ -740,27 +815,38 @@ git commit -m "feat(onlinetests): scenario documenti standard e articolati"
 ### Task 11: `testDocumentiTabelleImportate` (P0)
 
 **Files:**
+
 - Modify: `src/onlinetests/checks/documentiChecks.ts` (sezione tabelle importate)
 - Modify: `src/onlinetests/index.ts`
 
 **Interfaces:**
+
 - Consumes: `CONF_DOC_TABELLE` (`E2E_DOC_TABELLE`), template `tabelleImportate`, `tabellaSorgenteDati`, `tabellaSorgenteVuota`.
 - Produces: check che generano il doc via `DocumentoConTabelleImportateGeneratorStrategy` (config `CONF_DOC_TABELLE`), poi asserzioni di cui al passo 1.
 
 - [ ] **Step 1: Scrivi i check**
 
 ```ts
-function checkTabelleImportate(runner: TestRunner, container: ServiceContainer, sample: SharedTestDatabase, ids: E2eTemplateIds): void {
-  runner.add(groupName('documenti.tabelleImportate', 'generazione e contenuto'), sample.sampleSpreadsheetUrl, () => {
-    const c = container;
-    // 1. genera via avviaGenerazioneDataDriven(c, CONF_DOC_TABELLE, creaJobRunner(), budgetAmpio)
-    // 2. file esiste; LOG_DOCS ha ID/link/classe/tipo
-    // 3. drive.getFileText(fileId) contiene header + 2 righe della sorgente Dati
-    // 4. contiene i placeholder CDU espansi circostanti (render normale dopo inserimento tabelle)
-    // 5. nessun marker di tabella residuo; nessun Mustache irrisolto
-    // 6. marker vuoto rimosso, nessuna tabella bogus
-    // 7. seconda esecuzione: DUPLICAZIONE=NEGATA → nessun log duplicato (assert scoped per run)
-  });
+function checkTabelleImportate(
+  runner: TestRunner,
+  container: ServiceContainer,
+  sample: SharedTestDatabase,
+  ids: E2eTemplateIds
+): void {
+  runner.add(
+    groupName('documenti.tabelleImportate', 'generazione e contenuto'),
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const c = container;
+      // 1. genera via avviaGenerazioneDataDriven(c, CONF_DOC_TABELLE, creaJobRunner(), budgetAmpio)
+      // 2. file esiste; LOG_DOCS ha ID/link/classe/tipo
+      // 3. drive.getFileText(fileId) contiene header + 2 righe della sorgente Dati
+      // 4. contiene i placeholder CDU espansi circostanti (render normale dopo inserimento tabelle)
+      // 5. nessun marker di tabella residuo; nessun Mustache irrisolto
+      // 6. marker vuoto rimosso, nessuna tabella bogus
+      // 7. seconda esecuzione: DUPLICAZIONE=NEGATA → nessun log duplicato (assert scoped per run)
+    }
+  );
 }
 ```
 
@@ -782,10 +868,12 @@ git commit -m "feat(onlinetests): scenario tabelle importate (P0 MISSING_TESTS)"
 ### Task 12: `testDuplicazioneDocumenti` (essential #1)
 
 **Files:**
+
 - Modify: `src/onlinetests/checks/documentiChecks.ts`
 - Modify: `src/onlinetests/index.ts`
 
 **Interfaces:**
+
 - Consumes: config `CONF_DOC_PIANI` (già `DUPLICAZIONE=NEGATA` nell'attuale builder) + una config `DUPLICAZIONE=PERMESSA` nuova (aggiungere in `seedConfDedicated` o estendere `CONF_DOC_PIANI`).
 - Produces: check che misurano il conteggio file Drive REALE.
 
@@ -800,7 +888,8 @@ runner.add(groupName('documenti.duplicazione', 'NEGATA non duplica su Drive'), u
   if (after !== before + 1) throw new Error(`Attesi ${before + 1} file, trovati ${after}`);
 });
 runner.add(groupName('documenti.duplicazione', 'PERMESSA crea copie distinte'), url, () => {
-  genera(configPermessa); genera(configPermessa);
+  genera(configPermessa);
+  genera(configPermessa);
   // 2 file distinti, LOG_DOCS con 2 righe e ID_GEN distinti, nomi normalizzati
 });
 ```
@@ -823,10 +912,12 @@ git commit -m "feat(onlinetests): scenario duplicazione documenti (Drive reale)"
 ### Task 13: `checks/emailChecks.ts` — testInvioEmail, testEmailSicurezza
 
 **Files:**
+
 - Create: `src/onlinetests/checks/emailChecks.ts`
 - Modify: `src/onlinetests/index.ts`
 
 **Interfaces:**
+
 - Consumes: `EmailNotificationService.enableTestMode`, `EMAIL_TEST_SAFE`, `avviaInvioNotificheDataDriven`, config `CONF_MAIL_VERBALE`/`CONF_MAIL_PIANI`/`CONF_MAIL_STORICO`, `LOG_MAIL`.
 - Produces: `registerEmailChecks(runner, container, sample, safeEmail)`.
 
@@ -836,12 +927,19 @@ git commit -m "feat(onlinetests): scenario duplicazione documenti (Drive reale)"
 export function registerEmailChecks(runner, container, sample, safeEmail) {
   const email = container.get<EmailNotificationService>('emailNotificationService');
   // ogni check attiva test mode PRIMA di qualsiasi invio
-  runner.add(groupName('email.invio', 'batch test mode + allegati LOG_MAIL'), sample.sampleSpreadsheetUrl, () => {
-    email.enableTestMode(safeEmail);
-    try { avviaInvioNotificheDataDriven(container, CONF_MAIL_VERBALE, creaJobRunner(), budgetAmpio); }
-    finally { email.disableTestMode(); }
-    // LOG_MAIL: righe testMode, destinatario === safeEmail, allegato presente, zero duplicati
-  });
+  runner.add(
+    groupName('email.invio', 'batch test mode + allegati LOG_MAIL'),
+    sample.sampleSpreadsheetUrl,
+    () => {
+      email.enableTestMode(safeEmail);
+      try {
+        avviaInvioNotificheDataDriven(container, CONF_MAIL_VERBALE, creaJobRunner(), budgetAmpio);
+      } finally {
+        email.disableTestMode();
+      }
+      // LOG_MAIL: righe testMode, destinatario === safeEmail, allegato presente, zero duplicati
+    }
+  );
   runner.add(groupName('email.sicurezza', 'mai destinatario produttivo'), url, () => {
     // per ogni riga LOG_MAIL del pattern: destinatario == safeEmail (mai e2eDocenteEmail/alunno reali)
   });
@@ -876,10 +974,12 @@ git commit -m "feat(onlinetests): scenario email (batch test mode, sicurezza, du
 ### Task 14: `checks/jobRunnerChecks.ts` — testJobRunnerDocGen, testJobRunnerEmail
 
 **Files:**
+
 - Create: `src/onlinetests/checks/jobRunnerChecks.ts`
 - Modify: `src/onlinetests/index.ts`
 
 **Interfaces:**
+
 - Consumes: `avviaGenerazioneDataDriven`, `avviaInvioNotificheDataDriven`, `riprendiJobSospeso`, `creaJobRunner`, `CONF_DOC_JOBRUNNER`, `CONF_MAIL_JOBRUNNER`, `EMAIL_TEST_SAFE`, `JobRunnerService.getStatus/resetJob`, `ScriptPropertiesFacade`.
 - Produces: `registerJobRunnerChecks(runner, container, sample, safeEmail)` con il seam deterministico del design Sez. 3-A (doc ed email).
 
@@ -892,20 +992,28 @@ const MS_AMPO = 25 * 60 * 1000;
 function checkJobRunnerDocGen(runner, container, sample) {
   const runner_ = creaJobRunner();
   const jobName = `gen_${CONF_DOC_JOBRUNNER}`;
-  runner.add(groupName('jobrunner.docGen', 'sospensione to_resume + trigger'), sample.sampleSpreadsheetUrl, () => {
-    const esito = avviaGenerazioneDataDriven(container, CONF_DOC_JOBRUNNER, runner_, MS_TINY);
-    if (esito !== null) throw new Error('Attesa sospensione (esito null), ottenuto completamento');
-    const status = runner_.getStatus(jobName);
-    if (status.state !== 'to_resume') throw new Error(`Stato atteso to_resume, trovato ${status.state}`);
-    const props = new ScriptPropertiesFacade();
-    if (props.get(`trigger_${jobName}`) === null) throw new Error('trigger_<jobName> mancante');
-    if (props.get(`job_for_trigger_${props.get(`trigger_${jobName}`)}`) !== jobName) throw new Error('job_for_trigger_<id> non allineato');
-    // LOG_DOCS parziale: almeno 1 target processato, nessun duplicato, nessun target successivo
-  });
+  runner.add(
+    groupName('jobrunner.docGen', 'sospensione to_resume + trigger'),
+    sample.sampleSpreadsheetUrl,
+    () => {
+      const esito = avviaGenerazioneDataDriven(container, CONF_DOC_JOBRUNNER, runner_, MS_TINY);
+      if (esito !== null)
+        throw new Error('Attesa sospensione (esito null), ottenuto completamento');
+      const status = runner_.getStatus(jobName);
+      if (status.state !== 'to_resume')
+        throw new Error(`Stato atteso to_resume, trovato ${status.state}`);
+      const props = new ScriptPropertiesFacade();
+      if (props.get(`trigger_${jobName}`) === null) throw new Error('trigger_<jobName> mancante');
+      if (props.get(`job_for_trigger_${props.get(`trigger_${jobName}`)}`) !== jobName)
+        throw new Error('job_for_trigger_<id> non allineato');
+      // LOG_DOCS parziale: almeno 1 target processato, nessun duplicato, nessun target successivo
+    }
+  );
   runner.add(groupName('jobrunner.docGen', 'resume manuale completa senza duplicati'), url, () => {
     riprendiJobSospeso(container, runner_, jobName, MS_AMPO);
     const status = runner_.getStatus(jobName);
-    if (status.state !== 'completed' && status.state !== 'COMPLETED') throw new Error(`Atteso COMPLETED, trovato ${status.state}`);
+    if (status.state !== 'completed' && status.state !== 'COMPLETED')
+      throw new Error(`Atteso COMPLETED, trovato ${status.state}`);
     // LOG_DOCS totale atteso, zero duplicati (chiave: config+classe+idGen+jobId)
   });
   runner.add(groupName('jobrunner.docGen', 'resetJob pulisce trigger e stato'), url, () => {
@@ -939,10 +1047,12 @@ git commit -m "feat(onlinetests): jobrunner doc/email — sospensione determinis
 ### Task 15: `testJobRunnerTriggerReale` (opzionale, B)
 
 **Files:**
+
 - Modify: `src/onlinetests/checks/jobRunnerChecks.ts`
 - Modify: `src/onlinetests/index.ts`
 
 **Interfaces:**
+
 - Consumes: seam del Task 14; `Utilities.sleep`; polling.
 - Produces: `executeJobRunnerTriggerReale(): OnlineTestReport` — MAI chiamato da `executeFullOnlineTests`; `testJobRunnerTriggerReale(): OnlineTestReport`.
 
@@ -955,21 +1065,25 @@ const POLL_TIMEOUT_MS = 5 * 60 * 1000;
 function checkTriggerReale(container, sample) {
   const runner_ = creaJobRunner();
   const jobName = `gen_${CONF_DOC_JOBRUNNER}_REALE`;
-  runner.add(groupName('jobrunner.triggerReale', 'resume via contesto trigger'), sample.sampleSpreadsheetUrl, () => {
-    avviaGenerazioneDataDriven(container, CONF_DOC_JOBRUNNER, runner_, MS_TINY);
-    const start = Date.now();
-    let stato = runner_.getStatus(jobName).state;
-    while (stato === 'to_resume' && Date.now() - start < POLL_TIMEOUT_MS) {
-      Utilities.sleep(POLL_INTERVAL_MS);
-      stato = runner_.getStatus(jobName).state;
+  runner.add(
+    groupName('jobrunner.triggerReale', 'resume via contesto trigger'),
+    sample.sampleSpreadsheetUrl,
+    () => {
+      avviaGenerazioneDataDriven(container, CONF_DOC_JOBRUNNER, runner_, MS_TINY);
+      const start = Date.now();
+      let stato = runner_.getStatus(jobName).state;
+      while (stato === 'to_resume' && Date.now() - start < POLL_TIMEOUT_MS) {
+        Utilities.sleep(POLL_INTERVAL_MS);
+        stato = runner_.getStatus(jobName).state;
+      }
+      if (stato === 'to_resume') {
+        runner_.cancelJob(jobName); // fallback determinista: nessun trigger orfano
+        throw new Error('Il trigger one-time non è scattato nel timeout');
+      }
+      if (stato !== 'completed') throw new Error(`Stato atteso completed, trovato ${stato}`);
+      // LOG_DOCS completo, zero duplicati, proprietà job_for_trigger_* rimosse
     }
-    if (stato === 'to_resume') {
-      runner_.cancelJob(jobName); // fallback determinista: nessun trigger orfano
-      throw new Error('Il trigger one-time non è scattato nel timeout');
-    }
-    if (stato !== 'completed') throw new Error(`Stato atteso completed, trovato ${stato}`);
-    // LOG_DOCS completo, zero duplicati, proprietà job_for_trigger_* rimosse
-  });
+  );
 }
 ```
 
@@ -993,16 +1107,19 @@ git commit -m "feat(onlinetests): jobrunner trigger reale opzionale (polling + f
 ### Task 16: `checks/importChecks.ts` — testImportFileSingolo, testImportPolicy
 
 **Files:**
+
 - Create: `src/onlinetests/checks/importChecks.ts`
 - Modify: `src/onlinetests/index.ts`
 
 **Interfaces:**
+
 - Consumes: `ImportService.executeImport`/`avviaImportazioneDataDriven`, `CONF_IMP` esistenti (`E2E_IMPORT_ASL`) + nuove config policy (da aggiungere in `seedConfDedicated`): `IGNORE`, `OVERWRITE`, `TIMESTAMP`, `ATTIVO=false`, composite key, `hasHeaders=true/false`, `range`/`tabName`, misconfig (fileId/folderTipo/idGen mancanti, strategia sconosciuta).
 - Produces: `registerImportChecks(runner, container, sample)`.
 
 - [ ] **Step 1: Config aggiuntive in `seedConfDedicated`**
 
 Aggiungi righe `CONF_IMP`:
+
 - `E2E_IMP_IGNORE` (conflict `IGNORE`, chiave composta STUDENTE+anno, una riga già presente nel target)
 - `E2E_IMP_TIMESTAMP` (conflict `TIMESTAMP`; sorgente con colonna timestamp; più un caso senza colonna timestamp target per il fallback OVERWRITE)
 - `E2E_IMP_DISABLED` (`ATTIVO=false`, sorgente con righe che NON devono essere lette)
@@ -1026,10 +1143,12 @@ git commit -m "feat(onlinetests): import FILE_SINGOLO + policy (P1)"
 ### Task 17: `testImportCartelleClasse` (P0 CERCA_CARTELLE_CLASSE)
 
 **Files:**
+
 - Modify: `src/onlinetests/checks/importChecks.ts`
 - Modify: `src/onlinetests/index.ts`
 
 **Interfaces:**
+
 - Consumes: `E2E_IMP_ASL_CARTELLE`, `seedLogFold`, `LOG_FOLD`.
 - Produces: check che eseguono `avviaImportazioneDataDriven(container, E2E_IMP_ASL_CARTELLE)` e verificano il flusso folder-per-classe.
 
@@ -1058,10 +1177,12 @@ git commit -m "feat(onlinetests): import CERCA_CARTELLE_CLASSE storico ASL (P0)"
 ### Task 18: `testImportCercaDocumenti` + `testImportChunked` (P1 + essential #4)
 
 **Files:**
+
 - Modify: `src/onlinetests/checks/importChecks.ts`
 - Modify: `src/onlinetests/index.ts`
 
 **Interfaces:**
+
 - Consumes: `E2E_IMP_CERCA_DOCUMENTI` (idGen con 2 fogli generati da stesso generator, classi diverse; un foglio con tipo/stato diverso; un log non-sheet), `E2E_IMP_CHUNKED` (`avviaImportazioneChunkedDataDriven`).
 - Produces: check `CERCA_DOCUMENTI` + check chunked resume.
 
@@ -1104,10 +1225,12 @@ git commit -m "feat(onlinetests): import CERCA_DOCUMENTI + chunked resume"
 ### Task 19: `checks/storicoChecks.ts` — recupero storico alunno, classe, documenti
 
 **Files:**
+
 - Create: `src/onlinetests/checks/storicoChecks.ts`
 - Modify: `src/onlinetests/index.ts`
 
 **Interfaces:**
+
 - Consumes: `ContextBuilder` (`contextBuilder`), `seedAnniPrecedenti`, `materializeLazyRef`, `CONF_DOC_STORICO`, `CONF_MAIL_STORICO`.
 - Produces: `registerStoricoChecks(runner, container, sample)`.
 
@@ -1116,7 +1239,11 @@ git commit -m "feat(onlinetests): import CERCA_DOCUMENTI + chunked resume"
 ```ts
 function buildAlunnoCompleto(container, emailAlunno) {
   const builder = container.get<ContextBuilder>('contextBuilder');
-  return builder.build('ALUNNO_COMPLETO', { email: emailAlunno, includiStorico: true, profondita: 2 });
+  return builder.build('ALUNNO_COMPLETO', {
+    email: emailAlunno,
+    includiStorico: true,
+    profondita: 2
+  });
 }
 
 runner.add(groupName('storico.alunno', 'depth 2 materializzato'), url, () => {
@@ -1128,16 +1255,24 @@ runner.add(groupName('storico.alunno', 'casi limite depth 0 / mancanti / sconosc
   // depth 0 → storico assente; catena mancante → empty stabile; RITIRATO/SCONOSCIUTO → esiti attesi, nessun throw
 });
 runner.add(groupName('storico.classe', 'statistiche + progetti + referee'), url, () => {
-  const cdu = builder.build('CLASSE_COMPLETA', { classeId: CLASSE_C_PARENT, includiStorico: true, profondita: 2 });
+  const cdu = builder.build('CLASSE_COMPLETA', {
+    classeId: CLASSE_C_PARENT,
+    includiStorico: true,
+    profondita: 2
+  });
   const storico = materializeLazyRef(cdu.get('focus.classe.storico'));
   // statistiche, ASL/non-ASL progetti, referee present/missing (fallback persona display)
 });
 runner.add(groupName('storico.classe', 'continuità CdC/ITP + evoluzione materie'), url, () => {
   // storico classe: docenti precedenti incl. ITP cambiato/assente (campi ASSENTI, non null/false)
 });
-runner.add(groupName('storico.documenti', 'ID_GEN/famiglia/sottotipo e isolamento PEI/PDP'), url, () => {
-  // documenti storici con ID_GEN condiviso ma TIPO/SOTTOTIPO diversi; mai cross-link PEI/PDP
-});
+runner.add(
+  groupName('storico.documenti', 'ID_GEN/famiglia/sottotipo e isolamento PEI/PDP'),
+  url,
+  () => {
+    // documenti storici con ID_GEN condiviso ma TIPO/SOTTOTIPO diversi; mai cross-link PEI/PDP
+  }
+);
 runner.add(groupName('storico.render', 'template storico senza placeholder'), url, () => {
   // genera doc da CONF_DOC_STORICO e mail da CONF_MAIL_STORICO; contenuto con branch storici reali, nessun Mustache irrisolto
 });
@@ -1163,10 +1298,12 @@ git commit -m "feat(onlinetests): recupero storico alunno/classe/documenti (P0)"
 ### Task 20: `testArticolazione` sul dataset condiviso
 
 **Files:**
+
 - Modify: `src/onlinetests/checks/articolazioneChecks.ts`
 - Modify: `src/onlinetests/index.ts`
 
 **Interfaces:**
+
 - Consumes: `registerArticolazioneChecks` esistente (firma attuale: `(runner, container, sample)` con `sample` che oggi ha `priorSampleSpreadsheetId: ''` — adattare alla `SharedTestDatabase` con prior reali).
 - Produces: `testArticolazione(): OnlineTestReport`.
 
@@ -1186,10 +1323,12 @@ git commit -m "feat(onlinetests): articolazione sul dataset condiviso (chiude ga
 ### Task 21: `checks/itpDottedChecks.ts` — testITPeMateriePuntate
 
 **Files:**
+
 - Create: `src/onlinetests/checks/itpDottedChecks.ts`
 - Modify: `src/onlinetests/index.ts`
 
 **Interfaces:**
+
 - Consumes: `getITPPerMateria` (repo/role-resolution), CDU, `CONF_DOC_DOTTED`.
 - Produces: `registerItpDottedChecks(runner, container, sample)`.
 
@@ -1217,11 +1356,13 @@ git commit -m "feat(onlinetests): ITP e materie puntate end-to-end (P1)"
 ### Task 22: `checks/supplenzeRuoliChecks.ts` + `checks/aclRealiChecks.ts`
 
 **Files:**
+
 - Create: `src/onlinetests/checks/supplenzeRuoliChecks.ts`
 - Create: `src/onlinetests/checks/aclRealiChecks.ts`
 - Modify: `src/onlinetests/index.ts`
 
 **Interfaces:**
+
 - Consumes: CDU/recipients/ACL composition (esistenti nei consumer check), `IDriveFacade` + `SpreadsheetService` reali per read-back ACL.
 - Produces: `registerSupplenzeRuoliChecks`, `registerAclRealiChecks`.
 
@@ -1255,11 +1396,13 @@ git commit -m "feat(onlinetests): supplenze/ruoli boundary + ACL reali (P1, esse
 ### Task 23: `checks/cacheIsolamentoChecks.ts` + `checks/permessiChecks.ts`
 
 **Files:**
+
 - Create: `src/onlinetests/checks/cacheIsolamentoChecks.ts`
 - Create: `src/onlinetests/checks/permessiChecks.ts`
 - Modify: `src/onlinetests/index.ts`
 
 **Interfaces:**
+
 - Consumes: `initAldo`/`resetAldo`, cache GAS, `SessionActiveUserFacade`.
 - Produces: `registerCacheIsolamentoChecks`, `registerPermessiChecks`.
 
@@ -1302,6 +1445,7 @@ git commit -m "feat(onlinetests): cache isolation e permessi attivi (essential #
 ### Task 24: Verifica finale del DoD + doc aggiornata
 
 **Files:**
+
 - Modify: `docs/superpowers/specs/2026-08-10-online-tests-restructure-design.md` (status → implemented)
 - Modify: `MISSING_TESTS.md` (aggiornare lo stato dei gap implementati) — SOLO se richiesto dall'utente
 

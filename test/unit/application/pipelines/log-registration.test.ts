@@ -64,7 +64,9 @@ describe('resolveLogRegistration', () => {
     [JSON.stringify({ classe: '{{focus.classe}}' }), 'chiave non ammessa'],
     [JSON.stringify({ classi: 42 }), 'deve essere una stringa']
   ])('rejects %s', (raw, message) => {
-    expect(() => resolveLogRegistration(raw, templates, cdu, 'REGISTRA_DOC')).toThrow(PipelineError);
+    expect(() => resolveLogRegistration(raw, templates, cdu, 'REGISTRA_DOC')).toThrow(
+      PipelineError
+    );
     expect(() => resolveLogRegistration(raw, templates, cdu, 'REGISTRA_DOC')).toThrow(message);
     expect(() => resolveLogRegistration(raw, templates, cdu, 'REGISTRA_DOC')).toThrow(
       'REGISTRA_DOC'
@@ -89,10 +91,7 @@ describe('resolveLogRegistration', () => {
         classe: {
           anagrafica: { nome: '3C' },
           articolazione: { partners: ['3C-S', '3C-C'] },
-          coordinatori: [
-            { email: 'scientifico@school.it' },
-            { email: 'classico@school.it' }
-          ]
+          coordinatori: [{ email: 'scientifico@school.it' }, { email: 'classico@school.it' }]
         }
       }
     };

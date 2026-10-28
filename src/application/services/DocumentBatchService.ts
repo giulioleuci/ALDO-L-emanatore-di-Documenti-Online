@@ -517,8 +517,7 @@ export class DocumentBatchService {
               confDocId,
               jobId
             ),
-          (targetId, reason, index, total) =>
-            `Errore ${index + 1}/${total} ${targetId}: ${reason}`,
+          (targetId, reason, index, total) => `Errore ${index + 1}/${total} ${targetId}: ${reason}`,
           { docenteClasseMateriaTargets: targets }
         )
     );
@@ -574,8 +573,7 @@ export class DocumentBatchService {
               confDocId,
               jobId
             ),
-          (targetId, reason, index, total) =>
-            `Errore ${index + 1}/${total} ${targetId}: ${reason}`,
+          (targetId, reason, index, total) => `Errore ${index + 1}/${total} ${targetId}: ${reason}`,
           { classeMateriaTargets: targets }
         )
     );
@@ -630,8 +628,7 @@ export class DocumentBatchService {
               confDocId,
               jobId
             ),
-          (targetId, reason, index, total) =>
-            `Errore ${index + 1}/${total} ${targetId}: ${reason}`,
+          (targetId, reason, index, total) => `Errore ${index + 1}/${total} ${targetId}: ${reason}`,
           { classeDocenteTargets: targets }
         )
     );
@@ -647,7 +644,12 @@ export class DocumentBatchService {
   ): Generator<BatchCheckpoint, BatchResult, void> {
     let targets: DocenteBatchTarget[];
     if (resume === null) {
-      targets = targetsDocenti(this.classi, this.teachingAssignments, this.now, config.gestioneArticolazione);
+      targets = targetsDocenti(
+        this.classi,
+        this.teachingAssignments,
+        this.now,
+        config.gestioneArticolazione
+      );
     } else {
       if (resume.docenteTargets === undefined) {
         throw new ConfigurationError(
@@ -684,8 +686,7 @@ export class DocumentBatchService {
               confDocId,
               jobId
             ),
-          (targetId, reason, index, total) =>
-            `Errore ${index + 1}/${total} ${targetId}: ${reason}`,
+          (targetId, reason, index, total) => `Errore ${index + 1}/${total} ${targetId}: ${reason}`,
           { docenteTargets: targets }
         )
     );
@@ -727,8 +728,7 @@ export class DocumentBatchService {
           errori,
           targets,
           (target) => target.email,
-          (target) =>
-            this.documenti.generateForAlunno(target.email, confDocId, jobId),
+          (target) => this.documenti.generateForAlunno(target.email, confDocId, jobId),
           (targetId, reason) => `Errore: ${reason} (alunno ${targetId})`,
           { alunnoTargets: targets }
         )
@@ -802,7 +802,9 @@ export class DocumentBatchService {
       classeTargets = resume.classeTargets.slice();
       attive = classeTargets.map((id) => this.classi.findById(ClasseId.of(id)));
     }
-    const classeById = new Map<string, Classe | null>(classeTargets.map((id, i) => [id, attive[i]!]));
+    const classeById = new Map<string, Classe | null>(
+      classeTargets.map((id, i) => [id, attive[i]!])
+    );
 
     return yield* this.runBatchJob(
       jobId,

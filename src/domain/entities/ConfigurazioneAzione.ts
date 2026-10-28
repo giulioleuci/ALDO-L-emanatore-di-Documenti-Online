@@ -19,7 +19,8 @@ export class ConfigurazioneAzione extends AldoEntity {
 
   constructor(data: Record<string, unknown> = {}) {
     super(data);
-    this.id = typeof data[COL_CONF_AZIONI.ID] === 'string' ? (data[COL_CONF_AZIONI.ID] as string) : null;
+    this.id =
+      typeof data[COL_CONF_AZIONI.ID] === 'string' ? (data[COL_CONF_AZIONI.ID] as string) : null;
     this.tipo = text(data[COL_CONF_AZIONI.TIPO]);
     const asse = text(data[COL_CONF_AZIONI.ASSE]);
     if (!ASSI_AZIONE.includes(asse)) {

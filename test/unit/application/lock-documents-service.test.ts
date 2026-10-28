@@ -16,13 +16,18 @@ function drive(): FakeDriveFacade {
     { id: 'p3', email: 'owner@x.it', role: 'owner', tipo: 'user' },
     { id: 'p4', email: null, role: 'writer', tipo: 'anyone' }
   ]);
-  facade.permissionsPerFile.set('f2', [{ id: 'q1', email: 'c@x.it', role: 'reader', tipo: 'user' }]);
+  facade.permissionsPerFile.set('f2', [
+    { id: 'q1', email: 'c@x.it', role: 'reader', tipo: 'user' }
+  ]);
   return facade;
 }
 
 test('downgrades every writer, including link-wide grants, and leaves owners alone', () => {
   const facade = drive();
-  const esito = new LockDocumentsService({ logDocs: logDocs(['f1', 'f2']), drive: facade }).bloccaTutti();
+  const esito = new LockDocumentsService({
+    logDocs: logDocs(['f1', 'f2']),
+    drive: facade
+  }).bloccaTutti();
 
   expect(facade.roleChanges).toEqual([
     { fileId: 'f1', permissionId: 'p1', role: 'reader' },
@@ -39,7 +44,10 @@ test('downgrades every writer, including link-wide grants, and leaves owners alo
 test('a per-permission failure is reported without aborting the run', () => {
   const facade = drive();
   facade.permissionFailures.set('p1', 'quota');
-  const esito = new LockDocumentsService({ logDocs: logDocs(['f1', 'f2']), drive: facade }).bloccaTutti();
+  const esito = new LockDocumentsService({
+    logDocs: logDocs(['f1', 'f2']),
+    drive: facade
+  }).bloccaTutti();
 
   expect(esito.permessiDeclassati).toBe(1);
   expect(esito.falliti).toEqual([{ fileId: 'f1', permissionId: 'p1', errore: 'quota' }]);
@@ -51,7 +59,10 @@ test('a file whose permissions cannot be read is reported and the run continues'
     if (fileId === 'f1') throw new Error('File not found');
     return [];
   };
-  const esito = new LockDocumentsService({ logDocs: logDocs(['f1', 'f2']), drive: facade }).bloccaTutti();
+  const esito = new LockDocumentsService({
+    logDocs: logDocs(['f1', 'f2']),
+    drive: facade
+  }).bloccaTutti();
 
   expect(esito.totaleDocumenti).toBe(2);
   expect(esito.falliti).toEqual([{ fileId: 'f1', permissionId: null, errore: 'File not found' }]);
@@ -59,7 +70,16 @@ test('a file whose permissions cannot be read is reported and the run continues'
 
 test('rows without a Drive file id are skipped', () => {
   const facade = drive();
-  const docs = { findAll: () => [new LogDocumento({ NOME: 'senza id' })], findByClasse: () => [], findByUtente: () => [] };
+  const docs = {
+    findAll: () => [new LogDocumento({ NOME: 'senza id' })],
+    findByClasse: () => [],
+    findByUtente: () => []
+  };
   const esito = new LockDocumentsService({ logDocs: docs, drive: facade }).bloccaTutti();
-  expect(esito).toEqual({ totaleDocumenti: 1, documentiModificati: 0, permessiDeclassati: 0, falliti: [] });
+  expect(esito).toEqual({
+    totaleDocumenti: 1,
+    documentiModificati: 0,
+    permessiDeclassati: 0,
+    falliti: []
+  });
 });

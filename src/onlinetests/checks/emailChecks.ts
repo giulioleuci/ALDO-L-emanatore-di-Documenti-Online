@@ -141,7 +141,6 @@ export function registerEmailChecks(
   );
 }
 
-
 function testRows(rows: LogMailRow[]): LogMailRow[] {
   return rows.filter((row) => isTestModeRow(row));
 }

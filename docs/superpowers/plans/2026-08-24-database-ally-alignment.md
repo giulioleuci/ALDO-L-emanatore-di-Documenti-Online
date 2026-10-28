@@ -26,10 +26,12 @@
 ### Task 1: Scheletro script + copia passante
 
 **Files:**
+
 - Create: `DATABASES_TO_CONVERT/convert_to_ally.py`
 - Create: `DATABASES_TO_CONVERT/tests/test_convert_to_ally.py`
 
 **Interfaces:**
+
 - Produces: `main(source: Path, out_dir: Path) -> Path` (restituisce l'xlsx scritto); `load_workbook(path) -> openpyxl.Workbook`; costanti `SOURCE_DEFAULT`, `OUT_DIR_DEFAULT`, `REPORT_NAME = "REPORT_ALLINEAMENTO.md"` usate da tutti i task successivi.
 
 - [ ] **Step 1: Scrivere il test fallente (roundtrip)**
@@ -172,10 +174,12 @@ git commit -m "feat(ally): scheletro convert_to_ally con copia passante e change
 ### Task 2: Validatore residui + scrittura report
 
 **Files:**
+
 - Modify: `DATABASES_TO_CONVERT/convert_to_ally.py`
 - Modify: `DATABASES_TO_CONVERT/tests/test_convert_to_ally.py`
 
 **Interfaces:**
+
 - Consumes: `ChangeLog` (Task 1).
 - Produces: `collect_residuals(wb) -> list[dict]` con voci `{sheet, field, value, count}`; `EXPECTED_RESIDUAL_KEYS: set[tuple[str, str]]` (coppie ammesse sheet+field); `write_report(log, residuals, path) -> None`. `main` li integra: dopo `apply_rules` calcola residui e scrive anche il report.
 
@@ -390,10 +394,12 @@ git commit -m "feat(ally): validatore residui e generazione report allineamento"
 ### Task 3: Regole INDIRIZZI e CONF_DOC (enum, PERMISSII, GENERATORE, asse per-cattedra)
 
 **Files:**
+
 - Modify: `DATABASES_TO_CONVERT/convert_to_ally.py`
 - Modify: `DATABASES_TO_CONVERT/tests/test_convert_to_ally.py`
 
 **Interfaces:**
+
 - Consumes: `ChangeLog.add(rule, sheet, row_key, column, old, new)`.
 - Produces: `rule_indirizzi(wb, log)`, `rule_conf_doc(wb, log)` — firmate `(Workbook, ChangeLog) -> None`, registrate da `apply_rules`. Costanti: `LICEO_MAP`, `GENERIC_FILL`, `DOCENTE_MATERIA_IDS`, `PLACEHOLDER_FIXES`.
 
@@ -619,10 +625,12 @@ git commit -m "feat(ally): regole enum/permessi/generatore e asse documento-doce
 ### Task 4: Rimappatura audit trail (LOG_DOCS, LOG_FOLD)
 
 **Files:**
+
 - Modify: `DATABASES_TO_CONVERT/convert_to_ally.py`
 - Modify: `DATABASES_TO_CONVERT/tests/test_convert_to_ally.py`
 
 **Interfaces:**
+
 - Consumes: `_rows`, `_cell`, `ChangeLog`.
 - Produces: `rule_logs(wb, log)` registrata in `apply_rules` DOPO `rule_conf_doc`. Costanti: `LOG_DOCS_IDGEN_MAP`, `LOG_DOCS_TIPO_MAP`, `VERBALE_MONTH_MAP`, `LOG_FOLD_MAP`, `SOTTOTIPO_NORMALIZE`.
 
@@ -778,10 +786,12 @@ git commit -m "feat(ally): rimappatura audit trail LOG_DOCS/LOG_FOLD ai nuovi ID
 ### Task 5: Regole anagrafiche (DIPART, RUOLI, CLASSI, MOV_ALUNNI)
 
 **Files:**
+
 - Modify: `DATABASES_TO_CONVERT/convert_to_ally.py`
 - Modify: `DATABASES_TO_CONVERT/tests/test_convert_to_ally.py`
 
 **Interfaces:**
+
 - Consumes: `_rows`, `_cell`, `ChangeLog`.
 - Produces: `rule_anagrafica(wb, log)` registrata in `apply_rules` per ultima. Costanti: `RUOLI_NOME_FILL`, `MOV_FIXES`.
 
@@ -933,9 +943,11 @@ git commit -m "feat(ally): regole anagrafiche DIPART/RUOLI/CLASSI/MOV_ALUNNI"
 ### Task 6: Esecuzione reale, verifica d'accettazione e consegna
 
 **Files:**
+
 - Generate (non committare finché verificato): `DATABASES_TO_CONVERT/ALLY/AS 2526 per ALDO.xlsx`, `DATABASES_TO_CONVERT/ALLY/REPORT_ALLINEAMENTO.md`
 
 **Interfaces:**
+
 - Consumes: script completo dei Task 1–5.
 
 - [ ] **Step 1: Suite completa verde**

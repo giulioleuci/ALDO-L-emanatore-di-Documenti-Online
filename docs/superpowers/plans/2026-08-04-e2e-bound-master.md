@@ -37,11 +37,13 @@
 ### Task 1: Add generic existing-spreadsheet library builder
 
 **Files:**
+
 - Modify: `GasLibraryFactory/GasOnlineTestFramework/src/TestContext.js:82-192`
 - Modify: `GasLibraryFactory/GasOnlineTestFramework/__tests__/TestContext.test.js`
 - Modify: `GasLibraryFactory/DOCS_LIBS/GasOnlineTestFramework.md`
 
 **Interfaces:**
+
 - Produces: `TestContext.buildSampleSpreadsheetById(spreadsheetId): SampleSpreadsheetBuilder`.
 - Consumes: existing `resetSpreadsheet(ss)` and `SampleSpreadsheetBuilder`.
 
@@ -102,6 +104,7 @@ git -C GasLibraryFactory commit -m "feat(testing): build sample spreadsheet by i
 ### Task 2: Vendor API and E2E builder reuse
 
 **Files:**
+
 - Modify: `types/gaslibs/index.d.ts:1670-1686`
 - Modify: `src/onlinetests/SampleDatabaseBuilder.ts:29-43`
 - Modify: `src/onlinetests/GasSampleSpreadsheetFactory.ts:10-16`
@@ -110,6 +113,7 @@ git -C GasLibraryFactory commit -m "feat(testing): build sample spreadsheet by i
 - Generated: `vendor/gaslibs.Code.js`, `vendor/CHECKSUM`, `vendor/VERSION`
 
 **Interfaces:**
+
 - Consumes: Task 1 `TestContext.buildSampleSpreadsheetById`.
 - Produces: `ISampleSpreadsheetFactory.openExistingSpreadsheet(spreadsheetId: string): ISampleSpreadsheet`.
 - Produces: `E2eSampleDatabaseBuilder.build(templateIds: E2eTemplateIds, master: ISampleSpreadsheet): E2eSampleDatabase`.
@@ -193,10 +197,12 @@ git commit -m "feat(onlinetests): reuse bound E2E master"
 ### Task 3: Require master registration before E2E artifacts
 
 **Files:**
+
 - Modify: `src/onlinetests/index.ts:252-298`
 - Modify: `test/unit/onlinetests/index.test.ts:234-359`
 
 **Interfaces:**
+
 - Consumes: Task 2 factory and builder interfaces.
 - Consumes: `PROP_MASTER_SPREADSHEET_ID` set by `impostaMasterSpreadsheetId` in bound master.
 - Produces: `executeE2eScenarios()` always bootstraps ALDO against bound master.
@@ -209,7 +215,7 @@ expect(() => executeE2eScenarios({ properties: fakeProperties({}) })).toThrow(
 );
 
 const properties = fakeProperties({ [PROP_MASTER_SPREADSHEET_ID]: 'bound-master-id' });
-executeE2eScenarios({ properties, spreadsheetFactory, /* existing fakes */ });
+executeE2eScenarios({ properties, spreadsheetFactory /* existing fakes */ });
 expect(spreadsheetFactory.openExistingSpreadsheet).toHaveBeenCalledWith('bound-master-id');
 expect(properties.set).toHaveBeenCalledWith(PROP_MASTER_SPREADSHEET_ID, 'bound-master-id');
 ```
@@ -257,19 +263,27 @@ git commit -m "fix(onlinetests): require bound master registration"
 ### Task 4: Safely provision replacement project
 
 **Files:**
+
 - Modify: `scripts/setup-testonline-project.cjs:1-114`
 - Create: `test/unit/scripts/setup-testonline-project.test.ts`
 
 **Interfaces:**
+
 - Produces: `npm run setup:testonline -- --replace`, new root-Drive `_ALDO_E2E_MASTER` with local tracking updated.
 - Preserves: default invocation idempotent and cannot repoint current deployment.
 
 - [ ] **Step 1: Write failing pure setup-state tests**
 
 ```typescript
-expect(resolveSetupAction(existing, { claspExists: true, trackingExists: true }, false)).toBe('existing');
-expect(resolveSetupAction(existing, { claspExists: true, trackingExists: true }, true)).toBe('create');
-expect(resolveSetupAction(null, { claspExists: true, trackingExists: false }, false)).toBe('partial-error');
+expect(resolveSetupAction(existing, { claspExists: true, trackingExists: true }, false)).toBe(
+  'existing'
+);
+expect(resolveSetupAction(existing, { claspExists: true, trackingExists: true }, true)).toBe(
+  'create'
+);
+expect(resolveSetupAction(null, { claspExists: true, trackingExists: false }, false)).toBe(
+  'partial-error'
+);
 ```
 
 - [ ] **Step 2: Verify test fails**
@@ -310,9 +324,11 @@ git commit -m "feat(onlinetests): provision bound E2E master"
 ### Task 5: Create and deploy GAS project
 
 **Files:**
+
 - Generated, ignored: `.clasp.json`, `.aldo-testonline.json`, `dist/*`
 
 **Interfaces:**
+
 - Consumes: Tasks 1-4.
 - Produces: root-Drive `_ALDO_E2E_MASTER`, bound online build, existing ALDO menu.
 

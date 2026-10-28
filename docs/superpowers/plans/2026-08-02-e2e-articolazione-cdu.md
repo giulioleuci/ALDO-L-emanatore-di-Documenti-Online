@@ -21,6 +21,7 @@
 ### Task 1: Fixture and template contract
 
 **Files:**
+
 - Modify: `src/onlinetests/E2eSampleDatabaseBuilder.ts`
 - Modify: `src/onlinetests/E2eTemplateProvisioner.ts`
 - Test: `test/unit/onlinetests/e2e-sample-database-builder.test.ts`
@@ -35,6 +36,7 @@
 ### Task 2: Independent online entry point and guard
 
 **Files:**
+
 - Modify: `src/onlinetests/index.ts`
 - Test: `test/unit/onlinetests/index.test.ts` (or existing entry-point test file)
 
@@ -46,6 +48,7 @@
 ### Task 3: Read-only articulation/CDC checks
 
 **Files:**
+
 - Create: `src/onlinetests/checks/articolazioneChecks.ts`
 - Test: `test/unit/onlinetests/articolazione-checks.test.ts`
 
@@ -58,6 +61,7 @@
 ### Task 4: Existing E2E assertions and global exposure
 
 **Files:**
+
 - Modify: `src/onlinetests/checks/e2eScenarioChecks.ts`
 - Modify: `src/index.ts`
 - Test: relevant E2E check and entry-point unit tests

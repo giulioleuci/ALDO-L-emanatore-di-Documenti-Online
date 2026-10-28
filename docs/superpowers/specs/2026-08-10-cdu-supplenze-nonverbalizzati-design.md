@@ -17,8 +17,8 @@ delegazioni attive (`docenteEffettivo ≠ titolare`) anche sotto
 
 ```yaml
 focus.classe.supplenze:
-  - supplente: PersonVM          # §8.1 — docente effettivamente attivo (docenteEffettivo)
-    titolare: PersonVM           # §8.1 — titolare sostituito (assignment.titolare)
+  - supplente: PersonVM # §8.1 — docente effettivamente attivo (docenteEffettivo)
+    titolare: PersonVM # §8.1 — titolare sostituito (assignment.titolare)
     dettaglioMaterie: SubjectVM[] # §8.2 — materie coperte (base VM, senza docenti/continuita)
 ```
 
@@ -42,10 +42,10 @@ filtrare su `stato` (`where:'stato',...`): il raggruppamento è già precalcolat
 
 ```yaml
 focus.classe.didattica.pianiPersonalizzati.nonVerbalizzati:
-  isPresenteLista: boolean        # true sse elenco non vuoto (companion {{#isPresenteLista}}/{{^}})
+  isPresenteLista: boolean # true sse elenco non vuoto (companion {{#isPresenteLista}}/{{^}})
   elenco:
-    - studente: { nomeCompleto: string, email: string }  # stesso shape di PianoPersonalizzatoItem.studente
-      tipoLabel: string           # da tipoPianoLabel() (labels.ts) sul sottotipo
+    - studente: { nomeCompleto: string, email: string } # stesso shape di PianoPersonalizzatoItem.studente
+      tipoLabel: string # da tipoPianoLabel() (labels.ts) sul sottotipo
 ```
 
 - L'item riusa lo shape `studente` già esposto da `PianoPersonalizzatoItem`

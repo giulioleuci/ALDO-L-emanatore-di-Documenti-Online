@@ -46,7 +46,9 @@ test('marks E2E student-representative view-model entries active after the repre
   expect(cdu.focus.classe?.rappresentanti?.studenti.elenco).toEqual([
     { nomeCompleto: 'Rossi Anna', email: 'anna@example.test', active: true }
   ]);
-  expect(cdu.focus.classe?.rappresentanti?.genitori.elenco).toEqual([{ nomeCompleto: 'Rossi Mario' }]);
+  expect(cdu.focus.classe?.rappresentanti?.genitori.elenco).toEqual([
+    { nomeCompleto: 'Rossi Mario' }
+  ]);
 });
 
 test('leaves the E2E context untouched for providers other than rappresentanti', () => {

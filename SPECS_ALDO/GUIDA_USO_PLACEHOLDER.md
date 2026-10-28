@@ -192,6 +192,7 @@ Genera un elenco puntato nativo in Google Docs per ogni elemento dell'array indi
 ```
 
 **Elenco puntato delle supplenze attive:**
+
 ```mustache
 {{#bullet_list:focus.classe.consiglio.supplenze}}
 {{supplente.appellativoCompleto}} sostituisce {{titolare.appellativoCompleto}} ({{dettaglioMaterie | map:'nomeSintetico' | join:', '}})
@@ -199,6 +200,7 @@ Genera un elenco puntato nativo in Google Docs per ogni elemento dell'array indi
 ```
 
 **Elenco puntato dei piani non verbalizzati:**
+
 ```mustache
 {{#bullet_list:focus.classe.pianiPersonalizzati.nonVerbalizzati.elenco}}
 {{studente.nomeCompleto}} — {{tipoLabel}}
@@ -458,15 +460,15 @@ Template HTML memorizzato nel campo `TESTO_START` della tabella `CONF_MAIL`:
 <p>Le tue cattedre:</p>
 <ul>
   {{#destinatario.cattedre.elenco}}
-  <li><strong>{{classe.nome}}</strong> —
-    {{#materie}}{{nome}}{{^@last}}, {{/@last}}{{/materie}}
-  </li>
+  <li><strong>{{classe.nome}}</strong> — {{#materie}}{{nome}}{{^@last}}, {{/@last}}{{/materie}}</li>
   {{/destinatario.cattedre.elenco}}
 </ul>
 
-<p>Oppure, per la lista piatta deduplicata su tutte le classi, usa il box standard
-<code>cattedre</code> (BOX_CFG <code>{"TIPO_BOX":"cattedre"}</code>, titolo default "Le tue cattedre")
-oppure itera direttamente <code>destinatario.materie.elenco</code>:</p>
+<p>
+  Oppure, per la lista piatta deduplicata su tutte le classi, usa il box standard
+  <code>cattedre</code> (BOX_CFG <code>{"TIPO_BOX":"cattedre"}</code>, titolo default "Le tue
+  cattedre") oppure itera direttamente <code>destinatario.materie.elenco</code>:
+</p>
 <ul>
   {{#destinatario.materie.elenco}}
   <li>{{nome}}</li>

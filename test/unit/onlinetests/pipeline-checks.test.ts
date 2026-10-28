@@ -24,7 +24,10 @@ import { COL_CONF_DOC, COL_CONF_MAIL } from '../../../src/config/schema';
 const NOW = new Date('2026-07-12T09:00:00Z');
 const RECIPIENT_EMAIL = 'attivo@onlinetest.aldo.local';
 
-function expectCompleteRows(rows: Record<string, unknown>[], columns: Record<string, string>): void {
+function expectCompleteRows(
+  rows: Record<string, unknown>[],
+  columns: Record<string, string>
+): void {
   for (const row of rows) {
     expect(Object.keys(row).sort()).toEqual(Object.values(columns).sort());
   }
@@ -117,7 +120,8 @@ function sampleSeedTables(
             ID: CONF_MAIL_ID,
             OGGETTO: oggetto,
             PROCESSO: 'PER_ALUNNO',
-            BOX_CFG: '[{"TIPO_BOX":"testo_dinamico","CONTENUTO":"<p>Contenuto email di prova.</p>"}]',
+            BOX_CFG:
+              '[{"TIPO_BOX":"testo_dinamico","CONTENUTO":"<p>Contenuto email di prova.</p>"}]',
             TESTO_START: 'Messaggio di prova generato dalla suite di test online ALDO.',
             [COL_CONF_MAIL.TESTO_END]: '',
             [COL_CONF_MAIL.RISPONDI_A]: '',

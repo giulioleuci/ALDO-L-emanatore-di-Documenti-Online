@@ -9,10 +9,7 @@ import { GestioneSupplenti } from '../../domain/value-objects/enums';
 import { ValidationError } from '../../domain/errors/DomainError';
 import type { TestRunner } from '../report/OnlineTestReport';
 import { classifySyntheticProtectedRangeOutcome } from './protectedRangeOutcome';
-import {
-  CONF_DOC_ACL_REALI,
-  type SharedTestDatabase
-} from '../data/SharedTestDatabaseBuilder';
+import { CONF_DOC_ACL_REALI, type SharedTestDatabase } from '../data/SharedTestDatabaseBuilder';
 
 export interface DrivePermissionEvidence {
   id?: string;
@@ -72,7 +69,10 @@ function permissionEvidenceKey(permission: DrivePermissionEvidence): string {
         ? (permission.domain ?? '<missing-domain>')
         : type === 'anyone'
           ? '*'
-          : (permission.emailAddress ?? permission.domain ?? permission.id ?? '<missing-principal>');
+          : (permission.emailAddress ??
+            permission.domain ??
+            permission.id ??
+            '<missing-principal>');
   return `${type}:${principal}|${permission.role ?? '<missing-role>'}`;
 }
 
@@ -100,10 +100,19 @@ export function assertProtectedRangePrincipals(
 }
 
 function currentCdu(container: ServiceContainer): Cdu {
-  return container.get<ContextBuilder>('contextBuilder').build(
-    { target: '4A', tipoTarget: 'classe', now: new Date(), configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
-    recipe('CLASSE_COMPLETA')
-  );
+  return container
+    .get<ContextBuilder>('contextBuilder')
+    .build(
+      {
+        target: '4A',
+        tipoTarget: 'classe',
+        now: new Date(),
+        configurazioneId: 'ONLINE_CHECK',
+        esecuzioneId: 'ONLINE_CHECK',
+        tipoOperazione: 'GENERAZIONE_DOCUMENTO'
+      },
+      recipe('CLASSE_COMPLETA')
+    );
 }
 
 function generateAclArtifact(container: ServiceContainer): { fileId: string; folderId: string } {
@@ -111,7 +120,9 @@ function generateAclArtifact(container: ServiceContainer): { fileId: string; fol
     .get<DocumentGenerationService>('documentGenerationService')
     .generateForClasse(ClasseId.of('4A'), CONF_DOC_ACL_REALI);
   if (result.fileId === null) {
-    throw new ValidationError(`CONF_DOC ${CONF_DOC_ACL_REALI}: fileId mancante (${result.status}).`);
+    throw new ValidationError(
+      `CONF_DOC ${CONF_DOC_ACL_REALI}: fileId mancante (${result.status}).`
+    );
   }
   // Deliberately use the real factory wrapper. This is evidence read-back,
   // not an ALDO fake or the write-only IDriveFacade.

@@ -88,7 +88,10 @@ test('StudentiProvider: full flat AlunnoVM (status/curriculum/carenze/piani/asl)
     // includiStorico defaults to false — the lookup is gated off, storicoDb is
     // never touched, so this is the placeholder value (MovimentiProvider is not
     // in this recipe, so presenza.isPresenteTuttoAnno also stays its placeholder true).
-    presenza: { annoPrecedente: { isCalcolato: false, isPresente: false }, isPresenteTuttoAnno: true }
+    presenza: {
+      annoPrecedente: { isCalcolato: false, isPresente: false },
+      isPresenteTuttoAnno: true
+    }
   });
   // getCarenze returns rows most-recent first: prog.2 (MATE 5) then prog.1 (MATE 4.5, FISI ...).
   expect(a1.carenze.numero).toBe(3);
@@ -98,7 +101,15 @@ test('StudentiProvider: full flat AlunnoVM (status/curriculum/carenze/piani/asl)
     'MATE:5'
   ]);
   expect(a1.piani.elenco).toEqual([
-    { tipo: 'PEI', tipoLabel: 'PEI', isBes: true, link: null, hasLink: false, parametriGenerazione: null, hasParametriGenerazione: false }
+    {
+      tipo: 'PEI',
+      tipoLabel: 'PEI',
+      isBes: true,
+      link: null,
+      hasLink: false,
+      parametriGenerazione: null,
+      hasParametriGenerazione: false
+    }
   ]);
   expect(a1.piani.hasBes).toBe(true);
   expect(a1.curriculum).toEqual([
@@ -106,7 +117,10 @@ test('StudentiProvider: full flat AlunnoVM (status/curriculum/carenze/piani/asl)
       materiaId: 'INTERP',
       materiaSigla: 'INTERP',
       materiaNome: 'INTERP',
-      specifiche: [{ nome: 'CHITARRA', nomeCapitalizzato: 'CHITARRA' }, { nome: 'PIANO', nomeCapitalizzato: 'PIANO' }]
+      specifiche: [
+        { nome: 'CHITARRA', nomeCapitalizzato: 'CHITARRA' },
+        { nome: 'PIANO', nomeCapitalizzato: 'PIANO' }
+      ]
     })
   ]);
   expect(a1.asl.oreCumulate).toBe(100);
@@ -236,7 +250,7 @@ test('StudentiProvider: presenza.annoPrecedente.isPresente is computed per roste
   expect(a1.presenza.annoPrecedente).toEqual({ isCalcolato: true, isPresente: true }); // exists in priorDb's fixtureTables() too
 });
 
-test('StudentiProvider: pianiAnnoPrecedente lists the student\'s plans from the prior-year database when includiStorico is true', () => {
+test("StudentiProvider: pianiAnnoPrecedente lists the student's plans from the prior-year database when includiStorico is true", () => {
   const priorDb = new FakeDatabase(fixtureTables());
   const storicoDb: StoricoDatabaseProvider = {
     anniStorici: (profondita: number) =>
@@ -254,7 +268,12 @@ test('StudentiProvider: pianiAnnoPrecedente lists the student\'s plans from the 
 test('StudentiProvider: pianiAnnoPrecedente is gated behind includiStorico — empty elenco when false', () => {
   const cdu = build('5A', fixtureTables(), {}, noHistory());
   const a1 = cdu.focus.classe!.studenti!.elenco.find((a) => a.email === 'a1@school.it')!;
-  expect(a1.pianiAnnoPrecedente).toEqual({ elenco: [], hasElenco: false, numero: 0, elencoDescrizione: '' });
+  expect(a1.pianiAnnoPrecedente).toEqual({
+    elenco: [],
+    hasElenco: false,
+    numero: 0,
+    elencoDescrizione: ''
+  });
 });
 
 test('StudentiProvider: presenza.annoPrecedente is gated behind includiStorico — storicoDb is never touched when false', () => {

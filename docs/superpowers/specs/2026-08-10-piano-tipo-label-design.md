@@ -11,13 +11,13 @@ senza modificare l'identificatore tecnico usato dalle configurazioni e dai log.
 `PDP_STRANIERI`, `PFP`, `PEI`). Si aggiunge `focus.piano.tipoLabel`, con la
 seguente mappatura:
 
-| Tipo tecnico | Etichetta |
-| --- | --- |
-| `PDP_DSA` | `PDP (DSA)` |
-| `PDP_BES` | `PDP (BES)` |
+| Tipo tecnico    | Etichetta         |
+| --------------- | ----------------- |
+| `PDP_DSA`       | `PDP (DSA)`       |
+| `PDP_BES`       | `PDP (BES)`       |
 | `PDP_STRANIERI` | `PDP (STRANIERI)` |
-| `PFP` | `PFP` |
-| `PEI` | `PEI` |
+| `PFP`           | `PFP`             |
+| `PEI`           | `PEI`             |
 
 La mappatura resta nel mapper di etichette ALDO, poiché rappresenta il
 vocabolario di dominio SGSA e non una funzionalità riusabile di

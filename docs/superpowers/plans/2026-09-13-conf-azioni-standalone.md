@@ -23,7 +23,7 @@
 
 ## Scope decisions taken in this plan (deviations from a literal reading of the spec)
 
-1. **`VALIDATION_TABLES` needs no edit.** It is already `Object.values(TABLE).filter(t => t !== TABLE.MASTER)` (`src/config/validationRules.ts:40`), so adding `TABLE.CONF_AZIONI` puts the table inside the validation perimeter automatically. Only the *rules* are added by hand.
+1. **`VALIDATION_TABLES` needs no edit.** It is already `Object.values(TABLE).filter(t => t !== TABLE.MASTER)` (`src/config/validationRules.ts:40`), so adding `TABLE.CONF_AZIONI` puts the table inside the validation perimeter automatically. Only the _rules_ are added by hand.
 2. **No `ConfigurazioneAzioneRepository`.** `CONF_AZIONI` is read through `db.table(TABLE.CONF_AZIONI)` + the `ConfigurazioneAzione` entity, the way `DocumentGenerationService` reads `CONF_DOC`. A repository class would be an extra file with two one-line filters in it.
 3. **`PostProcessDb` keeps its name.** It is a DB-slice type, not an action concept; the spec's rename table does not list it, and renaming it touches four more files for zero behaviour.
 4. **Build-tier assertions land in the existing unit tests** (`test/unit/index.test.ts`, `test/unit/config/bootstrap.test.ts`) instead of a new `test/build/` project test: the assertions the spec asks for (job type registered, entrypoints on `globalThis`, `CONF_AZIONI` in schema/rules) are all checkable without building `dist/`.
@@ -36,6 +36,7 @@
 ## File Structure
 
 **Created**
+
 - `src/application/pipelines/standaloneActions.ts` — renamed from `postProcessActions.ts`; the shared azioni grammar + dispatcher.
 - `src/application/pipelines/azioniInfra.ts` — factory building the infrastructure handlers (`AGGIORNA_PERMESSI`, `RIDUCI_PERMESSI`, `VALIDA_DB`) over `IDriveFacade`/`IRoleResolver`/`StoricoDocumentiService`/`DatabaseValidationService`.
 - `src/application/services/axisTargets.ts` — pure target-enumeration functions per `GeneratoreAxis`, shared by `DocumentBatchService` and `ActionBatchService`.
@@ -48,6 +49,7 @@
 - `test/unit/application/axis-targets.test.ts`
 
 **Modified**
+
 - `src/config/schema.ts` — `TABLE.CONF_AZIONI`, `COL_CONF_AZIONI`.
 - `src/domain/value-objects/enums.ts` — `ASSI_AZIONE`.
 - `src/config/validationRules.ts` — required/enum/JSON rules for `CONF_AZIONI`.
@@ -71,6 +73,7 @@
 Pure rename + signature change. No behaviour changes; the existing tests are the regression gate.
 
 **Files:**
+
 - Create (via `git mv`): `src/application/pipelines/standaloneActions.ts` (from `postProcessActions.ts`)
 - Modify: `src/application/pipelines/documentSteps.ts:19-20,558-570,577`
 - Modify: `src/application/pipelines/emailSteps.ts:37,837-850`
@@ -80,6 +83,7 @@ Pure rename + signature change. No behaviour changes; the existing tests are the
 - Test (via `git mv`): `test/unit/application/pipelines/standalone-actions.test.ts` (from `post-process-actions.test.ts`)
 
 **Interfaces:**
+
 - Consumes: nothing (first task).
 - Produces:
   - `export interface Azione { tipo: string; tab?: string; col?: string; valore?: unknown; stato?: string; criteri?: Record<string, string>; target?: string; ruolo?: string; permesso?: string; profondita?: number; su?: string; emails?: string[]; operazione?: string; soglia?: string; tabelle?: string[]; }`
@@ -233,18 +237,18 @@ import type { Azione } from './standaloneActions';
 Replace the `executePostProcess(...)` call in `PostProcessStep._executeLogic` with:
 
 ```ts
-    const updated = eseguiAzioni({
-      azioni: String(cfg(ctx)[COL_CONF_DOC.POST_PROCESSO]),
-      cdu: cduRecord(ctx),
-      db: this.db,
-      templates: this.templates,
-      now: this.now,
-      logger: this.logger,
-      handlers: {
-        AGGIORNA_PERMESSI_STORICI: (azione, criteri) =>
-          this.aggiornaPermessiStorici(ctx, azione, criteri)
-      }
-    });
+const updated = eseguiAzioni({
+  azioni: String(cfg(ctx)[COL_CONF_DOC.POST_PROCESSO]),
+  cdu: cduRecord(ctx),
+  db: this.db,
+  templates: this.templates,
+  now: this.now,
+  logger: this.logger,
+  handlers: {
+    AGGIORNA_PERMESSI_STORICI: (azione, criteri) =>
+      this.aggiornaPermessiStorici(ctx, azione, criteri)
+  }
+});
 ```
 
 and change `aggiornaPermessiStorici`'s parameter type from `action: PostProcessAction` to `azione: Azione` (rename the parameter and its destructuring line `const { target, ruolo, permesso, profondita } = azione;`).
@@ -260,14 +264,14 @@ import { eseguiAzioni, hasJsonValue, type PostProcessDb } from './standaloneActi
 and replace the `executePostProcess(...)` call in `PostProcessEmailStep._executeLogic` with:
 
 ```ts
-    const updated = eseguiAzioni({
-      azioni: String(cfg(ctx)[COL_CONF_MAIL.POST_PROCESSO]),
-      cdu: cduRecord(ctx),
-      db: this.db,
-      templates: this.templates,
-      now: now(ctx),
-      logger: this.logger
-    });
+const updated = eseguiAzioni({
+  azioni: String(cfg(ctx)[COL_CONF_MAIL.POST_PROCESSO]),
+  cdu: cduRecord(ctx),
+  db: this.db,
+  templates: this.templates,
+  now: now(ctx),
+  logger: this.logger
+});
 ```
 
 - [ ] **Step 6: Fix the two remaining import paths**
@@ -280,36 +284,39 @@ In `src/domain/entities/ConfigurazioneDocumento.ts:111`, change the comment's `p
 In `test/unit/application/pipelines/standalone-actions.test.ts`, change the import block to:
 
 ```ts
-import { eseguiAzioni, type PostProcessDb } from '../../../../src/application/pipelines/standaloneActions';
+import {
+  eseguiAzioni,
+  type PostProcessDb
+} from '../../../../src/application/pipelines/standaloneActions';
 ```
 
 and rewrite every call. The positional form becomes the options object — e.g.
 
 ```ts
-  const n = eseguiAzioni({
-    azioni: actions,
-    cdu: cdu(),
-    db,
-    templates: new FakeTemplateEngine(),
-    now: NOW,
-    logger
-  });
+const n = eseguiAzioni({
+  azioni: actions,
+  cdu: cdu(),
+  db,
+  templates: new FakeTemplateEngine(),
+  now: NOW,
+  logger
+});
 ```
 
 and the handler test becomes:
 
 ```ts
-  expect(
-    eseguiAzioni({
-      azioni: actions,
-      cdu: { focus: { alunno: { email: 'a1@school.it' }, piano: { tipo: 'PDP_BES' } } },
-      db,
-      templates: new FakeTemplateEngine(),
-      now: NOW,
-      logger,
-      handlers: { AGGIORNA_PERMESSI_STORICI: handler }
-    })
-  ).toBe(1);
+expect(
+  eseguiAzioni({
+    azioni: actions,
+    cdu: { focus: { alunno: { email: 'a1@school.it' }, piano: { tipo: 'PDP_BES' } } },
+    db,
+    templates: new FakeTemplateEngine(),
+    now: NOW,
+    logger,
+    handlers: { AGGIORNA_PERMESSI_STORICI: handler }
+  })
+).toBe(1);
 ```
 
 Also rename the two `describe` titles from `postProcessActions — …` to `standaloneActions — …`.
@@ -336,10 +343,12 @@ git commit -m "refactor(azioni): rename POST_PROCESSO executor to the shared sta
 ### Task 2: `TRASFORMA_CAMPO` built-in action
 
 **Files:**
+
 - Modify: `src/application/pipelines/standaloneActions.ts`
 - Test: `test/unit/application/pipelines/standalone-actions.test.ts`
 
 **Interfaces:**
+
 - Consumes: `eseguiAzioni`, `Azione` (Task 1).
 - Produces: action type `TRASFORMA_CAMPO` with `{ tipo, tab, col, operazione, criteri? }`, `operazione ∈ TRIM | UPPER | LOWER | CAPITALIZE | UNCAPITALIZE`. Returns the number of rows actually changed.
 
@@ -349,7 +358,10 @@ Append to `test/unit/application/pipelines/standalone-actions.test.ts`:
 
 ```ts
 describe('standaloneActions — TRASFORMA_CAMPO', () => {
-  function run(operazione: string, criteri?: Record<string, string>): { db: FakeDatabase; n: number } {
+  function run(
+    operazione: string,
+    criteri?: Record<string, string>
+  ): { db: FakeDatabase; n: number } {
     const tables = fixtureTables();
     tables['DOCENTI'] = [
       { EMAIL: 'd1@school.it', COGNOME: '  rossi  ', NOME: 'mario', ITP: false },
@@ -358,7 +370,13 @@ describe('standaloneActions — TRASFORMA_CAMPO', () => {
     const db = new FakeDatabase(tables);
     const n = eseguiAzioni({
       azioni: JSON.stringify([
-        { tipo: 'TRASFORMA_CAMPO', tab: 'DOCENTI', col: 'COGNOME', operazione, ...(criteri === undefined ? {} : { criteri }) }
+        {
+          tipo: 'TRASFORMA_CAMPO',
+          tab: 'DOCENTI',
+          col: 'COGNOME',
+          operazione,
+          ...(criteri === undefined ? {} : { criteri })
+        }
       ]),
       cdu: cdu(),
       db,
@@ -487,6 +505,7 @@ git commit -m "feat(azioni): add TRASFORMA_CAMPO action type (TRIM/UPPER/LOWER/C
 ### Task 3: `CONF_AZIONI` schema, entity, validation rules and test-DB headers
 
 **Files:**
+
 - Modify: `src/config/schema.ts`
 - Modify: `src/domain/value-objects/enums.ts`
 - Create: `src/domain/entities/ConfigurazioneAzione.ts`
@@ -496,6 +515,7 @@ git commit -m "feat(azioni): add TRASFORMA_CAMPO action type (TRIM/UPPER/LOWER/C
 - Test: `test/unit/domain/configurazione-azione.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing from earlier tasks.
 - Produces:
   - `TABLE.CONF_AZIONI = 'CONF_AZIONI'`
@@ -531,24 +551,36 @@ test('reads every CONF_AZIONI column', () => {
 });
 
 test('accepts the reserved SINGOLA axis', () => {
-  expect(ConfigurazioneAzione.fromData({ ID: 'SANIFICA_TRIM', ASSE: 'SINGOLA' }).asse).toBe('SINGOLA');
+  expect(ConfigurazioneAzione.fromData({ ID: 'SANIFICA_TRIM', ASSE: 'SINGOLA' }).asse).toBe(
+    'SINGOLA'
+  );
 });
 
 test('rejects an unknown ASSE with a ConfigurationError', () => {
-  expect(() => ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'GALASSIA' })).toThrow(ConfigurationError);
+  expect(() => ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'GALASSIA' })).toThrow(
+    ConfigurationError
+  );
   expect(() => ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'GALASSIA' })).toThrow(/GALASSIA/);
 });
 
 test('ATTIVO defaults to true when the cell is blank and is false only when explicitly disabled', () => {
   expect(ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA' }).isAttivo()).toBe(true);
-  expect(ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA', ATTIVO: '' }).isAttivo()).toBe(true);
-  expect(ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA', ATTIVO: false }).isAttivo()).toBe(false);
-  expect(ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA', ATTIVO: 'FALSE' }).isAttivo()).toBe(false);
+  expect(ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA', ATTIVO: '' }).isAttivo()).toBe(
+    true
+  );
+  expect(
+    ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA', ATTIVO: false }).isAttivo()
+  ).toBe(false);
+  expect(
+    ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA', ATTIVO: 'FALSE' }).isAttivo()
+  ).toBe(false);
 });
 
 test('an unset AZIONI cell reads as null (nothing to execute), including the Sheets empty-string round-trip', () => {
   expect(ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA' }).getAzioniRaw()).toBeNull();
-  expect(ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA', AZIONI: '  ' }).getAzioniRaw()).toBeNull();
+  expect(
+    ConfigurazioneAzione.fromData({ ID: 'X', ASSE: 'SINGOLA', AZIONI: '  ' }).getAzioniRaw()
+  ).toBeNull();
 });
 ```
 
@@ -618,7 +650,8 @@ export class ConfigurazioneAzione extends AldoEntity {
 
   constructor(data: Record<string, unknown> = {}) {
     super(data);
-    this.id = typeof data[COL_CONF_AZIONI.ID] === 'string' ? (data[COL_CONF_AZIONI.ID] as string) : null;
+    this.id =
+      typeof data[COL_CONF_AZIONI.ID] === 'string' ? (data[COL_CONF_AZIONI.ID] as string) : null;
     this.tipo = text(data[COL_CONF_AZIONI.TIPO]);
     const asse = text(data[COL_CONF_AZIONI.ASSE]);
     if (!ASSI_AZIONE.includes(asse)) {
@@ -722,11 +755,13 @@ git commit -m "feat(conf-azioni): add CONF_AZIONI table, entity and validation r
 `ActionBatchService` must enumerate targets per `ASSE` exactly the way `DocumentBatchService` does per `GENERATORE`. Extract the enumeration (the `resume === null` branches) into pure functions used by both — one source of truth instead of a second copy.
 
 **Files:**
+
 - Create: `src/application/services/axisTargets.ts`
 - Modify: `src/application/services/DocumentBatchService.ts` (7 enumeration branches)
 - Test: `test/unit/application/axis-targets.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing from earlier tasks.
 - Produces (all pure, no `this`):
   - `targetsClasse(classi: IClasseRepository, gestione: GestioneArticolazione): Classe[]`
@@ -766,7 +801,12 @@ const NOW = new Date('2026-07-01T09:00:00Z');
 
 /** Every class gets the same two cattedre; one subject carries a specifica. */
 function resolver(): ITeachingAssignmentResolver {
-  const docente = new Docente({ EMAIL: 'd1@school.it', COGNOME: 'ROSSI', NOME: 'MARIO', ITP: false });
+  const docente = new Docente({
+    EMAIL: 'd1@school.it',
+    COGNOME: 'ROSSI',
+    NOME: 'MARIO',
+    ITP: false
+  });
   return {
     resolveConsiglio: () => [
       { docenteEffettivo: docente, slot: { materia: MateriaId.of('MAT'), specifica: null } },
@@ -780,7 +820,9 @@ test('targetsClasse returns the active classes filtered by gestione articolazion
   const db = new FakeDatabase(fixtureTables());
   const classi = new ClasseRepository(db);
   const targets = targetsClasse(classi, GestioneArticolazione.COMPLETA);
-  expect(targets).toEqual(classi.filterPerGestioneArticolazione(classi.findAttive(), GestioneArticolazione.COMPLETA));
+  expect(targets).toEqual(
+    classi.filterPerGestioneArticolazione(classi.findAttive(), GestioneArticolazione.COMPLETA)
+  );
   expect(targets.length).toBeGreaterThan(0);
 });
 
@@ -807,13 +849,16 @@ test('targetsDocenti aggregates every class a teacher is assigned to', () => {
   expect(targets).toHaveLength(1);
   expect(targets[0]!.docenteEmail).toBe('d1@school.it');
   expect(targets[0]!.classiCompetenza.length).toBe(
-    classi.filterPerGestioneArticolazione(classi.findAttive(), GestioneArticolazione.COMPLETA).length
+    classi.filterPerGestioneArticolazione(classi.findAttive(), GestioneArticolazione.COMPLETA)
+      .length
   );
 });
 
 test('targetsAlunni and targetsDipartimenti enumerate their whole tables', () => {
   const db = new FakeDatabase(fixtureTables());
-  expect(targetsAlunni(new AlunnoRepository(db)).length).toBe(new AlunnoRepository(db).findAttivi().length);
+  expect(targetsAlunni(new AlunnoRepository(db)).length).toBe(
+    new AlunnoRepository(db).findAttivi().length
+  );
   expect(targetsDipartimenti(new DipartimentoRepository(db)).length).toBe(
     new DipartimentoRepository(db).findAll().length
   );
@@ -907,7 +952,10 @@ function perClasseConCattedre(
   return out;
 }
 
-export function targetsClasse(classi: IClasseRepository, gestione: GestioneArticolazione): Classe[] {
+export function targetsClasse(
+  classi: IClasseRepository,
+  gestione: GestioneArticolazione
+): Classe[] {
   return classi.filterPerGestioneArticolazione(classi.findAttive(), gestione);
 }
 
@@ -942,7 +990,12 @@ export function targetsClasseDocenteMateria(
 ): DocenteClasseMateriaBatchTarget[] {
   const seen = new Set<string>();
   const targets: DocenteClasseMateriaBatchTarget[] = [];
-  for (const { classeId, docenteEmail, materiaId } of perClasseConCattedre(classi, teachingAssignments, now, gestione)) {
+  for (const { classeId, docenteEmail, materiaId } of perClasseConCattedre(
+    classi,
+    teachingAssignments,
+    now,
+    gestione
+  )) {
     const key = `${classeId}:${materiaId}:${docenteEmail}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -959,7 +1012,12 @@ export function targetsClasseMateria(
 ): ClasseMateriaBatchTarget[] {
   const seen = new Set<string>();
   const targets: ClasseMateriaBatchTarget[] = [];
-  for (const { classeId, materiaId } of perClasseConCattedre(classi, teachingAssignments, now, gestione)) {
+  for (const { classeId, materiaId } of perClasseConCattedre(
+    classi,
+    teachingAssignments,
+    now,
+    gestione
+  )) {
     const key = `${classeId}:${materiaId}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -976,7 +1034,12 @@ export function targetsClasseDocente(
 ): ClasseDocenteBatchTarget[] {
   const seen = new Set<string>();
   const targets: ClasseDocenteBatchTarget[] = [];
-  for (const { classeId, docenteEmail } of perClasseConCattedre(classi, teachingAssignments, now, gestione)) {
+  for (const { classeId, docenteEmail } of perClasseConCattedre(
+    classi,
+    teachingAssignments,
+    now,
+    gestione
+  )) {
     const key = `${classeId}:${docenteEmail}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -992,7 +1055,12 @@ export function targetsDocenti(
   gestione: GestioneArticolazione
 ): DocenteBatchTarget[] {
   const classiPerDocente = new Map<string, Set<string>>();
-  for (const { classeId, docenteEmail } of perClasseConCattedre(classi, teachingAssignments, now, gestione)) {
+  for (const { classeId, docenteEmail } of perClasseConCattedre(
+    classi,
+    teachingAssignments,
+    now,
+    gestione
+  )) {
     const acc = classiPerDocente.get(docenteEmail) ?? new Set<string>();
     acc.add(classeId);
     classiPerDocente.set(docenteEmail, acc);
@@ -1055,9 +1123,9 @@ b) Replace each `resume === null` enumeration branch with the corresponding call
 - in `generateClassi`:
 
 ```ts
-      const classi = targetsClasse(this.classi, config.gestioneArticolazione);
-      attive = classi;
-      classeTargets = classi.map((classe) => classe.id ?? '');
+const classi = targetsClasse(this.classi, config.gestioneArticolazione);
+attive = classi;
+classeTargets = classi.map((classe) => classe.id ?? '');
 ```
 
 Move the long explanatory comments that sat inside those branches into `axisTargets.ts` where the logic now lives (the `perClasseConCattedre` docstring already carries them) — do not leave orphaned comments describing code that moved.
@@ -1082,6 +1150,7 @@ git commit -m "refactor(batch): extract per-axis target enumeration into axisTar
 ### Task 5: Infrastructure action handlers (`AGGIORNA_PERMESSI`, `RIDUCI_PERMESSI`, `VALIDA_DB`)
 
 **Files:**
+
 - Create: `src/application/pipelines/azioniInfra.ts`
 - Modify: `src/infrastructure/facades/DriveServiceFacade.ts` (export the role map)
 - Modify: `src/application/services/DatabaseValidationService.ts` (`esegui(tabelle?)`)
@@ -1089,6 +1158,7 @@ git commit -m "refactor(batch): extract per-axis target enumeration into axisTar
 - Test: `test/unit/application/database-validation-service.test.ts` (add subset case)
 
 **Interfaces:**
+
 - Consumes: `Azione`, `AzioneHandler`, `PostProcessDb`, `csvValues` (Task 1); `IDriveFacade`, `DrivePermission`, `PermissionGrant` (existing).
 - Produces:
   - `export const DRIVE_ROLE_BY_PERMESSO: Record<string, string>` in `DriveServiceFacade.ts` (the existing private `ROLE_MAP`, exported and referenced by the class).
@@ -1114,11 +1184,40 @@ const cdu = {} as Cdu;
 function db(): FakeDatabase {
   const tables = fixtureTables();
   tables['LOG_DOCS'] = [
-    { ID: 'file_1', ID_GEN: 'CD1', TIPO: 'VERBALE', SOTTOTIPO: '', CLASSI: '5A,5B', UTENTI: '', MATERIE: '', PATH: 'Verbali/5', STATO: 'GENERATO' },
-    { ID: 'file_2', ID_GEN: 'CD1', TIPO: 'PIANO', SOTTOTIPO: 'PEI', CLASSI: '1A', UTENTI: 'a1@school.it', MATERIE: '', PATH: 'Piani/1', STATO: 'GENERATO' }
+    {
+      ID: 'file_1',
+      ID_GEN: 'CD1',
+      TIPO: 'VERBALE',
+      SOTTOTIPO: '',
+      CLASSI: '5A,5B',
+      UTENTI: '',
+      MATERIE: '',
+      PATH: 'Verbali/5',
+      STATO: 'GENERATO'
+    },
+    {
+      ID: 'file_2',
+      ID_GEN: 'CD1',
+      TIPO: 'PIANO',
+      SOTTOTIPO: 'PEI',
+      CLASSI: '1A',
+      UTENTI: 'a1@school.it',
+      MATERIE: '',
+      PATH: 'Piani/1',
+      STATO: 'GENERATO'
+    }
   ];
   tables['LOG_FOLD'] = [
-    { ID: 'fold_1', ID_GEN: 'CD1', TIPO: 'CARTELLA_CLASSE', NOME: '5A', PATH: '2026-2027/5A', CLASSI: '5A', UTENTI: '', MATERIE: '' }
+    {
+      ID: 'fold_1',
+      ID_GEN: 'CD1',
+      TIPO: 'CARTELLA_CLASSE',
+      NOME: '5A',
+      PATH: '2026-2027/5A',
+      CLASSI: '5A',
+      UTENTI: '',
+      MATERIE: ''
+    }
   ];
   return new FakeDatabase(tables);
 }
@@ -1166,7 +1265,9 @@ test('AGGIORNA_PERMESSI selects folders from LOG_FOLD by CLASSI containment and 
     { tipo: 'AGGIORNA_PERMESSI', su: 'LOG_FOLD', emails: ['x@school.it'], permesso: 'LETTURA' },
     { CLASSI: '5A', PATH: '2026-2027/' }
   );
-  expect(drive.permissions).toEqual([{ fileId: 'fold_1', email: 'x@school.it', permesso: 'LETTURA' }]);
+  expect(drive.permissions).toEqual([
+    { fileId: 'fold_1', email: 'x@school.it', permesso: 'LETTURA' }
+  ]);
 });
 
 test('AGGIORNA_PERMESSI never touches owner/organizer permissions', () => {
@@ -1246,7 +1347,13 @@ test('VALIDA_DB delegates to the validator with the requested table subset', () 
 
 test('VALIDA_DB is warned and skipped when no validator is wired', () => {
   const warn = jest.spyOn(LoggerService.prototype, 'warn').mockImplementation(() => {});
-  const handlers = creaHandlersInfra({ db: db(), drive: new FakeDriveFacade(), roles, cdu, logger });
+  const handlers = creaHandlersInfra({
+    db: db(),
+    drive: new FakeDriveFacade(),
+    roles,
+    cdu,
+    logger
+  });
   expect(handlers['VALIDA_DB']!({ tipo: 'VALIDA_DB' }, {})).toBe(0);
   expect(warn).toHaveBeenCalledWith(expect.stringContaining('VALIDA_DB'));
   warn.mockRestore();
@@ -1284,7 +1391,10 @@ Create `src/application/pipelines/azioniInfra.ts`:
 ```ts
 import type { Azione, AzioneHandler, PostProcessDb } from './standaloneActions';
 import { csvValues } from './standaloneActions';
-import type { IDriveFacade, PermissionGrant } from '../../infrastructure/facades/DriveServiceFacade';
+import type {
+  IDriveFacade,
+  PermissionGrant
+} from '../../infrastructure/facades/DriveServiceFacade';
 import { DRIVE_ROLE_BY_PERMESSO } from '../../infrastructure/facades/DriveServiceFacade';
 import type { IRoleResolver } from './documentSteps';
 import type { Cdu } from '../context-engine/Cdu';
@@ -1331,7 +1441,9 @@ export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneH
   function selezionaId(azione: Azione, criteri: Record<string, string>): string[] {
     const tab = azione.su ?? TABLE.LOG_DOCS;
     if (tab !== TABLE.LOG_DOCS && tab !== TABLE.LOG_FOLD) {
-      throw new ConfigurationError(`AZIONE ${azione.tipo}: "su" deve essere LOG_DOCS o LOG_FOLD, non ${tab}`);
+      throw new ConfigurationError(
+        `AZIONE ${azione.tipo}: "su" deve essere LOG_DOCS o LOG_FOLD, non ${tab}`
+      );
     }
     const table = db.tables[tab];
     if (table === undefined) return [];
@@ -1361,7 +1473,9 @@ export function creaHandlersInfra(deps: AzioniInfraDeps): Record<string, AzioneH
     if (profondita <= 0 || storico === undefined) return correnti;
     // StoricoDocumentiService only understands LOG_DOCS metadata criteria; PATH
     // is a current-year folder-tree concept and is dropped for the history scan.
-    const storiciCriteri = Object.fromEntries(Object.entries(criteri).filter(([col]) => col !== 'PATH'));
+    const storiciCriteri = Object.fromEntries(
+      Object.entries(criteri).filter(([col]) => col !== 'PATH')
+    );
     return [...new Set([...correnti, ...storico.idsMatching(storiciCriteri, profondita)])];
   }
 
@@ -1511,10 +1625,10 @@ In `src/application/services/DatabaseValidationService.ts`, replace the `esegui(
 and change the report name line to:
 
 ```ts
-    const nome =
-      richieste === null
-        ? `Validazione DB - ${anno.annoScolasticoRaw}`
-        : `Validazione DB - ${anno.annoScolasticoRaw} - ${richieste.join(', ')}`;
+const nome =
+  richieste === null
+    ? `Validazione DB - ${anno.annoScolasticoRaw}`
+    : `Validazione DB - ${anno.annoScolasticoRaw} - ${richieste.join(', ')}`;
 ```
 
 - [ ] **Step 9: Run the validation tests to verify they pass**
@@ -1537,6 +1651,7 @@ git commit -m "feat(azioni): add AGGIORNA_PERMESSI, RIDUCI_PERMESSI and VALIDA_D
 ### Task 6: `ActionBatchService` — the `ESECUZIONE_AZIONI` job
 
 **Files:**
+
 - Create: `src/application/services/ActionBatchService.ts`
 - Modify: `src/application/context-engine/Recipe.ts` (new recipe + `tipoOperazione` union)
 - Modify: `src/application/context-engine/Cdu.ts` (`tipoOperazione`/`tipoOperazioneLabel` unions)
@@ -1544,6 +1659,7 @@ git commit -m "feat(azioni): add AGGIORNA_PERMESSI, RIDUCI_PERMESSI and VALIDA_D
 - Test: `test/unit/application/action-batch-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `eseguiAzioni` (Task 1), `ConfigurazioneAzione`/`COL_CONF_AZIONI`/`ASSE_SINGOLA` (Task 3), `axisTargets` (Task 4), `creaHandlersInfra` (Task 5).
 - Produces:
   - `export const JOB_TYPE_ESECUZIONE_AZIONI = 'ESECUZIONE_AZIONI'`
@@ -1560,15 +1676,15 @@ In `src/application/context-engine/Recipe.ts`:
 - add to `RECIPES`, after `DOCENTE_AGGREGATO`:
 
 ```ts
-  /** CONF_AZIONI ASSE=SINGOLA (and the CONDIZIONE gate of every axis): institute-level CDU only, no focus. */
-  AZIONE_SINGOLA: ['school']
+/** CONF_AZIONI ASSE=SINGOLA (and the CONDIZIONE gate of every axis): institute-level CDU only, no focus. */
+AZIONE_SINGOLA: ['school'];
 ```
 
 In `src/application/context-engine/Cdu.ts`, widen both unions:
 
 ```ts
-  tipoOperazione: 'GENERAZIONE_DOCUMENTO' | 'INVIO_NOTIFICA' | 'ESECUZIONE_AZIONE';
-  tipoOperazioneLabel: 'Generazione documento' | 'Invio notifica' | 'Esecuzione azione';
+tipoOperazione: 'GENERAZIONE_DOCUMENTO' | 'INVIO_NOTIFICA' | 'ESECUZIONE_AZIONE';
+tipoOperazioneLabel: 'Generazione documento' | 'Invio notifica' | 'Esecuzione azione';
 ```
 
 In `src/application/context-engine/ContextBuilder.ts`, replace the ternary label mapping with:
@@ -1608,7 +1724,10 @@ import { ContextBuilder } from '../../../src/application/context-engine/ContextB
 import { ContextEngineFactory } from '../../../src/application/context-engine/ContextEngineFactory';
 import { StatoJob } from '../../../src/domain/value-objects/enums';
 import { ConfigurationError } from '../../../src/domain/errors/DomainError';
-import type { ILogJobRepository, LogJobEntryInput } from '../../../src/domain/repositories/ILogJobRepository';
+import type {
+  ILogJobRepository,
+  LogJobEntryInput
+} from '../../../src/domain/repositories/ILogJobRepository';
 import type { ITeachingAssignmentResolver } from '../../../src/application/ports/ITeachingAssignmentResolver';
 import type { IMasterSheetRepository } from '../../../src/domain/repositories/IMasterSheetRepository';
 import { MasterConfig } from '../../../src/domain/entities/MasterConfig';
@@ -1642,15 +1761,16 @@ function master(): IMasterSheetRepository {
     ID_SPREADSHEET: 'ss1',
     ID_CARTELLA_GOOGLE: 'root1'
   });
-  return { findConfigAnnoCorrente: () => config, findByAnno: () => config } as unknown as IMasterSheetRepository;
+  return {
+    findConfigAnnoCorrente: () => config,
+    findByAnno: () => config
+  } as unknown as IMasterSheetRepository;
 }
 
 function wire(azioni: Array<Record<string, unknown>>, options: { condizione?: boolean } = {}) {
   const tables = fixtureTables();
   tables['CONF_AZIONI'] = azioni;
-  tables['DOCENTI'] = [
-    { EMAIL: 'd1@school.it', COGNOME: '  rossi  ', NOME: 'mario', ITP: false }
-  ];
+  tables['DOCENTI'] = [{ EMAIL: 'd1@school.it', COGNOME: '  rossi  ', NOME: 'mario', ITP: false }];
   const db = new FakeDatabase(tables);
   const classi = new ClasseRepository(db);
   const { logJob, entries } = fakeLogJob();
@@ -1705,13 +1825,17 @@ const SANIFICA = {
   ASSE: 'SINGOLA',
   CONDIZIONE: '',
   ATTIVO: true,
-  AZIONI: JSON.stringify([{ tipo: 'TRASFORMA_CAMPO', tab: 'DOCENTI', col: 'COGNOME', operazione: 'TRIM' }]),
+  AZIONI: JSON.stringify([
+    { tipo: 'TRASFORMA_CAMPO', tab: 'DOCENTI', col: 'COGNOME', operazione: 'TRIM' }
+  ]),
   PERIODICITA: ''
 };
 
 test('ASSE=SINGOLA runs the action exactly once and applies it', () => {
   const { service, db, entries } = wire([SANIFICA]);
-  const checkpoints = drain(service.batchAzioniHandler({ azioneIds: ['SANIFICA_TRIM'], jobId: 'azioni_SANIFICA_TRIM' }));
+  const checkpoints = drain(
+    service.batchAzioniHandler({ azioneIds: ['SANIFICA_TRIM'], jobId: 'azioni_SANIFICA_TRIM' })
+  );
 
   expect(checkpoints).toHaveLength(1);
   expect(db.tables['DOCENTI']!.getAllRows()[0]!['COGNOME']).toBe('rossi');
@@ -1730,7 +1854,9 @@ test('ASSE=SINGOLA runs the action exactly once and applies it', () => {
 
 test('ASSE=CLASSE yields one checkpoint per active class', () => {
   const { service } = wire([{ ...SANIFICA, ID: 'PER_CLASSE', ASSE: 'CLASSE' }]);
-  const checkpoints = drain(service.batchAzioniHandler({ azioneIds: ['PER_CLASSE'], jobId: 'job' }));
+  const checkpoints = drain(
+    service.batchAzioniHandler({ azioneIds: ['PER_CLASSE'], jobId: 'job' })
+  );
   expect(checkpoints.length).toBeGreaterThan(1);
   expect(checkpoints[checkpoints.length - 1]!.percentage).toBe(100);
 });
@@ -1744,17 +1870,17 @@ test('a false CONDIZIONE skips the action and writes no LOG_JOB row', () => {
 
 test('an unknown ASSE fails the job with a ConfigurationError and a FALLITO row', () => {
   const { service, entries } = wire([{ ...SANIFICA, ASSE: 'GALASSIA' }]);
-  expect(() => drain(service.batchAzioniHandler({ azioneIds: ['SANIFICA_TRIM'], jobId: 'job' }))).toThrow(
-    ConfigurationError
-  );
+  expect(() =>
+    drain(service.batchAzioniHandler({ azioneIds: ['SANIFICA_TRIM'], jobId: 'job' }))
+  ).toThrow(ConfigurationError);
   expect(entries[0]).toMatchObject({ stato: StatoJob.FALLITO });
 });
 
 test('a missing CONF_AZIONI id fails the job', () => {
   const { service } = wire([SANIFICA]);
-  expect(() => drain(service.batchAzioniHandler({ azioneIds: ['NON_ESISTE'], jobId: 'job' }))).toThrow(
-    /NON_ESISTE/
-  );
+  expect(() =>
+    drain(service.batchAzioniHandler({ azioneIds: ['NON_ESISTE'], jobId: 'job' }))
+  ).toThrow(/NON_ESISTE/);
 });
 
 test('a failing target is recorded in LISTA_FALLIMENTI and the run continues', () => {
@@ -1765,7 +1891,9 @@ test('a failing target is recorded in LISTA_FALLIMENTI and the run continues', (
     AZIONI: JSON.stringify([{ tipo: 'AGGIORNA_PERMESSI', su: 'TABELLA_INESISTENTE' }])
   };
   const { service, entries } = wire([azione]);
-  const checkpoints = drain(service.batchAzioniHandler({ azioneIds: ['PER_CLASSE'], jobId: 'job' }));
+  const checkpoints = drain(
+    service.batchAzioniHandler({ azioneIds: ['PER_CLASSE'], jobId: 'job' })
+  );
   expect(checkpoints.length).toBeGreaterThan(0);
   expect(entries[0]).toMatchObject({ stato: StatoJob.COMPLETATO_CON_ERRORI });
   expect(entries[0]!.listaFallimenti.length).toBe(entries[0]!.falliti);
@@ -1787,9 +1915,20 @@ test('resuming from a checkpoint restarts at the persisted index and keeps the j
 });
 
 test('running several actions in one job writes one LOG_JOB row per action', () => {
-  const seconda = { ...SANIFICA, ID: 'SANIFICA_UPPER', AZIONI: JSON.stringify([{ tipo: 'TRASFORMA_CAMPO', tab: 'DOCENTI', col: 'NOME', operazione: 'UPPER' }]) };
+  const seconda = {
+    ...SANIFICA,
+    ID: 'SANIFICA_UPPER',
+    AZIONI: JSON.stringify([
+      { tipo: 'TRASFORMA_CAMPO', tab: 'DOCENTI', col: 'NOME', operazione: 'UPPER' }
+    ])
+  };
   const { service, db, entries } = wire([SANIFICA, seconda]);
-  drain(service.batchAzioniHandler({ azioneIds: ['SANIFICA_TRIM', 'SANIFICA_UPPER'], jobId: 'azioni_TUTTE' }));
+  drain(
+    service.batchAzioniHandler({
+      azioneIds: ['SANIFICA_TRIM', 'SANIFICA_UPPER'],
+      jobId: 'azioni_TUTTE'
+    })
+  );
   expect(entries.map((e) => e.idConfig)).toEqual(['SANIFICA_TRIM', 'SANIFICA_UPPER']);
   expect(db.tables['DOCENTI']!.getAllRows()[0]!['NOME']).toBe('MARIO');
 });
@@ -1825,7 +1964,12 @@ import type { Cdu } from '../context-engine/Cdu';
 import type { StoricoDocumentiService } from '../storico/StoricoDocumentiService';
 import { ConfigurazioneAzione } from '../../domain/entities/ConfigurazioneAzione';
 import { COL_CONF_AZIONI, TABLE } from '../../config/schema';
-import { ASSE_SINGOLA, GeneratoreAxis, GestioneArticolazione, StatoJob } from '../../domain/value-objects/enums';
+import {
+  ASSE_SINGOLA,
+  GeneratoreAxis,
+  GestioneArticolazione,
+  StatoJob
+} from '../../domain/value-objects/enums';
 import { ConfigurationError } from '../../domain/errors/DomainError';
 import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import type { IAlunnoRepository } from '../../domain/repositories/IAlunnoRepository';
@@ -1958,7 +2102,9 @@ export class ActionBatchService {
     this.containerStartedAt = Date.now();
     this.runCount = (resume?.runCount ?? 0) + 1;
     this.priorDurationMs = resume?.totalDurationMs ?? 0;
-    this.eseguitoDa = String(params.eseguitoDa ?? resume?.eseguitoDa ?? this.deps.activeUser?.getEmail() ?? '');
+    this.eseguitoDa = String(
+      params.eseguitoDa ?? resume?.eseguitoDa ?? this.deps.activeUser?.getEmail() ?? ''
+    );
     this.esecuzioneIniziata = new Date(this.containerStartedAt).toISOString();
     const azioneIds = params.azioneIds ?? resume?.azioneIds ?? [];
     const jobId = String(params.jobId ?? resume?.jobId ?? 'azioni');
@@ -1993,7 +2139,10 @@ export class ActionBatchService {
       // entirely and, by design, writes no LOG_JOB row at all.
       if (
         config.condizione.trim() !== '' &&
-        !this.deps.expressionEngine.evaluateBoolean(config.condizione, cduBase as unknown as Record<string, unknown>)
+        !this.deps.expressionEngine.evaluateBoolean(
+          config.condizione,
+          cduBase as unknown as Record<string, unknown>
+        )
       ) {
         logger?.info(`Azione ${azioneId} saltata: CONDIZIONE falsa`);
         return true;
@@ -2172,7 +2321,13 @@ export class ActionBatchService {
     const gestione = GestioneArticolazione.COMPLETA;
     switch (config.asse) {
       case ASSE_SINGOLA:
-        return [{ id: config.id ?? 'SINGOLA', recipe: 'AZIONE_SINGOLA', params: { target: '', tipoTarget: 'classe' } }];
+        return [
+          {
+            id: config.id ?? 'SINGOLA',
+            recipe: 'AZIONE_SINGOLA',
+            params: { target: '', tipoTarget: 'classe' }
+          }
+        ];
       case GeneratoreAxis.CLASSE:
         return targetsClasse(classi, gestione).map((classe) => ({
           id: classe.id ?? '',
@@ -2207,19 +2362,25 @@ export class ActionBatchService {
         return targetsClasseDocente(classi, teachingAssignments, now, gestione).map((target) => ({
           id: `${target.classe}:${target.docenteEmail}`,
           recipe: 'CLASSE_DOCENTE',
-          params: { target: target.classe, tipoTarget: 'classe', docenteCorrente: target.docenteEmail }
-        }));
-      case GeneratoreAxis.CLASSE_DOCENTE_MATERIA:
-        return targetsClasseDocenteMateria(classi, teachingAssignments, now, gestione).map((target) => ({
-          id: `${target.classe}:${target.materiaId}:${target.docenteEmail}`,
-          recipe: 'CLASSE_DOCENTE_MATERIA',
           params: {
             target: target.classe,
             tipoTarget: 'classe',
-            docenteCorrente: target.docenteEmail,
-            materiaCorrente: target.materiaId
+            docenteCorrente: target.docenteEmail
           }
         }));
+      case GeneratoreAxis.CLASSE_DOCENTE_MATERIA:
+        return targetsClasseDocenteMateria(classi, teachingAssignments, now, gestione).map(
+          (target) => ({
+            id: `${target.classe}:${target.materiaId}:${target.docenteEmail}`,
+            recipe: 'CLASSE_DOCENTE_MATERIA',
+            params: {
+              target: target.classe,
+              tipoTarget: 'classe',
+              docenteCorrente: target.docenteEmail,
+              materiaCorrente: target.materiaId
+            }
+          })
+        );
       case GeneratoreAxis.DOCENTE:
         return targetsDocenti(classi, teachingAssignments, now, gestione).map((target) => ({
           id: target.docenteEmail,
@@ -2234,13 +2395,17 @@ export class ActionBatchService {
       default:
         // Unreachable via the entity (its constructor validates ASSE), kept so a
         // future axis added to the dictionary fails loudly here instead of running zero targets.
-        throw new ConfigurationError(`CONF_AZIONI ${config.id ?? '?'}: ASSE non gestito: ${config.asse}`);
+        throw new ConfigurationError(
+          `CONF_AZIONI ${config.id ?? '?'}: ASSE non gestito: ${config.asse}`
+        );
     }
   }
 
   /** JobRunnerLib registry callback (passed to run/resume). */
   registerJobHandlers(queue: JobQueueLike): void {
-    queue.registerJobHandler(JOB_TYPE_ESECUZIONE_AZIONI, (params) => this.batchAzioniHandler(params));
+    queue.registerJobHandler(JOB_TYPE_ESECUZIONE_AZIONI, (params) =>
+      this.batchAzioniHandler(params)
+    );
   }
 
   /** Starts the batch through JobRunnerLib (state + resume triggers managed by the library). */
@@ -2285,6 +2450,7 @@ git commit -m "feat(azioni): add ActionBatchService (ESECUZIONE_AZIONI job)"
 ### Task 7: Wiring — container, launchers, menu, entrypoints
 
 **Files:**
+
 - Modify: `src/config/Bootstrap.ts`
 - Modify: `src/presentation/Menu.ts`
 - Modify: `src/index.ts`
@@ -2295,6 +2461,7 @@ git commit -m "feat(azioni): add ActionBatchService (ESECUZIONE_AZIONI job)"
 - Test: `test/unit/index.test.ts`
 
 **Interfaces:**
+
 - Consumes: `ActionBatchService`, `JOB_TYPE_ESECUZIONE_AZIONI` (Task 6).
 - Produces:
   - container key `'actionBatchService'`
@@ -2321,7 +2488,9 @@ test('menuEsecuzioneAzioni lists the active actions and delegates the chosen id'
   const ui = new FakeUiFacade();
   ui.risposteInput.push('SANIFICA_TRIM');
   const avviati: string[][] = [];
-  menuEsecuzioneAzioni(ui, [{ id: 'SANIFICA_TRIM', tipo: 'MANUTENZIONE' }], (ids) => avviati.push(ids));
+  menuEsecuzioneAzioni(ui, [{ id: 'SANIFICA_TRIM', tipo: 'MANUTENZIONE' }], (ids) =>
+    avviati.push(ids)
+  );
   expect(avviati).toEqual([['SANIFICA_TRIM']]);
   expect(ui.sidebars).toEqual([
     { jobId: 'azioni_SANIFICA_TRIM', titolo: 'Monitoraggio — ESEGUI AZIONI' }
@@ -2409,7 +2578,10 @@ export function menuEsecuzioneAzioni(
     return;
   }
   const ids = tutte ? attive.map((a) => a.id) : [scelta];
-  ui.mostraSidebarMonitoraggio(`azioni_${tutte ? PAROLA_TUTTE : scelta}`, `Monitoraggio — ${titolo}`);
+  ui.mostraSidebarMonitoraggio(
+    `azioni_${tutte ? PAROLA_TUTTE : scelta}`,
+    `Monitoraggio — ${titolo}`
+  );
   try {
     avvia(ids);
   } catch (e) {
@@ -2434,32 +2606,32 @@ import { ActionBatchService } from '../application/services/ActionBatchService';
 register the service next to `lockDocumentsService`:
 
 ```ts
-  c.register(
-    'actionBatchService',
-    (container) =>
-      new ActionBatchService({
-        db: deps.db,
-        contextBuilder: container.get<ContextBuilder>('contextBuilder'),
-        expressionEngine: deps.expressionEngine,
-        templates: deps.templates,
-        drive: deps.drive,
-        roles: container.get<RisolutoreRuoliService>('risolutoreRuoli'),
-        classi: container.get<ClasseRepository>('classi'),
-        alunni: container.get<AlunnoRepository>('alunni'),
-        dipartimenti: container.get<DipartimentoRepository>('dipartimenti'),
-        teachingAssignments: container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver'),
-        now: deps.now,
-        storico: container.get<StoricoDocumentiService>('storicoDocumenti'),
-        // VALIDA_DB is unavailable off-GAS for the same reason as the menu
-        // validation launcher: no SpreadsheetService, no report sheet.
-        ...(c.has('databaseValidationService')
-          ? { validator: container.get<DatabaseValidationService>('databaseValidationService') }
-          : {}),
-        logger,
-        logJob: container.get<LogJobRepository>('logJob'),
-        activeUser
-      })
-  );
+c.register(
+  'actionBatchService',
+  (container) =>
+    new ActionBatchService({
+      db: deps.db,
+      contextBuilder: container.get<ContextBuilder>('contextBuilder'),
+      expressionEngine: deps.expressionEngine,
+      templates: deps.templates,
+      drive: deps.drive,
+      roles: container.get<RisolutoreRuoliService>('risolutoreRuoli'),
+      classi: container.get<ClasseRepository>('classi'),
+      alunni: container.get<AlunnoRepository>('alunni'),
+      dipartimenti: container.get<DipartimentoRepository>('dipartimenti'),
+      teachingAssignments: container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver'),
+      now: deps.now,
+      storico: container.get<StoricoDocumentiService>('storicoDocumenti'),
+      // VALIDA_DB is unavailable off-GAS for the same reason as the menu
+      // validation launcher: no SpreadsheetService, no report sheet.
+      ...(c.has('databaseValidationService')
+        ? { validator: container.get<DatabaseValidationService>('databaseValidationService') }
+        : {}),
+      logger,
+      logJob: container.get<LogJobRepository>('logJob'),
+      activeUser
+    })
+);
 ```
 
 add the launchers next to the other data-driven launchers:
@@ -2491,11 +2663,11 @@ export function elencoAzioniAttive(c: ServiceContainer): Array<{ id: string; tip
 and register the handler in `riprendiJobSospeso`:
 
 ```ts
-  const azioni = c.get<ActionBatchService>('actionBatchService');
+const azioni = c.get<ActionBatchService>('actionBatchService');
 ```
 
 ```ts
-      azioni.registerJobHandlers(queue);
+azioni.registerJobHandlers(queue);
 ```
 
 - [ ] **Step 6: Expose the globals**
@@ -2605,7 +2777,10 @@ test('riprendiJobSospeso registers the ESECUZIONE_AZIONI handler', () => {
   const c = buildTestContainer();
   const registered: string[] = [];
   const runner = {
-    resume: (_name: string, register: (queue: { registerJobHandler: (t: string) => void }) => void) => {
+    resume: (
+      _name: string,
+      register: (queue: { registerJobHandler: (t: string) => void }) => void
+    ) => {
       register({ registerJobHandler: (t: string) => registered.push(t) });
     }
   } as unknown as JobRunnerService;
@@ -2653,10 +2828,12 @@ git commit -m "feat(azioni): wire ActionBatchService into the container, menu an
 ### Task 8: Governance documentation
 
 **Files:**
+
 - Modify: `SPECS_ALDO/01_SCHEMA_DATABASE.md`
 - Modify: `SPECS_ALDO/00_PANORAMICA.md`
 
 **Interfaces:**
+
 - Consumes: the final shape of `COL_CONF_AZIONI` and the action catalogue from Tasks 2–6.
 - Produces: no code.
 

@@ -6,7 +6,10 @@ import type { AggregatoreDati } from '../services/AggregatoreDati';
 import type { LogCartella } from '../../domain/entities/LogCartella';
 import type { LogDocumento } from '../../domain/entities/LogDocumento';
 import type { CattedraVM } from '../context-engine/Cdu';
-import { parseFiltriSorgente, type EntitaSorgente } from '../../domain/specifications/FiltriSorgente';
+import {
+  parseFiltriSorgente,
+  type EntitaSorgente
+} from '../../domain/specifications/FiltriSorgente';
 
 /**
  * Box Rendering System (11 §5/§11) on ComposableContentLib (L4): every
@@ -163,7 +166,11 @@ function renderRigaStandard(items: DocumentoItem[], displayMode: string): string
  * non-nome/link fields.
  */
 function escapeNomeLink<T extends { nome: string; link: string }>(d: T): T {
-  return { ...d, nome: HtmlSanitizer.escapeHtml(d.nome), link: HtmlSanitizer.escapeHtml(HtmlSanitizer.safeUrl(d.link)) };
+  return {
+    ...d,
+    nome: HtmlSanitizer.escapeHtml(d.nome),
+    link: HtmlSanitizer.escapeHtml(HtmlSanitizer.safeUrl(d.link))
+  };
 }
 
 function renderDocumentiBox(
@@ -177,8 +184,7 @@ function renderDocumentiBox(
   };
   const arricchisci = options.config['ARRICCHISCI_CON_STORICO'] === true;
   const configArricchimento = options.config['CONFIG_ARRICCHIMENTO'] as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   const templateRiga = arricchisci ? str(configArricchimento?.['TEMPLATE_RIGA']) : '';
 
   if (templateRiga === '' || storicoRef === undefined)
@@ -190,9 +196,7 @@ function renderDocumentiBox(
   const storico = storicoRef.get();
   const righe = items
     .map((corrente) => {
-      const storicoCorrente = storico
-        .filter((s) => s.idGen === corrente.idGen)
-        .map(escapeNomeLink);
+      const storicoCorrente = storico.filter((s) => s.idGen === corrente.idGen).map(escapeNomeLink);
       return templates.processString(templateRiga, {
         corrente: escapeNomeLink(corrente),
         storico: storicoCorrente
@@ -224,21 +228,23 @@ function renderPianiPersBox(
   };
   const arricchisci = options.config['ARRICCHISCI_CON_STORICO'];
   const configArricchimento = options.config['CONFIG_ARRICCHIMENTO'] as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   const explicitTemplate = str(configArricchimento?.['TEMPLATE_RIGA']);
   const wantsHistorical = typeof arricchisci === 'boolean' ? arricchisci : defaultTemplate !== '';
   const templateRiga = forceBuiltInTemplate
     ? DEFAULT_PIANI_PERS_TEMPLATE
     : wantsHistorical
-      ? (explicitTemplate !== '' ? explicitTemplate : defaultTemplate)
+      ? explicitTemplate !== ''
+        ? explicitTemplate
+        : defaultTemplate
       : '';
 
   if (templateRiga === '') {
     const righe = items
       .map((d) => {
         const href = HtmlSanitizer.escapeHtml(HtmlSanitizer.safeUrl(d.link));
-        const alunno = d.studente !== undefined ? HtmlSanitizer.escapeHtml(d.studente.nomeCompleto) : '';
+        const alunno =
+          d.studente !== undefined ? HtmlSanitizer.escapeHtml(d.studente.nomeCompleto) : '';
         const classeNome = d.classe !== undefined ? HtmlSanitizer.escapeHtml(d.classe.nome) : '';
         const testo = `${alunno} - ${classeNome} - ${HtmlSanitizer.escapeHtml(d.sottotipoLabel)}`;
         return `<li><a href="${href}" target="_blank">${testo}</a></li>`;
@@ -282,7 +288,9 @@ function renderPianiPersBox(
               }
             : {}),
           ...(corrente.classe !== undefined
-            ? { classe: { ...corrente.classe, nome: HtmlSanitizer.escapeHtml(corrente.classe.nome) } }
+            ? {
+                classe: { ...corrente.classe, nome: HtmlSanitizer.escapeHtml(corrente.classe.nome) }
+              }
             : {})
         },
         storico: storicoCorrente
@@ -382,13 +390,23 @@ export function createBoxComposer(
   simple(
     'piani_pers_da_inviare',
     'Piani personalizzati da notificare',
-    (ctx) => ctx.get('boxdata.pianiPersDaInviare', { items: [], storicoRef: undefined, defaultTemplate: '' }),
+    (ctx) =>
+      ctx.get('boxdata.pianiPersDaInviare', {
+        items: [],
+        storicoRef: undefined,
+        defaultTemplate: ''
+      }),
     (d) => (d as { items: unknown[] }).items.length === 0
   );
   simple(
     'piani_pers_inviati',
     'Piani personalizzati notificati',
-    (ctx) => ctx.get('boxdata.pianiPersInviati', { items: [], storicoRef: undefined, defaultTemplate: '' }),
+    (ctx) =>
+      ctx.get('boxdata.pianiPersInviati', {
+        items: [],
+        storicoRef: undefined,
+        defaultTemplate: ''
+      }),
     (d) => (d as { items: unknown[] }).items.length === 0
   );
   simple(
@@ -442,7 +460,10 @@ export function createBoxComposer(
         assenze: () => renderAssenzeBox(),
         cattedre: (data) => renderCattedreBox(data),
         testo_dinamico: (data, options) =>
-          templates.processStringEscaped(str(options.config['CONTENUTO']), data as Record<string, unknown>)
+          templates.processStringEscaped(
+            str(options.config['CONTENUTO']),
+            data as Record<string, unknown>
+          )
       }
     })
   );
@@ -480,8 +501,12 @@ function aggregaDati(
   cartelleSorgente?: DocumentoItem[]
 ): Record<string, unknown> {
   const focus = cdu['focus'] as import('../context-engine/Cdu').ContestoFocusVM | undefined;
-  const dettaglio = (focus?.alunno?.carenze?.elenco ?? []).map(({ materiaSigla, voto }) => ({ materia: materiaSigla, voto }));
-  const documenti = focus?.classe?.documenti ?? focus?.alunno?.documenti ?? focus?.dipartimento?.documenti;
+  const dettaglio = (focus?.alunno?.carenze?.elenco ?? []).map(({ materiaSigla, voto }) => ({
+    materia: materiaSigla,
+    voto
+  }));
+  const documenti =
+    focus?.classe?.documenti ?? focus?.alunno?.documenti ?? focus?.dipartimento?.documenti;
   const items = documenti?.elenco ?? [];
   const storicoRef = documenti?.storico;
   const pianiPers = focus?.classe?.pianiPersonalizzati;
@@ -489,7 +514,10 @@ function aggregaDati(
   const pianiStoricoRef = pianiPers?.storico;
   return {
     carenze: mapCarenzeFormatoB(dettaglio, materie),
-    documenti: { items: documentiSorgente ?? items.filter((i) => i.tipo !== 'CARTELLA'), storicoRef },
+    documenti: {
+      items: documentiSorgente ?? items.filter((i) => i.tipo !== 'CARTELLA'),
+      storicoRef
+    },
     documentiDipartimento: { items: focus?.dipartimento?.documenti?.elenco ?? [] },
     cartelle: {
       items: cartelleSorgente ?? items.filter((i) => i.tipo === 'CARTELLA'),
@@ -518,7 +546,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function uniqueById<T extends { id?: string | null | undefined }>(items: T[]): T[] {
   const distinct = folderProjector.project(
-    items.flatMap((item, index) => (item.id === null || item.id === undefined ? [] : [{ id: item.id, index }])),
+    items.flatMap((item, index) =>
+      item.id === null || item.id === undefined ? [] : [{ id: item.id, index }]
+    ),
     [{ type: 'distinctBy', keys: ['id'] }]
   ).value as Array<{ index: number }>;
   return distinct.map(({ index }) => items[index]!);
@@ -559,8 +589,10 @@ function cartellaItem(cartella: LogCartella): DocumentoItem {
 }
 
 function isLegacyFilter(cfg: Record<string, unknown>): boolean {
-  return Object.prototype.hasOwnProperty.call(cfg, 'FILTRO_TIPO') ||
-    Object.prototype.hasOwnProperty.call(cfg, 'FILTRO_STATO');
+  return (
+    Object.prototype.hasOwnProperty.call(cfg, 'FILTRO_TIPO') ||
+    Object.prototype.hasOwnProperty.call(cfg, 'FILTRO_STATO')
+  );
 }
 
 function sourceMethodsFor(entita: EntitaSorgente): ReadonlySet<string> {
@@ -604,22 +636,26 @@ function resolveSourceItems(
             ? []
             : [scope.classeId];
         if (classi.length === 0) return [aggregatoreDati.perMetodo(metodo, { filtri }, logger)];
-        return classi.map((classeId) =>
-          aggregatoreDati.perMetodo(metodo, { classeId, filtri }, logger) ?? null
+        return classi.map(
+          (classeId) => aggregatoreDati.perMetodo(metodo, { classeId, filtri }, logger) ?? null
         );
       })()
     : [
-        aggregatoreDati.perMetodo(metodo, {
-          ...(scope?.utenteEmail === undefined ? {} : { utenteEmail: scope.utenteEmail }),
-          ...(scope?.isDocente === undefined ? {} : { isDocente: scope.isDocente }),
-          ...(scope?.classiCompetenza === undefined
-            ? {}
-            : { classiCompetenza: scope.classiCompetenza }),
-          ...(scope?.dipartimentoId === undefined
-            ? {}
-            : { dipartimentoId: scope.dipartimentoId }),
-          ...(filtri === undefined ? {} : { filtri })
-        }, logger)
+        aggregatoreDati.perMetodo(
+          metodo,
+          {
+            ...(scope?.utenteEmail === undefined ? {} : { utenteEmail: scope.utenteEmail }),
+            ...(scope?.isDocente === undefined ? {} : { isDocente: scope.isDocente }),
+            ...(scope?.classiCompetenza === undefined
+              ? {}
+              : { classiCompetenza: scope.classiCompetenza }),
+            ...(scope?.dipartimentoId === undefined
+              ? {}
+              : { dipartimentoId: scope.dipartimentoId }),
+            ...(filtri === undefined ? {} : { filtri })
+          },
+          logger
+        )
       ];
   if (calls.length === 0 || calls.some((items) => items === null)) return null;
 
@@ -666,9 +702,7 @@ function resolveBoxConfigurations(
       );
     }
     if (Object.prototype.hasOwnProperty.call(cfg, 'filtri')) {
-      logger.error(
-        `CONF_MAIL ${confMail.id ?? ''}: filtri deve comparire in DATI_SORGENTE.filtri`
-      );
+      logger.error(`CONF_MAIL ${confMail.id ?? ''}: filtri deve comparire in DATI_SORGENTE.filtri`);
       return [];
     }
     const sourceItems = resolveSourceItems(
@@ -714,17 +748,19 @@ export function renderBoxes(
   dynamicAttachments: Array<{ id: string; link: string }>;
 } {
   const activeLogger = logger ?? new LoggerService();
-  const renderable = resolveBoxConfigurations(
-    confMail,
-    aggregatoreDati,
-    sourceScope,
-    activeLogger
-  );
+  const renderable = resolveBoxConfigurations(confMail, aggregatoreDati, sourceScope, activeLogger);
   if (renderable.length === 0)
     return {
       ordered: [],
       hasTriggeringContent: false,
-      boxes: { perId: {}, elenco: [], visibili: [], hasElenco: false, hasVisibili: false, numero: 0 },
+      boxes: {
+        perId: {},
+        elenco: [],
+        visibili: [],
+        hasElenco: false,
+        hasVisibili: false,
+        numero: 0
+      },
       documentIds: [],
       folderIds: [],
       dynamicAttachments: []
@@ -789,7 +825,13 @@ export function renderBoxes(
     const instanceId = `${tipo}_${index}`;
     const block = byInstance.get(instanceId);
     if (block === undefined) {
-      boxes[instanceId] = { id: instanceId, titolo: DEFAULT_TITLES[tipo]!, html: '', isVuoto: true, isVisibile: false };
+      boxes[instanceId] = {
+        id: instanceId,
+        titolo: DEFAULT_TITLES[tipo]!,
+        html: '',
+        isVuoto: true,
+        isVisibile: false
+      };
       continue;
     }
     if (block.isVisible && block.content !== '') {
@@ -831,7 +873,11 @@ export function renderBoxes(
     }
   }
   const ids = (items: Array<{ id?: string | undefined }>): string[] =>
-    Array.from(new Set(items.map((item) => item.id).filter((id): id is string => id !== undefined && id !== '')));
+    Array.from(
+      new Set(
+        items.map((item) => item.id).filter((id): id is string => id !== undefined && id !== '')
+      )
+    );
   const hasRenderedSourceContent = (tipo: string): boolean => sourceContentTypes.has(tipo);
   const documentIds = [
     ...renderedDocumentItems,

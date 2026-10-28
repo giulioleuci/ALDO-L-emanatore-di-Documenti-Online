@@ -138,7 +138,11 @@ describe('DocumentoConTabelleImportateGeneratorStrategy (10 §9)', () => {
     ]);
     expect(tables.removed).toEqual([{ fileId: 'doc1', marker: '{{TABELLA:sheet_1}}' }]);
     // Insertion (which relies on findText locating the marker) must happen before removal.
-    expect(tables.callOrder).toEqual(['insert:{{TABELLA:sheet_1}}', 'flush', 'remove:{{TABELLA:sheet_1}}']);
+    expect(tables.callOrder).toEqual([
+      'insert:{{TABELLA:sheet_1}}',
+      'flush',
+      'remove:{{TABELLA:sheet_1}}'
+    ]);
     expect(templates.contextFor('doc1')).toEqual(cdu);
   });
 

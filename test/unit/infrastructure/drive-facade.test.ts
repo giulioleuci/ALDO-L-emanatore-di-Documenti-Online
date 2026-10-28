@@ -109,32 +109,41 @@ describe('folder status through the real vendored DriveService', () => {
       remove: (key: string) => values.delete(key)
     };
     const drive = Reflect.construct(DriveService, [
-      new LoggerService(), cache, new UtilsService(),
+      new LoggerService(),
+      cache,
+      new UtilsService(),
       { executeWithRetry: (operation: () => unknown) => operation() }
     ]) as DriveService;
     return { drive, facade: new DriveServiceFacade(drive, {} as PermissionService, ROOT) };
   }
 
-  test.each([false, true])('refetches incomplete cached metadata before returning trashed=%s', (trashed) => {
-    let metadata: Record<string, unknown> = { id: 'folder_1', name: 'Verbali' };
-    const get = jest.fn(() => metadata);
-    const { drive, facade } = realFacade(get);
-    drive.getFiles('folder_1', { fields: 'id,name' });
-    metadata = { id: 'folder_1', trashed };
+  test.each([false, true])(
+    'refetches incomplete cached metadata before returning trashed=%s',
+    (trashed) => {
+      let metadata: Record<string, unknown> = { id: 'folder_1', name: 'Verbali' };
+      const get = jest.fn(() => metadata);
+      const { drive, facade } = realFacade(get);
+      drive.getFiles('folder_1', { fields: 'id,name' });
+      metadata = { id: 'folder_1', trashed };
 
-    expect(facade.isFolderTrashed('folder_1')).toBe(trashed);
-    expect(get).toHaveBeenLastCalledWith('folder_1', { fields: 'id,trashed' });
-    expect(get).toHaveBeenCalledTimes(2);
-  });
+      expect(facade.isFolderTrashed('folder_1')).toBe(trashed);
+      expect(get).toHaveBeenLastCalledWith('folder_1', { fields: 'id,trashed' });
+      expect(get).toHaveBeenCalledTimes(2);
+    }
+  );
 
   test('a confirmed 404 marks a logged folder as missing', () => {
-    const { facade } = realFacade(() => { throw Object.assign(new Error('Not found'), { code: 404 }); });
+    const { facade } = realFacade(() => {
+      throw Object.assign(new Error('Not found'), { code: 404 });
+    });
     expect(facade.isFolderTrashed('folder_1')).toBe(true);
   });
 
   test.each([403, 429, 503])('propagates lookup error %s and preserves LOG_FOLD', (code) => {
     const failure = Object.assign(new Error('Drive lookup failed'), { code });
-    const { facade } = realFacade(() => { throw failure; });
+    const { facade } = realFacade(() => {
+      throw failure;
+    });
     const logged = { ID: 'folder_1', PATH: 'Verbali', LINK: 'existing-link', CLASSI: '5A' };
     const db = new FakeDatabase({ LOG_FOLD: [logged] });
     const albero = new AlberoCartelle(facade, db);
@@ -187,7 +196,13 @@ test('findFileByName searches by name+parent, excluding folders and trashed file
   const { drive, perms } = fakeDrive();
   drive.searchFiles.mockImplementation((query: string) => {
     if (query.includes("'FOLDER_1' in parents") && query.includes("name = 'Verbale template'")) {
-      return [{ id: 'tmpl_file_1', name: 'Verbale template', mimeType: 'application/vnd.google-apps.document' }];
+      return [
+        {
+          id: 'tmpl_file_1',
+          name: 'Verbale template',
+          mimeType: 'application/vnd.google-apps.document'
+        }
+      ];
     }
     return [];
   });
@@ -264,7 +279,10 @@ test('setPermissions reports a Drive rejection (e.g. on a folder) after still at
   perms.shareWithUsers.mockImplementation((fileIds: string | string[]) => {
     const id = Array.isArray(fileIds) ? fileIds[0] : fileIds;
     return id === 'folder_1'
-      ? { successful: [], failed: [{ fileId: id, error: new Error('ruolo non valido'), statusCode: 400 }] }
+      ? {
+          successful: [],
+          failed: [{ fileId: id, error: new Error('ruolo non valido'), statusCode: 400 }]
+        }
       : { successful: [{ fileId: id, permission: {}, statusCode: 200 }], failed: [] };
   });
   const facade = new DriveServiceFacade(drive as never, perms as never, ROOT);
@@ -355,7 +373,9 @@ describe('DriveServiceFacade — copyFile failure', () => {
 
 describe('countFilesInFolder', () => {
   it('counts non-trashed, non-folder files via searchFiles', () => {
-    const drive = { searchFiles: jest.fn().mockReturnValue([{ id: 'a' }, { id: 'b' }, { id: 'c' }]) };
+    const drive = {
+      searchFiles: jest.fn().mockReturnValue([{ id: 'a' }, { id: 'b' }, { id: 'c' }])
+    };
     const facade = new DriveServiceFacade(drive as never, {} as never, 'root');
 
     const count = facade.countFilesInFolder('folder123');

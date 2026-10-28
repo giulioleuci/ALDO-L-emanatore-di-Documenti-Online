@@ -17,9 +17,9 @@ test('PeriodoSupplenza: open-ended AL is always active after DAL; DAL>AL throws'
 });
 
 test('PeriodoSupplenza: DAL>AL throws the specific ordering message', () => {
-  expect(() =>
-    PeriodoSupplenza.of(new Date('2025-11-30'), new Date('2025-11-01'))
-  ).toThrow('PeriodoSupplenza: deve valere DAL ≤ AL');
+  expect(() => PeriodoSupplenza.of(new Date('2025-11-30'), new Date('2025-11-01'))).toThrow(
+    'PeriodoSupplenza: deve valere DAL ≤ AL'
+  );
 });
 
 test('PeriodoSupplenza: a non-ordering DateRange construction failure surfaces its own message, not the ordering one', () => {

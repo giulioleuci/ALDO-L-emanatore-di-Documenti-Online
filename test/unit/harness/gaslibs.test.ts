@@ -81,9 +81,7 @@ test('vendored logger preserves scoped callback results and renders pipeline con
 
   expect(callbackResult).toBe('scoped-result');
   expect(logSpy).toHaveBeenCalledWith(
-    expect.stringContaining(
-      '[GenerateName] PDP_DSA_Rossi_Mario_2026 (EXECUTED in 12ms)'
-    )
+    expect.stringContaining('[GenerateName] PDP_DSA_Rossi_Mario_2026 (EXECUTED in 12ms)')
   );
   logSpy.mockRestore();
 });
@@ -196,7 +194,12 @@ test('vendored DocumentService/SpreadsheetService expose createDocument/createSp
   const logger = new LoggerService();
   const fakeCache = { get: () => null, put: () => undefined, remove: () => undefined };
   const fakeExceptionService = { executeWithRetry: (fn: () => unknown) => fn() };
-  const documents = new DocumentService(logger, fakeCache, new UtilsService(), fakeExceptionService);
+  const documents = new DocumentService(
+    logger,
+    fakeCache,
+    new UtilsService(),
+    fakeExceptionService
+  );
   const sheets = new SpreadsheetService(
     logger,
     fakeCache,
@@ -233,7 +236,12 @@ test('vendored DocumentService exposes openStandard (DriveServiceFacade.getFileT
   const logger = new LoggerService();
   const fakeCache = { get: () => null, put: () => undefined, remove: () => undefined };
   const fakeExceptionService = { executeWithRetry: (fn: () => unknown) => fn() };
-  const documents = new DocumentService(logger, fakeCache, new UtilsService(), fakeExceptionService);
+  const documents = new DocumentService(
+    logger,
+    fakeCache,
+    new UtilsService(),
+    fakeExceptionService
+  );
   expect(typeof documents.openStandard).toBe('function');
 });
 
@@ -241,7 +249,12 @@ test('vendored DocumentBuilder exposes appendParagraph/setText (blank-doc conten
   const logger = new LoggerService();
   const fakeCache = { get: () => null, put: () => undefined, remove: () => undefined };
   const fakeExceptionService = { executeWithRetry: (fn: () => unknown) => fn() };
-  const documents = new DocumentService(logger, fakeCache, new UtilsService(), fakeExceptionService);
+  const documents = new DocumentService(
+    logger,
+    fakeCache,
+    new UtilsService(),
+    fakeExceptionService
+  );
   const builder = documents.document('doc1');
   expect(typeof builder.appendParagraph).toBe('function');
   expect(typeof builder.setText).toBe('function');
@@ -324,10 +337,9 @@ test('custom SourceStrategy registered via ImportEngine.registerCustomSource wor
 
 test('vendored bundle exposes DatasetValidator (Feature 2)', () => {
   const validator = new DatasetValidator();
-  const { violations } = validator.validate(
-    { T: [{ A: '', B: 'data' }] },
-    [{ id: 'R', type: 'required', table: 'T', columns: ['A'] }]
-  );
+  const { violations } = validator.validate({ T: [{ A: '', B: 'data' }] }, [
+    { id: 'R', type: 'required', table: 'T', columns: ['A'] }
+  ]);
   expect(violations).toHaveLength(1);
   expect(violations[0]!.ruleId).toBe('R');
 });

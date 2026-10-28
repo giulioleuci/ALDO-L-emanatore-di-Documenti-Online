@@ -4,7 +4,7 @@
 
 **Goal:** Apply every verified dead-code/simplification finding from the 29 `AUDIT_PONYTAIL/*.md` reports (2026-09-01) across both the ALDO repo and the separate `GasLibraryFactory` (GLF) repo, without changing observable behavior.
 
-**Architecture:** No architecture change. This is pure deletion/consolidation of already-dead or duplicated code, verified against the *current* working tree (not the audit's 2026-09-01 snapshot — several ALDO context-engine files had uncommitted edits in progress when this plan was written). Each task = one audit report = one independently reviewable, independently testable, independently committable unit.
+**Architecture:** No architecture change. This is pure deletion/consolidation of already-dead or duplicated code, verified against the _current_ working tree (not the audit's 2026-09-01 snapshot — several ALDO context-engine files had uncommitted edits in progress when this plan was written). Each task = one audit report = one independently reviewable, independently testable, independently committable unit.
 
 **Tech Stack:** TypeScript/Jest/ts-jest (ALDO), JavaScript/Jest/Webpack/Babel (GasLibraryFactory).
 
@@ -14,12 +14,12 @@
 
 Every finding below was independently re-verified against the current tree (grep + `codebase-memory-mcp` graph queries on `aldo-full-coverage` / `home-giulio-Desktop-ALDO-implementing` / `home-giulio-Desktop-ALDO-implementing-GasLibraryFactory`) before being turned into a task. Two audit reports had **zero** findings (`ALDO_APPLICATION_IMPORT_STORICO`, `ALDO_DOMAIN_REPOSITORIES_SPECIFICATIONS` — net 0 lines each) and are **not** included as tasks; there is nothing to implement in them. One finding (GLF ContextEngine #1, `CollectionProjector`/`ProjectionRegistry`/`CollectionProjectionInterceptor`, claimed −1,100 lines) is **excluded from every task** — production code in ALDO's email, role-resolution, context-engine, and document-strategy paths calls it; it is not dead. One finding (GLF PipelineFramework #2, `testing/mocks.js`) is **excluded** — `GasLibraryFactory/test/fakes/MockFactory.js` is built on top of it; deleting it breaks the monorepo's shared test fakes.
 
-A handful of findings needed a correction to their *stated* scope (an extra interface declaration to remove, an extra call site to update, an ordering dependency between two findings in the same report, a follow-up test-contract entry). Those corrections are folded directly into the affected task below — follow this plan's steps, not the audit file's prose, when the two disagree.
+A handful of findings needed a correction to their _stated_ scope (an extra interface declaration to remove, an extra call site to update, an ordering dependency between two findings in the same report, a follow-up test-contract entry). Those corrections are folded directly into the affected task below — follow this plan's steps, not the audit file's prose, when the two disagree.
 
 ## Global Constraints
 
 - **Never edit `dist/*`** in either repo — always fix source.
-- **GasLibraryFactory is a separate git repo** (`./GasLibraryFactory`, own history, own `package.json`). Tasks 12–27 commit *inside* that repo. ALDO tasks (1–11) commit at the ALDO repo root.
+- **GasLibraryFactory is a separate git repo** (`./GasLibraryFactory`, own history, own `package.json`). Tasks 12–27 commit _inside_ that repo. ALDO tasks (1–11) commit at the ALDO repo root.
 - **Vendor sync:** any GLF source change (Tasks 12–27) invalidates ALDO's `vendor/gaslibs.Code.js`. Every GLF task's closeout rebuilds and re-syncs it, then proves ALDO still typechecks/tests against the refreshed bundle, then commits the resulting `vendor/` change in the ALDO repo as its own commit.
 - **GLF closeout** (run at the end of every GLF task, from `GasLibraryFactory/`): `npm test && npm run lint`, then from the ALDO repo root: `npm run refresh:vendor && npm run verify:vendor && npm run typecheck && npm test`.
 - **ALDO closeout** (run at the end of every ALDO task, from the ALDO repo root): `npm run typecheck && npm run lint && npm test`.
@@ -33,6 +33,7 @@ A handful of findings needed a correction to their *stated* scope (an extra inte
 **Source:** `AUDIT_PONYTAIL_ALDO_APPLICATION_CONTEXT_ENGINE_2026-09-01.md`
 
 **Files:**
+
 - Modify: `src/application/context-engine/TeachingCouncilProjection.ts`
 - Modify: `src/application/context-engine/providers/PartnerProjectionProvider.ts:78`
 - Modify: `src/application/context-engine/providers/ConsiglioClasseProvider.ts:91-99`
@@ -51,7 +52,7 @@ Add an exported function next to the existing `buildConsiglioClasseVm` export:
 ```ts
 export function scopeByArticolazione<T extends { tipoArticolazione: string | null }>(
   docenti: T[],
-  tipo: string | null,
+  tipo: string | null
 ): T[] {
   if (tipo === null) return docenti;
   return docenti.filter((d) => d.tipoArticolazione === 'COMUNE' || d.tipoArticolazione === tipo);
@@ -84,6 +85,7 @@ git commit -m "refactor(context-engine): extract shared articulation-scope filte
 **Source:** `AUDIT_PONYTAIL_ALDO_APPLICATION_SERVICES_2026-09-01.md`
 
 **Files:**
+
 - Modify: `src/application/services/DocumentBatchService.ts:167,197-259,340-397,447-499,544-596,644-695,717-763,777-822,839-894`
 - Modify: `src/application/services/DocumentGenerationService.ts:156-209,218-257,264-306,334-380`
 - Test: `test/unit/application/services/document-batch-service.test.ts`, `test/unit/application/services/document-generation-service.test.ts`
@@ -150,6 +152,7 @@ git commit -m "refactor(services): extract batch-job and transactional-pipeline 
 **Source:** `AUDIT_PONYTAIL_ALDO_APPLICATION_STRATEGIES_EMAIL_PIPELINES_2026-09-01.md`
 
 **Files:**
+
 - Modify: `src/application/pipelines/emailSteps.ts:23,469`
 - Modify: `src/application/services/EmailNotificationService.ts:317`
 - Test: `test/unit/application/pipelines/email-steps.test.ts:192,215,382,1196,1250,1277,1320,2503,2522,2591,2607`
@@ -186,6 +189,7 @@ git commit -m "refactor(email): drop unused ComposeEmailStep logDocs parameter"
 **Source:** `AUDIT_PONYTAIL_ALDO_DOMAIN_ENTITIES_VALUE_OBJECTS_2026-09-01.md`
 
 **Files:**
+
 - Delete: `src/domain/value-objects/DriveFileId.ts`, `test/unit/domain/drive-ids.test.ts`
 - Modify: `src/domain/entities/AldoEntity.ts:1-14`
 - Modify: `src/domain/value-objects/AnnoCorso.ts:14,26,29` + `test/unit/domain/anno-corso.test.ts`
@@ -252,6 +256,7 @@ git commit -m "refactor(domain): delete test-only entity/value-object methods"
 **Source:** `AUDIT_PONYTAIL_ALDO_INFRASTRUCTURE_DB_REPOSITORIES_2026-09-01.md`
 
 **Files:**
+
 - Modify: `src/infrastructure/repositories/ConfigurazioneEmailRepository.ts:34`
 - Modify: `src/infrastructure/repositories/ClasseRepository.ts:181,185,322`
 - Modify: `src/domain/repositories/IClasseRepository.ts:37-38`
@@ -266,6 +271,7 @@ Remove the `getBoxes` method at `ConfigurazioneEmailRepository.ts:34`. Confirm f
 - [ ] **Step 2: Delete `getDocentiIRC`/`getDocentiALT` — implementation AND interface**
 
 The audit report claims these are absent from `IClasseRepository`; they are not — they're declared at `IClasseRepository.ts:37-38`. Remove both:
+
 - The `getDocentiIRC`/`getDocentiALT` implementations at `ClasseRepository.ts:181,185`.
 - Their declarations at `IClasseRepository.ts:37-38`.
 
@@ -293,6 +299,7 @@ git commit -m "refactor(repositories): delete test-only ClasseRepository/Configu
 **Source:** `AUDIT_PONYTAIL_ALDO_INFRASTRUCTURE_FACADES_2026-09-01.md`
 
 **Files:**
+
 - Modify: `src/infrastructure/facades/DocumentTableFacade.ts:12,63`
 - Modify: `src/infrastructure/facades/IDriveFacade.ts` (interface) and `src/infrastructure/facades/DriveServiceFacade.ts:21`
 - Modify: `src/onlinetests/checks/contextEngineChecks.ts:482,714`
@@ -326,6 +333,7 @@ git commit -m "refactor(facades): delete unused appendTable/setPermission"
 **Source:** `AUDIT_PONYTAIL_ALDO_INFRASTRUCTURE_ROLE_SERVICES_2026-09-01.md`
 
 **Files:**
+
 - Modify: `src/infrastructure/role-resolution/RowScopeExpansion.ts:30-54,190-192`
 - Modify: `src/infrastructure/role-resolution/AldoTeachingResolutionConfig.ts:16-18,71`
 - Modify: `src/infrastructure/services/AlberoCartelle.ts:5-19`
@@ -367,6 +375,7 @@ git commit -m "refactor(infrastructure): trim stale comments, collapse single-im
 **Source:** `AUDIT_PONYTAIL_ALDO_CONFIG_ENTRYPOINTS_PRESENTATION_2026-09-01.md`
 
 **Files:**
+
 - Modify: `src/entrypoints/EntryPoints_User.ts:22-393`
 
 **Interfaces:** None — self-contained.
@@ -397,6 +406,7 @@ git commit -m "refactor(entrypoints): remove redundant EntryPoints_User shortcut
 **Source:** `AUDIT_PONYTAIL_ALDO_ONLINE_TESTS_2026-09-01.md`
 
 **Files:**
+
 - Modify: `src/onlinetests/index.ts:1078-1157,1361`
 - Modify: `src/onlinetests/checks/e2eScenarioChecks.ts:354,1150-1235`
 - Modify: `src/onlinetests/E2eActiveRepresentativesInterceptor.ts:14-27` and its import in `src/onlinetests/index.ts:16`
@@ -431,7 +441,7 @@ Read `CapturedScenarioCheck` (1150), `captureExistingScenarioChecks` (1183), `re
 export const e2eActiveRepresentativesInterceptor: LibContextInterceptor = {
   intercept(/* match the existing intercept(...) signature exactly */) {
     // existing intercept method body, moved here verbatim
-  },
+  }
 };
 ```
 
@@ -455,6 +465,7 @@ git commit -m "refactor(onlinetests): dedupe historical-check bootstrap, drop sc
 **Source:** `AUDIT_PONYTAIL_ALDO_TESTS_2026-09-01.md`
 
 **Files:**
+
 - Create: `test/unit/onlinetests/recordingSpreadsheet.ts` (or similarly named shared helper)
 - Modify: `test/unit/application/database-validation-service-full-db.test.ts:22,79-105`
 - Modify: `test/unit/onlinetests/repository-checks.test.ts`, `test/unit/onlinetests/seeders.test.ts:97-126`, `test/unit/onlinetests/shared-test-database-builder-migration.test.ts:93,106-132`, `test/unit/onlinetests/e2e-sample-database-builder.test.ts`
@@ -494,6 +505,7 @@ git commit -m "test: extract shared RecordingSpreadsheet, recordingArtifacts, TE
 **Source:** `AUDIT_PONYTAIL_ALDO_TOOLING_CONFIG_2026-09-01.md`
 
 **Files:**
+
 - Modify: `scripts/build-and-prepare.cjs:677-683,689-756,788-795`
 - Delete: `babel.config.cjs`
 - Delete: `.clasp.json.bak-20260808-091355`, `.aldo-testonline.json.bak-20260808-091355`
@@ -542,6 +554,7 @@ git commit -m "chore: remove dead build-script steps, unused babel config, stale
 **Source:** `AUDIT_PONYTAIL_GLF_COMPOSABLE_CONTENT_LIB_2026-09-01.md` — run in `GasLibraryFactory/`.
 
 **Files:**
+
 - Modify: `GasLibraryFactory/ComposableContentLib/src/BlockDefinition.js:55-56`
 - Modify: `GasLibraryFactory/ComposableContentLib/src/ComposableContentError.js:77`
 - Modify: `GasLibraryFactory/ComposableContentLib/src/CompositionResult.js:18,152-153`
@@ -585,6 +598,7 @@ git commit -m "chore: refresh vendor after ComposableContentLib cleanup"
 **Excluded finding:** #1 (`CollectionProjector.js`, claimed −1,100 lines) — production inbound use confirmed from ALDO email/role-resolution/context-engine/document-strategy paths. **Do not delete.**
 
 **Files:**
+
 - Modify: `GasLibraryFactory/ContextEngine/index.js:1` (604 lines)
 - Modify: `GasLibraryFactory/ContextEngine/src/ProviderRegistry.test.js`
 - Modify: `GasLibraryFactory/ContextEngine/src/ContextStepExecutor.js:192`
@@ -630,6 +644,7 @@ git commit -m "chore: refresh vendor after ContextEngine cleanup"
 **Source:** `AUDIT_PONYTAIL_GLF_CORE_UTILS_LIB_2026-09-01.md` — run in `GasLibraryFactory/`.
 
 **Files:**
+
 - Modify: `GasLibraryFactory/CoreUtilsLib/src/SystemUtils.js:35`
 - Modify: `GasLibraryFactory/CoreUtilsLib/src/TypeGuards.js:199,444` and `GasLibraryFactory/CoreUtilsLib/index.js:175-176`
 - Modify: `GasLibraryFactory/CoreUtilsLib/src/UtilsService.js:14`
@@ -670,6 +685,7 @@ git commit -m "chore: refresh vendor after CoreUtilsLib cleanup"
 **Source:** `AUDIT_PONYTAIL_GLF_DOMAIN_REPOSITORY_LIB_2026-09-01.md` — run in `GasLibraryFactory/`.
 
 **Files:**
+
 - Modify: `GasLibraryFactory/DomainRepositoryLib/src/SpecificationBuilder.js:7`
 - Modify: `GasLibraryFactory/DomainRepositoryLib/src/ExpressionSpecification.js:10`
 - Delete: `GasLibraryFactory/DomainRepositoryLib/Tests.gs`
@@ -726,6 +742,7 @@ git commit -m "chore: refresh vendor after DomainRepositoryLib cleanup"
 **Source:** `AUDIT_PONYTAIL_GLF_GAS_DATA_IMPORTER_2026-09-01.md` — run in `GasLibraryFactory/`.
 
 **Files:**
+
 - Modify: `GasLibraryFactory/GasDataImporter/index.js:1`
 - Delete: `GasLibraryFactory/GasDataImporter/Tests.gs`
 - Modify: `GasLibraryFactory/GasDataImporter/src/pipeline/Transformer.js:17`
@@ -772,6 +789,7 @@ git commit -m "chore: refresh vendor after GasDataImporter cleanup"
 **Source:** `AUDIT_PONYTAIL_GLF_GAS_EXPRESSION_ENGINE_LIB_2026-09-01.md` — run in `GasLibraryFactory/`.
 
 **Files:**
+
 - Modify: `GasLibraryFactory/GasExpressionEngineLib/src/ExpressionEvaluatorService.js:62`
 - Modify: `GasLibraryFactory/GasExpressionEngineLib/src/handlers/ErrorHelper.js:1` and `GasLibraryFactory/GasExpressionEngineLib/index.js`
 - Modify: `GasLibraryFactory/test/offline/exports-validation.test.js:170`
@@ -813,6 +831,7 @@ git commit -m "chore: refresh vendor after GasExpressionEngineLib cleanup"
 **Source:** `AUDIT_PONYTAIL_GLF_GAS_ONLINE_TEST_FRAMEWORK_2026-09-01.md` — run in `GasLibraryFactory/`.
 
 **Files:**
+
 - Modify: `GasLibraryFactory/GasOnlineTestFramework/README.md:8`
 - Modify: `GasLibraryFactory/GasOnlineTestFramework/src/EnhancedTestRunner.js:13,23,47`
 - Modify: `GasLibraryFactory/GasOnlineTestFramework/src/TestContext.js:17`
@@ -859,6 +878,7 @@ git commit -m "chore: refresh vendor after GasOnlineTestFramework cleanup"
 **Ordering constraint:** findings #1 and #4 must be applied together in the same commit — `loose-coupling.test.js` (deleted by #1) also calls `getConfigSummary()` (deleted by #4); applying #4 alone first breaks a test that's about to be deleted anyway, but applying them out of order within this task risks a broken intermediate state if interrupted. Do both in Step 1/Step 2 below before the closeout.
 
 **Files:**
+
 - Delete: `GasLibraryFactory/GasProcessMonitorLib/loose-coupling.test.js`
 - Modify: `GasLibraryFactory/GasProcessMonitorLib/src/ProcessMonitorService.js:534`
 - Modify: `GasLibraryFactory/GasProcessMonitorLib/src/DashboardUi.js:537`
@@ -911,6 +931,7 @@ git commit -m "chore: refresh vendor after GasProcessMonitorLib cleanup"
 **Source:** `AUDIT_PONYTAIL_GLF_GAS_RESILIENCE_LIB_2026-09-01.md` — run in `GasLibraryFactory/`.
 
 **Files:**
+
 - Modify: `GasLibraryFactory/GasResilienceLib/index.js:1`
 - Modify: `GasLibraryFactory/GasResilienceLib/src/handlers/ErrorClassifier.js:30`
 - Modify: `GasLibraryFactory/GasResilienceLib/src/handlers/ErrorReporter.js:7-9,47-48`
@@ -965,6 +986,7 @@ git commit -m "chore: refresh vendor after GasResilienceLib cleanup"
 **Source:** `AUDIT_PONYTAIL_GLF_GAS_SCHEMA_VALIDATOR_LIB_2026-09-01.md` — run in `GasLibraryFactory/`.
 
 **Files:**
+
 - Modify: `GasLibraryFactory/GasSchemaValidatorLib/src/SchemaValidator.js:6`
 - Modify: `GasLibraryFactory/GasSchemaValidatorLib/index.js:6`
 - Delete: `GasLibraryFactory/GasSchemaValidatorLib/src/testing/mocks.js` (already empty)
@@ -974,7 +996,7 @@ git commit -m "chore: refresh vendor after GasResilienceLib cleanup"
 
 - [ ] **Step 1: Confirm the `WeakMap` cache has no control/metrics API to worry about**
 
-Read `SchemaValidator.js:6` — this finding is about the *lack* of a cache-control/metrics API (nothing to add), not a deletion. Skip if the audit's actual action item is "no change needed" — re-read the original finding text in `AUDIT_PONYTAIL_GLF_GAS_SCHEMA_VALIDATOR_LIB_2026-09-01.md` to confirm what concrete edit (if any) it calls for before touching this file.
+Read `SchemaValidator.js:6` — this finding is about the _lack_ of a cache-control/metrics API (nothing to add), not a deletion. Skip if the audit's actual action item is "no change needed" — re-read the original finding text in `AUDIT_PONYTAIL_GLF_GAS_SCHEMA_VALIDATOR_LIB_2026-09-01.md` to confirm what concrete edit (if any) it calls for before touching this file.
 
 - [ ] **Step 2: Delete the empty `testing/mocks.js`**
 
@@ -1009,6 +1031,7 @@ git commit -m "chore: refresh vendor after GasSchemaValidatorLib cleanup"
 **Deferred, not a task here:** the audit's finding about `index.js:174`'s deprecated re-export says to remove it "at the next major version" — that half is explicitly future work, not implemented now. Only the actionable half (Step 4 below) is in scope.
 
 **Files:**
+
 - Modify: `GasLibraryFactory/GoogleApiWrapper/src/CacheService.js:131`
 - Modify: `GasLibraryFactory/GoogleApiWrapper/src/GoogleService.js:147`
 - Modify: `GasLibraryFactory/GoogleApiWrapper/src/PropertiesService.js:256,390,516,633`
@@ -1032,7 +1055,7 @@ Delete the inline "## Behavior" tutorial-style JSDoc blocks at lines 256, 390, 5
 
 - [ ] **Step 4: Delete `shareFilesWithUsers` and `getScriptPropertyJSON`**
 
-Remove `shareFilesWithUsers` (`PermissionService.js:102`) and `getScriptPropertyJSON` (`PropertiesService.js:633`) — both are confirmed alias-only with zero source callers (grepped across GLF + outer ALDO src; only hits were in the *built* `vendor/gaslibs.Code.js` bundle, which will regenerate on the next `refresh:vendor`).
+Remove `shareFilesWithUsers` (`PermissionService.js:102`) and `getScriptPropertyJSON` (`PropertiesService.js:633`) — both are confirmed alias-only with zero source callers (grepped across GLF + outer ALDO src; only hits were in the _built_ `vendor/gaslibs.Code.js` bundle, which will regenerate on the next `refresh:vendor`).
 
 - [ ] **Step 5: Fix the one real consumer of the deprecated re-export, without removing the re-export itself**
 
@@ -1060,6 +1083,7 @@ git commit -m "chore: refresh vendor after GoogleApiWrapper cleanup"
 **Source:** `AUDIT_PONYTAIL_GLF_JOB_RUNNER_LIB_2026-09-01.md` — run in `GasLibraryFactory/`.
 
 **Files:**
+
 - Modify: `GasLibraryFactory/JobRunnerLib/index.js:1`
 - Modify: `GasLibraryFactory/JobRunnerLib/src/__tests__/JobRunnerService.phase5.test.js:86`
 
@@ -1094,9 +1118,10 @@ git commit -m "chore: refresh vendor after JobRunnerLib cleanup"
 
 **Source:** `AUDIT_PONYTAIL_GLF_PIPELINE_FRAMEWORK_2026-09-01.md` — run in `GasLibraryFactory/`.
 
-**Excluded finding:** #2 (`testing/mocks.js`) — `GasLibraryFactory/test/fakes/MockFactory.js` imports and wraps `PipelineTesting.StepMock`/`PipelineContextMock` from this module (`MockFactory.js:12,158,171`). The audit's own claim that "no in-repo consumer" exists has it backwards — `MockFactory` is *built on* this module. **Do not delete.**
+**Excluded finding:** #2 (`testing/mocks.js`) — `GasLibraryFactory/test/fakes/MockFactory.js` imports and wraps `PipelineTesting.StepMock`/`PipelineContextMock` from this module (`MockFactory.js:12,158,171`). The audit's own claim that "no in-repo consumer" exists has it backwards — `MockFactory` is _built on_ this module. **Do not delete.**
 
 **Files:**
+
 - Delete or trim: `GasLibraryFactory/PipelineFramework/src/Errors.test.js` (VALID as an exhaustive matrix — audit doesn't actually want it deleted; see Step 1)
 - Modify: `GasLibraryFactory/PipelineFramework/src/Pipeline.js:48-49,66,461`
 - Modify: `GasLibraryFactory/PipelineFramework/src/PipelineContext.js:137,152`
@@ -1118,6 +1143,7 @@ Remove `_isDryRun`/`options.dryRun` from `Pipeline.js:66` — zero external call
 Remove `_monitor`/`_jobId` from `Pipeline.js:48-49` — never set by any caller; ALDO already wires telemetry via `beforeStep`/`afterStep` instead (confirmed in `DocumentGenerationService.ts:409` and `EmailNotificationService.ts:306`, which only pass `{name, stopOnError, logPosition}`).
 
 Remove `setFlag`/`getFlag` from `PipelineContext.js:137,152` — **this one has real cross-repo callers**, unlike what "−0 deps" in the audit implies. In the ALDO repo, update `src/application/services/DocumentGenerationService.ts`:
+
 - Lines 202, 249, 298, 372: change `ctx.getFlag<string>('criticalError')` to `ctx.get('criticalError')` (or the correctly-typed equivalent — check `PipelineContext`'s existing `get`/`set` signatures for the right generic/cast).
 - Line 430: change `ctx.setFlag('criticalError', ...)` to `ctx.set('criticalError', ...)`.
 
@@ -1153,6 +1179,7 @@ git commit -m "refactor(services): migrate off PipelineContext.setFlag/getFlag a
 **Source:** `AUDIT_PONYTAIL_GLF_ROLE_RESOLUTION_LIB_2026-09-01.md` — run in `GasLibraryFactory/`.
 
 **Files:**
+
 - Modify: `GasLibraryFactory/RoleResolutionLib/src/AssignmentSource.js:102`
 - Modify: `GasLibraryFactory/RoleResolutionLib/src/DelegationSource.js:85`
 - Modify: `GasLibraryFactory/RoleResolutionLib/src/RoutingResult.js:68`
@@ -1203,6 +1230,7 @@ git commit -m "chore: refresh vendor after RoleResolutionLib cleanup"
 **Source:** `AUDIT_PONYTAIL_GLF_SHEET_DB_LIB_2026-09-01.md` — run in `GasLibraryFactory/`.
 
 **Files:**
+
 - Modify: `GasLibraryFactory/DOCS_LIBS/SheetDBLib.md`
 - Modify: `GasLibraryFactory/SheetDBLib/src/internal/query-builders/AdvancedQueryParser.js:92`
 - Modify: `GasLibraryFactory/SheetDBLib/src/query/AdvancedQueryBuilder.js:21,38`
@@ -1268,6 +1296,7 @@ git commit -m "chore: refresh vendor after SheetDBLib cleanup"
 **Source:** `AUDIT_PONYTAIL_GLF_WORKSPACE_TEMPLATE_ENGINE_2026-09-01.md` — run in `GasLibraryFactory/`.
 
 **Files:**
+
 - Modify: `GasLibraryFactory/WorkspaceTemplateEngine/index.js:1`
 - Modify: `GasLibraryFactory/WorkspaceTemplateEngine/src/FilterStrategy.js:30`
 - Modify: `GasLibraryFactory/WorkspaceTemplateEngine/src/Mustache.js:425`

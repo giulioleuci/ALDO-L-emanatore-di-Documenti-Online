@@ -6,12 +6,7 @@ import {
   composeEmailNotificationService,
   composeRisolutoreRuoli
 } from '../../src/config/ApplicationComposition';
-import {
-  COL_LOG_DOCS,
-  COL_LOG_FOLD,
-  COL_LOG_MAIL,
-  TABLE
-} from '../../src/config/schema';
+import { COL_LOG_DOCS, COL_LOG_FOLD, COL_LOG_MAIL, TABLE } from '../../src/config/schema';
 import { TipoPiano } from '../../src/domain/value-objects/enums';
 import { SheetDbAdapter } from '../../src/infrastructure/db/SheetDbAdapter';
 import { ExpressionEngineFacade } from '../../src/infrastructure/facades/ExpressionEngineFacade';
@@ -58,7 +53,10 @@ function tableNameFromRange(range: string): string {
   return match[1]!.replace(/''/g, "'");
 }
 
-function installRealSheetDb(tables: Record<string, Row[]>, logger: LoggerService): {
+function installRealSheetDb(
+  tables: Record<string, Row[]>,
+  logger: LoggerService
+): {
   db: SheetDbAdapter;
   sheets: NativeSheets;
   flush: jest.Mock;
@@ -117,12 +115,7 @@ function installRealSheetDb(tables: Record<string, Row[]>, logger: LoggerService
   (globalThis as unknown as { SpreadsheetApp: { flush: jest.Mock } }).SpreadsheetApp = { flush };
 
   const cache = { get: () => null, put: () => undefined, remove: () => undefined };
-  const service = new DatabaseService(
-    'integration-sheet',
-    logger,
-    new UtilsService(),
-    cache
-  );
+  const service = new DatabaseService('integration-sheet', logger, new UtilsService(), cache);
 
   return {
     db: new SheetDbAdapter(service),

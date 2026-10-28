@@ -34,34 +34,34 @@ Approccio scartato: editing manuale su Sheets (non riproducibile); pipeline TS v
 
 ### 4.1 Enum e casing
 
-| Foglio | Campo | Trasformazione |
-| --- | --- | --- |
-| INDIRIZZI | `TIPO` | `CLASSICO`, `SCIENTIFICO` → `LICEO` (enum `TipoIstituto`) |
-| CONF_DOC | `PERMESSI` | valori `scrittura`→`SCRITTURA`, `lettura`→`LETTURA` (enum `PermessoACL`); chiave `cartella`→`folder` sia top-level sia dentro `regolaSupplente` (~21 valori + ~4 chiavi) |
+| Foglio    | Campo      | Trasformazione                                                                                                                                                           |
+| --------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| INDIRIZZI | `TIPO`     | `CLASSICO`, `SCIENTIFICO` → `LICEO` (enum `TipoIstituto`)                                                                                                                |
+| CONF_DOC  | `PERMESSI` | valori `scrittura`→`SCRITTURA`, `lettura`→`LETTURA` (enum `PermessoACL`); chiave `cartella`→`folder` sia top-level sia dentro `regolaSupplente` (~21 valori + ~4 chiavi) |
 
 ### 4.2 CONF_DOC — completamento campi obbligatori
 
-| Riga | Campo | Nuovo valore | Motivazione |
-| --- | --- | --- | --- |
-| CONDOTTA | `GENERATORE` | `SHEET_CON_MATERIE_E_PERMESSI` | GSHEET con colonne materie + ACL per materia (`permessiAltSuRel`) |
-| COMPETENZE | `GENERATORE` | `SHEET_CON_MATERIE_E_PERMESSI` | idem |
-| CARENZE_SEGNALATORE_NOVEMBRE | `GENERATORE` | `SHEET_CON_MATERIE_E_PERMESSI` | GSHEET con colonne materie per classe |
-| CARENZE_SEGNALATORE_FEBBRAIO | `GENERATORE` | `SHEET_CON_MATERIE_E_PERMESSI` | idem |
-| DOC15MAGGIO | `GENERATORE` | `DOCUMENTO_CON_TABELLE_IMPORTATE` | GDOC con importazioni da altri documenti (superset sicuro di DOCUMENTO_GENERICO) |
+| Riga                         | Campo        | Nuovo valore                      | Motivazione                                                                      |
+| ---------------------------- | ------------ | --------------------------------- | -------------------------------------------------------------------------------- |
+| CONDOTTA                     | `GENERATORE` | `SHEET_CON_MATERIE_E_PERMESSI`    | GSHEET con colonne materie + ACL per materia (`permessiAltSuRel`)                |
+| COMPETENZE                   | `GENERATORE` | `SHEET_CON_MATERIE_E_PERMESSI`    | idem                                                                             |
+| CARENZE_SEGNALATORE_NOVEMBRE | `GENERATORE` | `SHEET_CON_MATERIE_E_PERMESSI`    | GSHEET con colonne materie per classe                                            |
+| CARENZE_SEGNALATORE_FEBBRAIO | `GENERATORE` | `SHEET_CON_MATERIE_E_PERMESSI`    | idem                                                                             |
+| DOC15MAGGIO                  | `GENERATORE` | `DOCUMENTO_CON_TABELLE_IMPORTATE` | GDOC con importazioni da altri documenti (superset sicuro di DOCUMENTO_GENERICO) |
 
 `GENERATORE` vuoto causerebbe `PipelineError: GENERATORE non registrato` in `RenderTemplateStep`.
 
 ### 4.3 CONF_DOC — asse batch e placeholder CDU
 
-| Riga | Campo | Vecchio | Nuovo |
-| --- | --- | --- | --- |
-| RELAZIONE_FINALE | `TIPO` | `RELAZIONE_FINALE` | `DOCUMENTO_DOCENTE_CLASSE_MATERIA` |
-| RELAZIONE_FINALE | `FILE_NAME` | `{{materia.sigla}}` / `{{docente.nomeCompleto}}` | `{{focus.materia.sigla}}` / `{{focus.docente.nomeCompleto}}` |
-| PROGRAMMA | `TIPO` | `PROGRAMMA_SVOLTO` | `DOCUMENTO_DOCENTE_CLASSE_MATERIA` |
-| PROGRAMMA | `FILE_NAME` | `{{materia.sigla}}` | `{{focus.materia.sigla}}` |
-| PROGRAMMA_RELAZIONI_QUINTE | `TIPO` | `RELAZIONE_DOCENTE_DOC_15_MAGGIO` | `DOCUMENTO_DOCENTE_CLASSE_MATERIA` |
-| PROGRAMMA_RELAZIONI_QUINTE | `FILE_NAME` | `{{materia.sigla}}` | `{{focus.materia.sigla}}` |
-| DOC15MAGGIO | `MODELLI[0].condizione` | `{{classe.indirizzoSigla}} == 'LC'` | `{{focus.classe.anagrafica.indirizzo.sigla}} == 'LC'` |
+| Riga                       | Campo                   | Vecchio                                          | Nuovo                                                        |
+| -------------------------- | ----------------------- | ------------------------------------------------ | ------------------------------------------------------------ |
+| RELAZIONE_FINALE           | `TIPO`                  | `RELAZIONE_FINALE`                               | `DOCUMENTO_DOCENTE_CLASSE_MATERIA`                           |
+| RELAZIONE_FINALE           | `FILE_NAME`             | `{{materia.sigla}}` / `{{docente.nomeCompleto}}` | `{{focus.materia.sigla}}` / `{{focus.docente.nomeCompleto}}` |
+| PROGRAMMA                  | `TIPO`                  | `PROGRAMMA_SVOLTO`                               | `DOCUMENTO_DOCENTE_CLASSE_MATERIA`                           |
+| PROGRAMMA                  | `FILE_NAME`             | `{{materia.sigla}}`                              | `{{focus.materia.sigla}}`                                    |
+| PROGRAMMA_RELAZIONI_QUINTE | `TIPO`                  | `RELAZIONE_DOCENTE_DOC_15_MAGGIO`                | `DOCUMENTO_DOCENTE_CLASSE_MATERIA`                           |
+| PROGRAMMA_RELAZIONI_QUINTE | `FILE_NAME`             | `{{materia.sigla}}`                              | `{{focus.materia.sigla}}`                                    |
+| DOC15MAGGIO                | `MODELLI[0].condizione` | `{{classe.indirizzoSigla}} == 'LC'`              | `{{focus.classe.anagrafica.indirizzo.sigla}} == 'LC'`        |
 
 Motivazione: `focus.docente`/`focus.materia` sono popolati SOLO dall'asse batch `DOCUMENTO_DOCENTE_CLASSE_MATERIA` (01 §CONF_DOC "Altri TIPO riservati", 02 §4.5); il percorso `classe.indirizzoSigla` non esiste nel CDU e la condizione sarebbe sempre falsa (template sbagliato scelto in silenzio).
 
@@ -75,19 +75,19 @@ Politica confermata: best-effort deterministico sui casi con successore univoco 
 
 **LOG_DOCS.ID_GEN / LOG_FOLD.TIPO:**
 
-| Vecchio ID | Criterio | Nuovo ID |
-| --- | --- | --- |
-| `DOCUMENTO_PERSONALIZZATO` | rinomina univoca | `PIANI_PERSONALIZZATI` |
-| *(vuoto)* + TIPO=`PIANO_PERS` | TIPO | `PIANI_PERSONALIZZATI` |
-| *(vuoto)* + TIPO=`PCTO` | TIPO | `PCTO` |
-| *(vuoto)* + TIPO=`PIANO_LAVORO` | TIPO | `PIANO_LAVORO` |
-| *(vuoto)* + TIPO=`VERBALE_CDC` | TIPO + mese di `DATA_CREAZ` (verificato: tutto mese 10) | `VERBALE_CDC_OTTOBRE` |
-| `RIEPILOGO_QUINTA` (ID_GEN) e *(vuoto)*+TIPO=`RIEPILOGO_QUINTA` | nessun successore | **intatto**, report |
-| fold `VERBALE_CDC` | cartelle dei verbali (stesso batch ottobre) | `VERBALE_CDC_OTTOBRE` |
-| fold `PROGRAMMI_SVOLTI` | corrispondenza semantica | `PROGRAMMA` |
-| fold `RELAZIONI_FINALI` | corrispondenza semantica | `RELAZIONE_FINALE` |
-| fold `DOCUMENTO_15_MAGGIO` | corrispondenza semantica | `DOC15MAGGIO` |
-| fold `VERBALE_ASSEMBLEA_CLASSE` | nessun successore | **intatto**, report |
+| Vecchio ID                                                      | Criterio                                                | Nuovo ID               |
+| --------------------------------------------------------------- | ------------------------------------------------------- | ---------------------- |
+| `DOCUMENTO_PERSONALIZZATO`                                      | rinomina univoca                                        | `PIANI_PERSONALIZZATI` |
+| _(vuoto)_ + TIPO=`PIANO_PERS`                                   | TIPO                                                    | `PIANI_PERSONALIZZATI` |
+| _(vuoto)_ + TIPO=`PCTO`                                         | TIPO                                                    | `PCTO`                 |
+| _(vuoto)_ + TIPO=`PIANO_LAVORO`                                 | TIPO                                                    | `PIANO_LAVORO`         |
+| _(vuoto)_ + TIPO=`VERBALE_CDC`                                  | TIPO + mese di `DATA_CREAZ` (verificato: tutto mese 10) | `VERBALE_CDC_OTTOBRE`  |
+| `RIEPILOGO_QUINTA` (ID_GEN) e _(vuoto)_+TIPO=`RIEPILOGO_QUINTA` | nessun successore                                       | **intatto**, report    |
+| fold `VERBALE_CDC`                                              | cartelle dei verbali (stesso batch ottobre)             | `VERBALE_CDC_OTTOBRE`  |
+| fold `PROGRAMMI_SVOLTI`                                         | corrispondenza semantica                                | `PROGRAMMA`            |
+| fold `RELAZIONI_FINALI`                                         | corrispondenza semantica                                | `RELAZIONE_FINALE`     |
+| fold `DOCUMENTO_15_MAGGIO`                                      | corrispondenza semantica                                | `DOC15MAGGIO`          |
+| fold `VERBALE_ASSEMBLEA_CLASSE`                                 | nessun successore                                       | **intatto**, report    |
 
 **Normalizzazione SOTTOTIPO** solo sulle righe LOG_DOCS toccate dalla rimappatura: `PDP BES`→`PDP_BES`, `PDP DSA`→`PDP_DSA`, `PDP STRANIERI`→`PDP_STRANIERI` (valori enum `TipoPiano`; `LOG_DOCS.SOTTOTIPO` DEVE essere il valore di `PIANI.TIPO`).
 
@@ -95,13 +95,13 @@ Politica confermata: best-effort deterministico sui casi con successore univoco 
 
 ### 4.6 Dati anagrafici e operativi
 
-| Foglio | Modifica |
-| --- | --- |
-| DIPART | `CAPO` svuotato su tutte le 12 righe (email fittizie `docenteN@scuola.edu` assenti da DOCENTI). CAPO vuoto è lecito: `PER_CAPO_DIPARTIMENTO` salta i dipartimenti senza capo. Elenco nel report per assegnazione futura |
-| RUOLI | `NOME` completato: REF_ORIENTAMENTO→`Referente Orientamento`, DOCENTE_PRIMA_PROVA→`Docente della prima prova d'esame`, DOCENTE_SECONDA_PROVA→`Docente della seconda prova d'esame`, ALUNNO→`Alunno`; typo RAPPRESENTANTE_GENITORI: `classedei`→`classe dei` |
-| CLASSI | `TERMINALE=TRUE` sulle righe con ANNO=5 (10 classi: 5ALC…5H; istituto con soli licei quinquennali) |
+| Foglio     | Modifica                                                                                                                                                                                                                                                        |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DIPART     | `CAPO` svuotato su tutte le 12 righe (email fittizie `docenteN@scuola.edu` assenti da DOCENTI). CAPO vuoto è lecito: `PER_CAPO_DIPARTIMENTO` salta i dipartimenti senza capo. Elenco nel report per assegnazione futura                                         |
+| RUOLI      | `NOME` completato: REF_ORIENTAMENTO→`Referente Orientamento`, DOCENTE_PRIMA_PROVA→`Docente della prima prova d'esame`, DOCENTE_SECONDA_PROVA→`Docente della seconda prova d'esame`, ALUNNO→`Alunno`; typo RAPPRESENTANTE_GENITORI: `classedei`→`classe dei`     |
+| CLASSI     | `TERMINALE=TRUE` sulle righe con ANNO=5 (10 classi: 5ALC…5H; istituto con soli licei quinquennali)                                                                                                                                                              |
 | MOV_ALUNNI | riga `vittorio.dantonio@…`: TIPO `OUT`→`RITIRATO`, A `RITIRO FREQUENZA`→`RITIRO` (semantica enum TipoMovimento); riga `aurora.petrini@…`: A vuoto→`ALTRO ISTITUTO`. Coppia `michelle.dellamora@…` (OUT+IN 2E→2E): **solo segnalata** nel report, valori intatti |
-| CARENZE | riga orfana `matias.veliaj@pietroaldi.com` (non in ALUNNI): **lasciata**, report |
+| CARENZE    | riga orfana `matias.veliaj@pietroaldi.com` (non in ALUNNI): **lasciata**, report                                                                                                                                                                                |
 
 ## 5. Elementi lasciati volutamente intatti (scelte utente)
 

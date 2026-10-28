@@ -65,7 +65,8 @@ export interface DocumentGenerationDeps {
 function recipeOptionsFromParametri(config: ConfigurazioneDocumento): Partial<RecipeOptions> {
   const parametri = config.getParametri();
   const overrides: Partial<RecipeOptions> = {};
-  if (typeof parametri.includiStorico === 'boolean') overrides.includiStorico = parametri.includiStorico;
+  if (typeof parametri.includiStorico === 'boolean')
+    overrides.includiStorico = parametri.includiStorico;
   if (typeof parametri.profonditaAnniStorico === 'number') {
     overrides.profonditaAnniStorico = parametri.profonditaAnniStorico;
   }
@@ -196,7 +197,9 @@ export class DocumentGenerationService {
     if (classe === null) throw new PipelineError(`Classe ${target.value} non trovata`);
     const articolazione = this.classi.getArticolazione(classe);
     const classiCompetenza = (
-      articolazione?.isParent() === true ? [classe, ...this.classi.getClassiPartner(classe)] : [classe]
+      articolazione?.isParent() === true
+        ? [classe, ...this.classi.getClassiPartner(classe)]
+        : [classe]
     ).map((c) => c.id ?? '');
 
     const cdu = this.contextBuilder.build(
@@ -285,11 +288,7 @@ export class DocumentGenerationService {
   }
 
   /** Alunno-targeted mirror of {@link generateForClasse} (e.g. DOC_PERSONALIZZATO, one file per student). */
-  generateForAlunno(
-    target: string,
-    confDocId: string,
-    jobId?: string
-  ): DocumentGenerationResult {
+  generateForAlunno(target: string, confDocId: string, jobId?: string): DocumentGenerationResult {
     return this.generateForAlunnoWithRecipe(target, confDocId, 'ALUNNO_COMPLETO', jobId);
   }
 
@@ -421,7 +420,9 @@ export class DocumentGenerationService {
       .addStep(new SelectTemplateStep(this.logger, this.configs, this.expressionEngine))
       .addStep(new CloneTemplateStep(this.logger, this.drive))
       .addStep(new RenderTemplateStep(this.logger, this.strategyFactory))
-      .addStep(new ApplyPermissionsStep(this.logger, this.drive, this.roleResolver, this.expressionEngine))
+      .addStep(
+        new ApplyPermissionsStep(this.logger, this.drive, this.roleResolver, this.expressionEngine)
+      )
       .addStep(new RegisterDocumentStep(this.logger, this.db, this.templates))
       .addStep(
         new PostProcessStep(

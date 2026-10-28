@@ -44,7 +44,12 @@ const rossiSlot = (list: DocenteCdcVM[]) =>
 // gestioneSupplenti only steers email routing (EmailNotificationService) --
 // consiglio.elenco/consiglio.titolari are always built from fixed policies
 // (DELEGATE_OR_PRINCIPAL / PRINCIPAL_ONLY), independent of it.
-const anyGestione = [undefined, GestioneSupplenti.SOLO_TITOLARI, GestioneSupplenti.SOLO_SUPPLENTI, GestioneSupplenti.ENTRAMBI];
+const anyGestione = [
+  undefined,
+  GestioneSupplenti.SOLO_TITOLARI,
+  GestioneSupplenti.SOLO_SUPPLENTI,
+  GestioneSupplenti.ENTRAMBI
+];
 
 test.each(anyGestione)(
   'consiglio.elenco always shows the effective actor, SUPPLENZE included (gestioneSupplenti=%s)',

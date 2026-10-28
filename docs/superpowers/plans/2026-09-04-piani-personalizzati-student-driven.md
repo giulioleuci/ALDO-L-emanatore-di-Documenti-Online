@@ -23,10 +23,12 @@
 ### Task 1: Rewrite `PianiPersClasseProvider` to join from the roster
 
 **Files:**
+
 - Modify: `src/application/context-engine/providers/PianiPersClasseProvider.ts`
 - Test: `test/unit/application/context-engine/piani-pers-classe-provider.test.ts` (full rewrite — the existing fixtures are internally inconsistent: e.g. student `a1@school.it`'s `PIANI.TIPO` is `PEI` in `test/fixtures/tables.ts`, but the existing test pushes a `LOG_DOCS` row with `SOTTOTIPO:'PDP_DSA'` for that same student — a mismatch the class-tag-driven code never noticed because it never looked at PIANI)
 
 **Interfaces:**
+
 - Consumes: `IClasseRepository.getStudenti(classe: Classe, soloAttivi?: boolean): Alunno[]` (ALUNNI.ATTIVO gate built in), `IAlunnoRepository.getPiani(alunno: Alunno): Piano[]` (PIANI table), `ILogDocumentoRepository.findByUtente(email: Email): LogDocumento[]`, `LogDocumento.getSottotipo(): string`, `LogDocumento.tipo: string`, `mappers/labels.ts`'s `tipoPianoLabel(tipo: TipoPiano): string`.
 - Produces: `focus.classe.pianiPersonalizzati: PianiPersonalizzatiClasseVM` unchanged in shape (`elenco`, `nonVerbalizzati`, `storico`); `PianoPersonalizzatoVM.hasId` now meaningfully distinguishes a real document from a placeholder for `boxes.ts`/`emailSteps.ts` (Task 2/3).
 
@@ -70,7 +72,10 @@ function build(
   const logDocs = new LogDocumentoRepository(db, new LazyRef(() => classi));
   const b = new ContextBuilder();
   b.registerProvider('class', new ClasseProvider(classi, alunni));
-  b.registerProvider('pianiPersClasse', new PianiPersClasseProvider(classi, logDocs, alunni, databases));
+  b.registerProvider(
+    'pianiPersClasse',
+    new PianiPersClasseProvider(classi, logDocs, alunni, databases)
+  );
   const params: BuildParams = {
     target: '5A',
     tipoTarget: 'classe',
@@ -374,7 +379,10 @@ export class PianiPersClasseProvider implements ContextProvider {
         const piani = this.alunni.getPiani(alunno);
         if (piani.length === 0) return [];
         emails.add(alunno.email.value);
-        const studente: StudenteRef = { nomeCompleto: alunno.cognomeNome, email: alunno.email.value };
+        const studente: StudenteRef = {
+          nomeCompleto: alunno.cognomeNome,
+          email: alunno.email.value
+        };
         return piani.flatMap((piano) => this.itemsPerPiano(alunno, piano, studente));
       });
     });
@@ -398,7 +406,11 @@ export class PianiPersClasseProvider implements ContextProvider {
     };
   }
 
-  private itemsPerPiano(alunno: Alunno, piano: Piano, studente: StudenteRef): PianoPersonalizzatoVM[] {
+  private itemsPerPiano(
+    alunno: Alunno,
+    piano: Piano,
+    studente: StudenteRef
+  ): PianoPersonalizzatoVM[] {
     const matches = this.logDocs
       .findByUtente(alunno.email)
       .filter((l) => l.tipo === TIPO_PIANO_PERS && l.getSottotipo() === piano.tipo);
@@ -453,10 +465,12 @@ git commit -m "feat(cdu): drive pianiPersonalizzati from the active roster, not 
 ### Task 2: Gate `boxes.ts`'s "da notificare" bucket on `hasId`
 
 **Files:**
+
 - Modify: `src/application/email/boxes.ts:506-510` (the `pianiPersDaInviare` filter inside `aggregaDati`)
 - Test: `test/unit/application/email-boxes.test.ts` (raw literal at lines 184-195, and the `pianiPersCduRecord` helper at lines 631-646)
 
 **Interfaces:**
+
 - Consumes: `PianoPersonalizzatoVM.hasId` (Task 1 — `false` for placeholders).
 - Produces: `pianiPersDaInviare.items` now excludes placeholders (nothing to notify for a document that was never generated).
 
@@ -486,36 +500,36 @@ Two edits, both because `renderBoxes` (`src/application/email/boxes.ts:692`) cal
 Edit 2a — the raw literal at `test/unit/application/email-boxes.test.ts:184-195` (the `documentIds` test) currently has no `hasId` field:
 
 ```ts
-  (focus['classe'] as Record<string, unknown>)['pianiPersonalizzati'] = {
-    elenco: [
-      {
-        id: 'personal-plan-1',
-        nome: 'PDP Anna',
-        link: 'https://drive/personal-plan-1',
-        sottotipo: 'PDP_BES',
-        idGen: 'PIANI_PERSONALIZZATI',
-        isNotificato: false
-      }
-    ]
-  };
+(focus['classe'] as Record<string, unknown>)['pianiPersonalizzati'] = {
+  elenco: [
+    {
+      id: 'personal-plan-1',
+      nome: 'PDP Anna',
+      link: 'https://drive/personal-plan-1',
+      sottotipo: 'PDP_BES',
+      idGen: 'PIANI_PERSONALIZZATI',
+      isNotificato: false
+    }
+  ]
+};
 ```
 
 Add `hasId: true` (this item represents an already-generated document, so it must still flow through `pianiPersDaInviare`):
 
 ```ts
-  (focus['classe'] as Record<string, unknown>)['pianiPersonalizzati'] = {
-    elenco: [
-      {
-        id: 'personal-plan-1',
-        hasId: true,
-        nome: 'PDP Anna',
-        link: 'https://drive/personal-plan-1',
-        sottotipo: 'PDP_BES',
-        idGen: 'PIANI_PERSONALIZZATI',
-        isNotificato: false
-      }
-    ]
-  };
+(focus['classe'] as Record<string, unknown>)['pianiPersonalizzati'] = {
+  elenco: [
+    {
+      id: 'personal-plan-1',
+      hasId: true,
+      nome: 'PDP Anna',
+      link: 'https://drive/personal-plan-1',
+      sottotipo: 'PDP_BES',
+      idGen: 'PIANI_PERSONALIZZATI',
+      isNotificato: false
+    }
+  ]
+};
 ```
 
 Edit 2b — the `pianiPersCduRecord` helper at `test/unit/application/email-boxes.test.ts:631-646` is the single choke point every other `piani_pers_da_inviare`/`piani_pers_inviati` test in this file routes through (5 call sites: lines 651, 702, 746, 777, 804). None of their item literals set `hasId`. Default it in the helper instead of touching all five call sites:
@@ -577,10 +591,12 @@ git commit -m "fix(email): exclude ungenerated piani-personalizzati placeholders
 ### Task 3: Gate `emailSteps.ts`'s `PianiDaNotificare` log count on `hasId`, and fix the one test fixture it breaks
 
 **Files:**
+
 - Modify: `src/application/pipelines/emailSteps.ts:446-460` (`RenderBoxesStep._getLogDetails`)
 - Modify: `test/unit/application/pipelines/email-steps.test.ts` (one fixture, ~line 295-319)
 
 **Interfaces:**
+
 - Consumes: `PianoPersonalizzatoVM.hasId` (Task 1).
 - Produces: `_getLogDetails`'s `PianiDaNotificare` count no longer counts placeholders.
 
@@ -645,16 +661,19 @@ git commit -m "fix(email): exclude ungenerated piani-personalizzati placeholders
 ### Task 4: Fix the two remaining consumers surfaced by the new placeholder
 
 **Files:**
+
 - Modify: `test/unit/application/context-engine/recipes-e2e.test.ts` (two assertions)
 - Modify: `test/unit/application/document-generation-service.test.ts` (one fixture addition)
 
 **Interfaces:**
+
 - Consumes: nothing new — these are pure test-fixture/assertion fixes for behavior Task 1 already implements correctly. `a1@school.it` (base fixture, `ATTIVO:true`, `PIANI.TIPO:'PEI'`) now always produces exactly one placeholder item when no matching `LOG_DOCS` row exists for it in the test's tables.
 
 - [ ] **Step 1: Run recipes-e2e to see the breaks**
 
 Run: `npx jest --config jest.config.cjs test/unit/application/context-engine/recipes-e2e.test.ts`
 Expected failures:
+
 - `'CLASSE_COMPLETA on an ordinary class (5A) assembles every class-axis node (09 §3)'`: `c.pianiPersonalizzati?.elenco` is `[{...}]` (length 1, `a1`'s placeholder), not `[]`; `hasElenco` is `true`, not `false`.
 - `'DOCENTE_COMPLETO (document) populates classe-scoped document nodes without a student focus'`: `c.pianiPersonalizzati!.hasElenco` is `true`, not `false`.
 
@@ -663,17 +682,17 @@ Expected failures:
 Change:
 
 ```ts
-  expect(c.pianiPersonalizzati?.elenco).toEqual([]);
-  expect(c.pianiPersonalizzati?.hasElenco).toBe(false);
+expect(c.pianiPersonalizzati?.elenco).toEqual([]);
+expect(c.pianiPersonalizzati?.hasElenco).toBe(false);
 ```
 
 to:
 
 ```ts
-  // a1 (ATTIVO, PIANI.TIPO=PEI) surfaces as a placeholder — no LOG_DOCS row backs it in this fixture.
-  expect(c.pianiPersonalizzati?.elenco).toHaveLength(1);
-  expect(c.pianiPersonalizzati?.elenco[0]?.hasId).toBe(false);
-  expect(c.pianiPersonalizzati?.hasElenco).toBe(true);
+// a1 (ATTIVO, PIANI.TIPO=PEI) surfaces as a placeholder — no LOG_DOCS row backs it in this fixture.
+expect(c.pianiPersonalizzati?.elenco).toHaveLength(1);
+expect(c.pianiPersonalizzati?.elenco[0]?.hasId).toBe(false);
+expect(c.pianiPersonalizzati?.hasElenco).toBe(true);
 ```
 
 - [ ] **Step 3: Fix `recipes-e2e.test.ts:220-221`**
@@ -681,15 +700,15 @@ to:
 Change:
 
 ```ts
-  expect(c.pianiPersonalizzati).toBeDefined();
-  expect(c.pianiPersonalizzati!.hasElenco).toBe(false);
+expect(c.pianiPersonalizzati).toBeDefined();
+expect(c.pianiPersonalizzati!.hasElenco).toBe(false);
 ```
 
 to:
 
 ```ts
-  expect(c.pianiPersonalizzati).toBeDefined();
-  expect(c.pianiPersonalizzati!.hasElenco).toBe(true);
+expect(c.pianiPersonalizzati).toBeDefined();
+expect(c.pianiPersonalizzati!.hasElenco).toBe(true);
 ```
 
 - [ ] **Step 4: Run recipes-e2e again**
@@ -710,19 +729,19 @@ Expected failure: `strategy.cdu?.focus.classe?.pianiPersonalizzati?.elenco.map((
 In `test/unit/application/document-generation-service.test.ts`, in the `'includes personalized plans filed under a partner class when targeting the parent'` test, insert before the existing `tables.LOG_DOCS!.push({...})` call (before line 497):
 
 ```ts
-    tables.ALUNNI!.push({
-      EMAIL: 'studente@school.test',
-      COGNOMENOME: 'STUDENTE TEST',
-      CLASSE: '1F-LSO',
-      RELIGIONE: 'NO',
-      ATTIVO: true,
-      RIPETENTE: false,
-      RAPPR_STUD: false,
-      TUTOR_1: '',
-      TUTOR_2: '',
-      CURRICULUM: null
-    });
-    tables.PIANI!.push({ STUDENTE: 'studente@school.test', TIPO: 'PDP_DSA', PARAMETRI: null });
+tables.ALUNNI!.push({
+  EMAIL: 'studente@school.test',
+  COGNOMENOME: 'STUDENTE TEST',
+  CLASSE: '1F-LSO',
+  RELIGIONE: 'NO',
+  ATTIVO: true,
+  RIPETENTE: false,
+  RAPPR_STUD: false,
+  TUTOR_1: '',
+  TUTOR_2: '',
+  CURRICULUM: null
+});
+tables.PIANI!.push({ STUDENTE: 'studente@school.test', TIPO: 'PDP_DSA', PARAMETRI: null });
 ```
 
 - [ ] **Step 7: Run the full document-generation-service suite**

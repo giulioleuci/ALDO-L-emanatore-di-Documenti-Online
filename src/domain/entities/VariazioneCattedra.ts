@@ -42,7 +42,9 @@ export class VariazioneCattedra extends AldoEntity {
     this.dalRaw =
       typeof data[COL_VARIAZIONI.DAL] === 'string' ? (data[COL_VARIAZIONI.DAL] as string) : '';
     this.classiRaw =
-      typeof data[COL_VARIAZIONI.CLASSI] === 'string' ? (data[COL_VARIAZIONI.CLASSI] as string) : '';
+      typeof data[COL_VARIAZIONI.CLASSI] === 'string'
+        ? (data[COL_VARIAZIONI.CLASSI] as string)
+        : '';
     this.materieRaw =
       typeof data[COL_VARIAZIONI.MATERIE] === 'string'
         ? (data[COL_VARIAZIONI.MATERIE] as string)

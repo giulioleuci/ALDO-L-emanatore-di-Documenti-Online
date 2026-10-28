@@ -5,7 +5,9 @@ import { PipelineError } from '../../../domain/errors/DomainError';
 
 export class PianoFocusProvider implements ContextProvider {
   provide(cdu: Cdu, params: BuildParams): void {
-    const piano = cdu.focus.alunno?.piani.elenco.find((item) => item.tipo === String(params.pianoTipo));
+    const piano = cdu.focus.alunno?.piani.elenco.find(
+      (item) => item.tipo === String(params.pianoTipo)
+    );
     if (piano === undefined) throw new PipelineError(`Piano ${params.pianoTipo ?? ''} non trovato`);
     cdu.focus.piano = {
       tipo: piano.tipo,

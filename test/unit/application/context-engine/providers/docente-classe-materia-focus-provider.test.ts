@@ -29,7 +29,11 @@ describe('DocenteClasseMateriaFocusProvider', () => {
 
     provider.provide(cdu, { docenteCorrente: 'rossi@scuola.it', materiaCorrente: 'MAT' } as never);
 
-    expect(cdu.focus.docente).toEqual({ email: 'rossi@scuola.it', nomeCompleto: 'Mario Rossi', materie: expect.any(Array) });
+    expect(cdu.focus.docente).toEqual({
+      email: 'rossi@scuola.it',
+      nomeCompleto: 'Mario Rossi',
+      materie: expect.any(Array)
+    });
     expect(cdu.focus.materia).toEqual({ sigla: 'MAT', nome: 'Matematica' });
   });
 
@@ -38,7 +42,10 @@ describe('DocenteClasseMateriaFocusProvider', () => {
     const provider = new DocenteClasseMateriaFocusProvider();
 
     expect(() =>
-      provider.provide(cdu, { docenteCorrente: 'ignoto@scuola.it', materiaCorrente: 'MAT' } as never)
+      provider.provide(cdu, {
+        docenteCorrente: 'ignoto@scuola.it',
+        materiaCorrente: 'MAT'
+      } as never)
     ).toThrow(PipelineError);
   });
 

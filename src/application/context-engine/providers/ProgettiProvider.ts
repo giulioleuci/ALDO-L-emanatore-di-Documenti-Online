@@ -8,12 +8,16 @@ import { elencoVm } from '../mappers/elencoVm';
 import { tipoProgettoLabel } from '../mappers/labels';
 
 export class ProgettiProvider implements ContextProvider {
-  constructor(private readonly progetti: ProgettoRepository, private readonly docenti: IDocenteRepository) {}
+  constructor(
+    private readonly progetti: ProgettoRepository,
+    private readonly docenti: IDocenteRepository
+  ) {}
 
   provide(cdu: Cdu): void {
     const focus = cdu.focus.classe;
     if (focus === undefined) return;
-    const elenco: ProgettoVM[] = this.progetti.findByClasse(getClasseEntity(cdu))
+    const elenco: ProgettoVM[] = this.progetti
+      .findByClasse(getClasseEntity(cdu))
       .map((progetto) => ({
         tipo: progetto.tipo,
         tipoLabel: tipoProgettoLabel(progetto.tipo),
@@ -45,6 +49,12 @@ export class ProgettiProvider implements ContextProvider {
     const docente = this.docenti.findById(raw);
     return docente === null
       ? buildPersonaVm({ nome: raw, cognome: null, email: null, genere: null, isEsterno: true })
-      : buildPersonaVm({ nome: docente.nome, cognome: docente.cognome, email: docente.id, genere: docente.genere, isEsterno: false });
+      : buildPersonaVm({
+          nome: docente.nome,
+          cognome: docente.cognome,
+          email: docente.id,
+          genere: docente.genere,
+          isEsterno: false
+        });
   }
 }

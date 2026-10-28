@@ -62,7 +62,9 @@ export function assertActorVisibility(
   for (const channel of CHANNELS) {
     const values = actual[channel];
     if (new Set(values).size !== values.length) {
-      throw new ValidationError(`${label}: ${channel} contiene actor duplicati: ${values.join(',')}`);
+      throw new ValidationError(
+        `${label}: ${channel} contiene actor duplicati: ${values.join(',')}`
+      );
     }
     const visible = normalized(values.filter((email) => focal.has(email)));
     if (JSON.stringify(visible) !== JSON.stringify(normalized(expected))) {
@@ -80,15 +82,21 @@ function classCdu(
   mode: GestioneSupplenti
 ): Cdu {
   return builder.build(
-    { target: classeId, tipoTarget: 'classe', now, configurazioneId: 'ONLINE_CHECK', esecuzioneId: 'ONLINE_CHECK', tipoOperazione: 'GENERAZIONE_DOCUMENTO' },
+    {
+      target: classeId,
+      tipoTarget: 'classe',
+      now,
+      configurazioneId: 'ONLINE_CHECK',
+      esecuzioneId: 'ONLINE_CHECK',
+      tipoOperazione: 'GENERAZIONE_DOCUMENTO'
+    },
     recipe('CLASSE_COMPLETA', { gestioneSupplenti: mode })
   );
 }
 
 function subjectActors(cdu: Cdu, subject: string): string[] {
   return (cdu.focus.classe?.consiglio?.elenco ?? []).flatMap((docente) =>
-    docente.materie.some((materia) => materia.sigla === subject) &&
-    docente.email !== null
+    docente.materie.some((materia) => materia.sigla === subject) && docente.email !== null
       ? [docente.email]
       : []
   );
@@ -180,8 +188,9 @@ export function visibilitySnapshot(
       const groups = focus.classe?.sheet?.materieColonne as {
         gruppi: Array<{ colonne: Array<Record<string, unknown>> }>;
       };
-      const layout = groups.gruppi.flatMap((group) => group.colonne).map(
-        (item, index) => ({
+      const layout = groups.gruppi
+        .flatMap((group) => group.colonne)
+        .map((item, index) => ({
           sheetName: 'Sheet1',
           column: index + 1,
           header:
@@ -192,8 +201,7 @@ export function visibilitySnapshot(
                 : '',
           isLabel: false,
           item
-        })
-      );
+        }));
       capturedLayout.push(...layout);
       return layout;
     }
@@ -224,15 +232,11 @@ export function visibilitySnapshot(
     capturedLayout,
     protectionGestioneSupplenti(sheetConfig)
   );
-  const matProtection = resolvedRequests.find((request) =>
-    request.description?.includes(' MAT ')
-  );
+  const matProtection = resolvedRequests.find((request) => request.description?.includes(' MAT '));
 
   return {
     cdu: subjectActors(cdu, 'MAT'),
-    recipients: roles
-      .risolvi('CDC', cdu, { regolaSupplente: mode })
-      .map((email) => email.value),
+    recipients: roles.risolvi('CDC', cdu, { regolaSupplente: mode }).map((email) => email.value),
     documentAcl: grants
       .filter((grant) => grant.targetId === 'visibility-file')
       .map((grant) => grant.email),
@@ -255,48 +259,38 @@ export function registerSupplenzeRuoliChecks(
     return;
   }
 
-  runner.add(
-    'supplenze.ruoli::confini inclusivi ed esclusivi',
-    sample.sampleSpreadsheetUrl,
-    () => {
-      const builder = container.get<ContextBuilder>('contextBuilder');
-      const principal = e2eDocenteEmail(19);
-      const substitute = e2eDocenteEmail(20);
-      const actorsAt = (date: Date): string[] =>
-        subjectActors(classCdu(builder, '4A', date, GestioneSupplenti.SOLO_SUPPLENTI), 'MAT');
-      assertActors('prima DAL', actorsAt(new Date(SUPPLENZA_INIZIO.getTime() - 1)), [principal]);
-      assertActors('DAL inclusivo', actorsAt(SUPPLENZA_INIZIO), [substitute]);
-      assertActors('AL inclusivo', actorsAt(SUPPLENZA_FINE), [substitute]);
-      // AL is persisted date-only (COL_SUPPLENZE.AL is sliced to YYYY-MM-DD),
-      // so it's inclusive of the whole calendar day — a +1ms probe stays on
-      // the same day and never actually crosses the boundary. Advance a full
-      // day instead.
-      assertActors(
-        'dopo AL',
-        actorsAt(new Date(SUPPLENZA_FINE.getTime() + 24 * 60 * 60 * 1000)),
-        [principal]
-      );
-    }
-  );
+  runner.add('supplenze.ruoli::confini inclusivi ed esclusivi', sample.sampleSpreadsheetUrl, () => {
+    const builder = container.get<ContextBuilder>('contextBuilder');
+    const principal = e2eDocenteEmail(19);
+    const substitute = e2eDocenteEmail(20);
+    const actorsAt = (date: Date): string[] =>
+      subjectActors(classCdu(builder, '4A', date, GestioneSupplenti.SOLO_SUPPLENTI), 'MAT');
+    assertActors('prima DAL', actorsAt(new Date(SUPPLENZA_INIZIO.getTime() - 1)), [principal]);
+    assertActors('DAL inclusivo', actorsAt(SUPPLENZA_INIZIO), [substitute]);
+    assertActors('AL inclusivo', actorsAt(SUPPLENZA_FINE), [substitute]);
+    // AL is persisted date-only (COL_SUPPLENZE.AL is sliced to YYYY-MM-DD),
+    // so it's inclusive of the whole calendar day — a +1ms probe stays on
+    // the same day and never actually crosses the boundary. Advance a full
+    // day instead.
+    assertActors('dopo AL', actorsAt(new Date(SUPPLENZA_FINE.getTime() + 24 * 60 * 60 * 1000)), [
+      principal
+    ]);
+  });
 
-  runner.add(
-    'supplenze.ruoli::isolamento classi sovrapposte',
-    sample.sampleSpreadsheetUrl,
-    () => {
-      const builder = container.get<ContextBuilder>('contextBuilder');
-      const at = SUPPLENZA_INIZIO;
-      assertActors(
-        '4A/MAT',
-        subjectActors(classCdu(builder, '4A', at, GestioneSupplenti.SOLO_SUPPLENTI), 'MAT'),
-        [e2eDocenteEmail(20)]
-      );
-      assertActors(
-        '2B/ING',
-        subjectActors(classCdu(builder, '2B', at, GestioneSupplenti.SOLO_SUPPLENTI), 'ING'),
-        [e2eDocenteEmail(18)]
-      );
-    }
-  );
+  runner.add('supplenze.ruoli::isolamento classi sovrapposte', sample.sampleSpreadsheetUrl, () => {
+    const builder = container.get<ContextBuilder>('contextBuilder');
+    const at = SUPPLENZA_INIZIO;
+    assertActors(
+      '4A/MAT',
+      subjectActors(classCdu(builder, '4A', at, GestioneSupplenti.SOLO_SUPPLENTI), 'MAT'),
+      [e2eDocenteEmail(20)]
+    );
+    assertActors(
+      '2B/ING',
+      subjectActors(classCdu(builder, '2B', at, GestioneSupplenti.SOLO_SUPPLENTI), 'ING'),
+      [e2eDocenteEmail(18)]
+    );
+  });
 
   runner.add(
     'supplenze.ruoli::variazione prima durante dopo sostituzione',
@@ -341,18 +335,14 @@ export function registerSupplenzeRuoliChecks(
     }
   );
 
-  runner.add(
-    'supplenze.ruoli::dedupe titolare e supplente',
-    sample.sampleSpreadsheetUrl,
-    () => {
-      const same = e2eDocenteEmail(19);
-      assertActorVisibility(
-        'same-email',
-        visibilitySnapshot(container, new Date('2026-11-05T12:00:00Z'), GestioneSupplenti.ENTRAMBI),
-        same,
-        same,
-        GestioneSupplenti.ENTRAMBI
-      );
-    }
-  );
+  runner.add('supplenze.ruoli::dedupe titolare e supplente', sample.sampleSpreadsheetUrl, () => {
+    const same = e2eDocenteEmail(19);
+    assertActorVisibility(
+      'same-email',
+      visibilitySnapshot(container, new Date('2026-11-05T12:00:00Z'), GestioneSupplenti.ENTRAMBI),
+      same,
+      same,
+      GestioneSupplenti.ENTRAMBI
+    );
+  });
 }

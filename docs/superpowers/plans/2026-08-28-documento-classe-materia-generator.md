@@ -20,6 +20,7 @@
 - This adds a new reserved `CONF_DOC.TIPO` value on the **batch axis** (like `DOCUMENTO_DOCENTE_MATERIA` and `DIPARTIMENTO` in `01_SCHEMA_DATABASE.md`); the spec doc must be updated.
 
 ---
+
 ## File Structure
 
 - `src/application/services/DocumentBatchService.ts` — add `generateClassiMateria()`, dispatch branch in `batchGenerateHandler`, `ClasseMateriaBatchTarget` type, `BatchResumeState.classeMateriaTargets`.
@@ -37,11 +38,13 @@
 ### Task 1: Domain/repository — role-resolved multi-teacher lookup
 
 **Files:**
+
 - Modify: `src/domain/repositories/IClasseRepository.ts` (interface)
 - Modify: `src/infrastructure/repositories/ClasseRepository.ts` (implementation)
 - Test: `test/unit/infrastructure/classe-repository.test.ts`
 
 **Interfaces:**
+
 - Produces: `IClasseRepository.getDocentiEffettiviPerMateria(classe: Classe, materia: MateriaId, date: Date, resolver: ITeachingAssignmentResolver): Docente[]` — every ACTIVE teacher (role-resolved chain SUPPLENZE→VARIAZIONI_CATTEDRA→CLASSI, `includeReligioneAlt: true`) assigned to the subject in the class. Order: nominal-then-substitutes won't be guaranteed; dedup by email.
 
 This task adds the repository method. Role resolution itself is delegated to `ITeachingAssignmentResolver.resolveConsiglio` (already a constructor dependency of `DocumentBatchService`), so the repository does NOT itself depend on the resolver — keep the resolver invocation in the batch/generation layer where it already lives. **Wait — the repository signature above pulls the resolver in, which would pollute the domain. Refine: the repository exposes a plain `getDocentiPerMateria` (already exists) and the new multi-teacher resolution happens in `DocumentBatchService`/`ClasseMateriaFocusProvider` from `resolveConsiglio`, reusing the exact pattern `generateDocentiMateria` already uses.** Therefore Task 1 is NOT needed — no repository change. `resolveConsiglio` already returns a `TeachingAssignment` list with `docenteEffettivo`, and `ClasseMateriaFocusProvider` can derive all teachers per materia by filtering that list. **Task 1 dropped (YAGNI): zero new repository surface.**
@@ -51,16 +54,19 @@ This task adds the repository method. Role resolution itself is delegated to `IT
 ### Task 2: Batch axis — `generateClassiMateria`
 
 **Files:**
+
 - Modify: `src/application/services/DocumentBatchService.ts`
 - Test: `test/unit/application/document-batch-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `DocumentGenerationService.generateForClasseMateria` (Task 3), `ITeachingAssignmentResolver.resolveConsiglio`, existing `filterPerGestioneArticolazione`, `findAttive`.
 - Produces: new reserved `TIPO = 'DOCUMENTO_CLASSE_MATERIA'` dispatch branch; `export interface ClasseMateriaBatchTarget { classe: string; materiaId: string }`; `BatchResumeState.classeMateriaTargets?: ClasseMateriaBatchTarget[]`.
 
 - [ ] **Step 1: Write failing test**
 
 In `test/unit/application/document-batch-service.test.ts`, add a `wireClassiMateria()` factory (mirror `wireDocentiMateria`) and tests:
+
 - dispatch on `TIPO=DOCUMENTO_CLASSE_MATERIA` routes to the new generator producing one target per (classe, materia), **not** per (classe, materia, docente);
 - a class whose MATE slot has 2 teachers yields **one** `MATE` target, not two;
 - resume from persisted `classeMateriaTargets` skips already `processed` work without re-querying `resolveConsiglio`;
@@ -68,6 +74,7 @@ In `test/unit/application/document-batch-service.test.ts`, add a `wireClassiMate
 - `GESTIONE_ARTICOLAZIONE=COMPLETA` excludes partners (reuse fixture 5A/1F).
 
 Test (representative first test):
+
 ```ts
 test('DOCUMENTO_CLASSE_MATERIA emits one target per (classe, materia), not per docente', () => {
   const { service, generated } = wireClassiMateria();
@@ -93,13 +100,16 @@ Expected: FAIL — the new TIPO branch falls through to `generateClassi` produci
 - [ ] **Step 3: Add `ClasseMateriaBatchTarget` and resume field**
 
 Add near `DocenteMateriaBatchTarget`:
+
 ```ts
 export interface ClasseMateriaBatchTarget {
   classe: string;
   materiaId: string;
 }
 ```
+
 Extend `BatchResumeState`:
+
 ```ts
 classeMateriaTargets?: ClasseMateriaBatchTarget[];
 ```
@@ -107,9 +117,10 @@ classeMateriaTargets?: ClasseMateriaBatchTarget[];
 - [ ] **Step 4: Add dispatch branch**
 
 In `batchGenerateHandler`, after the `DOCUMENTO_DOCENTE_MATERIA` branch:
+
 ```ts
 if (config.tipo === 'DOCUMENTO_CLASSE_MATERIA') {
-  return yield* this.generateClassiMateria(config, confDocId, jobId, resume, processed, errori);
+  return yield * this.generateClassiMateria(config, confDocId, jobId, resume, processed, errori);
 }
 ```
 
@@ -237,10 +248,12 @@ git commit -m "feat(batch): DOCUMENTO_CLASSE_MATERIA axis, one doc per classe+ma
 ### Task 3: Service — `generateForClasseMateria`
 
 **Files:**
+
 - Modify: `src/application/services/DocumentGenerationService.ts`
 - Test: `test/unit/application/document-generation-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `generateForClasseWithRecipe` (private), `BuildParams`, `ITeachingAssignmentResolver`, recipe `'CLASSE_MATERIA'` (Task 4).
 - Produces: `generateForClasseMateria(target: ClasseId, materiaId: string, confDocId: string, jobId?: string): DocumentGenerationResult`.
 
@@ -256,6 +269,7 @@ Expected: FAIL — method missing.
 - [ ] **Step 3: Implement**
 
 Add a public method delegating to the private recipe builder (same shape as `generateForClasseDocenteMateria`):
+
 ```ts
 /** One document per (classe, materia) of an active class — e.g. "scheda materia per classe". */
 generateForClasseMateria(
@@ -273,6 +287,7 @@ generateForClasseMateria(
   );
 }
 ```
+
 Note: pass `materiaCorrente` (not `docenteCorrente`) so the new `ClasseMateriaFocusProvider` (Task 4) receives it.
 
 - [ ] **Step 4: Run to verify it passes**
@@ -292,6 +307,7 @@ git commit -m "feat(generation): generateForClasseMateria service method"
 ### Task 4: CDU provider — `ClasseMateriaFocusProvider`
 
 **Files:**
+
 - Create: `src/application/context-engine/providers/ClasseMateriaFocusProvider.ts`
 - Modify: `src/application/context-engine/Recipe.ts` (new recipe `CLASSE_MATERIA`)
 - Modify: `src/application/context-engine/ContextEngineFactory.ts` (register provider)
@@ -299,6 +315,7 @@ git commit -m "feat(generation): generateForClasseMateria service method"
 - Test: `test/unit/application/context-engine/providers/classe-materia-focus-provider.test.ts`
 
 **Interfaces:**
+
 - Consumes: `BuildParams.materiaCorrente`, `cdu.focus.classe.consiglioDiClasse` (already role-resolved by `consiglio` provider), provider token ids.
 - Produces: provider token `classeMateriaFocus`; CDU `focus.materia` (SubjectVM) and `focus.classiMateria.docenti` (PersonVM[] of all teachers of that subject).
 
@@ -326,9 +343,7 @@ export class ClasseMateriaFocusProvider {
       throw new PipelineError('DOCUMENTO_CLASSE_MATERIA: materiaCorrente mancante');
     }
     const items = cdc.flatMap((d) =>
-      d.materie
-        .filter((m) => m.sigla === materiaId)
-        .map((m) => ({ docente: d, materia: m }))
+      d.materie.filter((m) => m.sigla === materiaId).map((m) => ({ docente: d, materia: m }))
     );
     if (items.length === 0) {
       throw new PipelineError(
@@ -342,11 +357,13 @@ export class ClasseMateriaFocusProvider {
   }
 }
 ```
+
 `consiglioDiClasse` items are `DocenteCdcVM` with `materie: SubjectVM[]` and `anagrafica: PersonVM` — reuse the exact shapes `docente-materia-focus-provider.test` already builds. The council is role-resolved upstream (the `consiglio` provider resolves SUPPLENZE/VARIAZIONI chains), so this provider gets the **active** teacher set for free — permissions apply to all of them.
 
 - [ ] **Step 4: Add recipe + register provider**
 
 In `Recipe.ts`, add:
+
 ```ts
 CLASSE_MATERIA: [
   'school',         // istituto info
@@ -357,7 +374,8 @@ CLASSE_MATERIA: [
 ```
 
 > **ponytail:** Only these 4 providers are needed for MODELLI template selection by `materia.sigla` + `classe.anagrafica.anno` + `classe.anagrafica.indirizzo` and for applying ACL to all role-resolved teachers. Add `'students'`, `'materie'`, etc. only when a template actually references them — they are not part of this axis's minimum contract.
-In `ContextEngineFactory.ts` (near `docenteMateriaFocus`, ~line 120):
+> In `ContextEngineFactory.ts` (near `docenteMateriaFocus`, ~line 120):
+
 ```ts
 .registerProvider('classeMateriaFocus', new ClasseMateriaFocusProvider())
 ```
@@ -367,6 +385,7 @@ In `ContextEngineFactory.ts` (near `docenteMateriaFocus`, ~line 120):
 `focus.materia?: SubjectVM` is already declared in `Cdu.ts` (shared with `DocenteMateriaFocusProvider`). Only add the new field:
 
 In `src/application/context-engine/Cdu.ts`, add to the `focus` interface:
+
 ```ts
 classiMateria?: { docenti: PersonVM[] };
 ```
@@ -388,6 +407,7 @@ git commit -m "feat(cdu): ClasseMateriaFocusProvider + CLASSE_MATERIA recipe"
 ### Task 5: Wiring, spec docs, full verification
 
 **Files:**
+
 - Modify: `SPECS_ALDO/01_SCHEMA_DATABASE.md` (CONF_DOC reserved `TIPO` on batch axis)
 - Modify: `SPECS_ALDO/02_CDU_STRUTTURA.md` (new `focus.materia`, `focus.classiMateria` paths + §4.5)
 
@@ -396,6 +416,7 @@ git commit -m "feat(cdu): ClasseMateriaFocusProvider + CLASSE_MATERIA recipe"
 - [ ] **Step 1: Document CONF_DOC reserved TIPO**
 
 In `01_SCHEMA_DATABASE.md`, extend the "Altri `CONF_DOC.TIPO` riservati (asse di batch)" block after `DOCUMENTO_DOCENTE_MATERIA`:
+
 > - `DOCUMENTO_CLASSE_MATERIA`: un documento per ciascuna materia di ogni classe attiva — non per docente. Popola `focus.materia`/`focus.classiMateria` (02 §4.5); `LOG_DOCS.SOTTOTIPO` è `materia`.
 
 - [ ] **Step 2: Document CDU paths**
@@ -409,6 +430,7 @@ npm run typecheck
 npm run lint
 npm test
 ```
+
 Expected: all green.
 
 - [ ] **Step 4: Commit**
@@ -422,9 +444,10 @@ git commit -m "docs(specs): DOCUMENTO_CLASSE_MATERIA axis + focus.classiMateria"
 
 ### Task 6: Rename `DOCUMENTO_DOCENTE_MATERIA` → `DOCUMENTO_DOCENTE_CLASSE_MATERIA`
 
-The existing axis generates one document per **(classe, docente, materia)** triple, so its name should say so. This is a pure rename of the reserved `CONF_DOC.TIPO` value and the matching code identifiers — no behaviour change, and independent of Tasks 2–5 (it targets the *old* axis, not the new `DOCUMENTO_CLASSE_MATERIA`), so it can run last.
+The existing axis generates one document per **(classe, docente, materia)** triple, so its name should say so. This is a pure rename of the reserved `CONF_DOC.TIPO` value and the matching code identifiers — no behaviour change, and independent of Tasks 2–5 (it targets the _old_ axis, not the new `DOCUMENTO_CLASSE_MATERIA`), so it can run last.
 
 **Files (from repo-wide grep):**
+
 - `src/application/services/DocumentBatchService.ts` — `'DOCUMENTO_DOCENTE_MATERIA'` dispatch check, `DocenteMateriaBatchTarget`, `generateDocentiMateria`, `docenteMateriaTargets` resume field, `generateForClasseDocenteMateria` call site.
 - `src/application/services/DocumentGenerationService.ts` — `generateForClasseDocenteMateria` method.
 - `src/application/context-engine/providers/DocenteMateriaFocusProvider.ts` — class token `docenteMateriaFocus`, its class name, error strings.
@@ -437,10 +460,10 @@ The existing axis generates one document per **(classe, docente, materia)** trip
 > **ponytail / caveat:** The string `'DOCUMENTO_DOCENTE_MATERIA'` is also a **persisted `CONF_DOC.TIPO` value in production data**. Renaming the code constant does not rewrite existing `CONF_DOC` rows — the user migrates that data manually, so no migration step is included here.
 
 - [ ] **Step 1: Rename the reserved TIPO value + code identifiers**
-  Find-replace `DOCUMENTO_DOCENTE_MATERIA` → `DOCUMENTO_DOCENTE_CLASSE_MATERIA` in the source + onlinetests + spec files listed above, and `generateDocentiMateria` → `generateDocentiClasseMateria`, `DocenteMateriaBatchTarget` → `DocenteClasseMateriaBatchTarget`, `generateForClasseDocenteMateria` → `generateForClasseDocente...`-consistent name (pick one and use it everywhere), `docenteMateriaTargets` → `docenteClasseMateriaTargets`, `DocenteMateriaFocusProvider` → `DocenteClasseMateriaFocusProvider`, `docenteMateriaFocus` → `docenteClasseMateriaFocus`, and matching test-file renames.
+      Find-replace `DOCUMENTO_DOCENTE_MATERIA` → `DOCUMENTO_DOCENTE_CLASSE_MATERIA` in the source + onlinetests + spec files listed above, and `generateDocentiMateria` → `generateDocentiClasseMateria`, `DocenteMateriaBatchTarget` → `DocenteClasseMateriaBatchTarget`, `generateForClasseDocenteMateria` → `generateForClasseDocente...`-consistent name (pick one and use it everywhere), `docenteMateriaTargets` → `docenteClasseMateriaTargets`, `DocenteMateriaFocusProvider` → `DocenteClasseMateriaFocusProvider`, `docenteMateriaFocus` → `docenteClasseMateriaFocus`, and matching test-file renames.
 - [ ] **Step 2: Run full verification**
-  Run: `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:integration`, `npm run test:build`.
-  Expected: all green — the rename must be behaviour-neutral.
+      Run: `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:integration`, `npm run test:build`.
+      Expected: all green — the rename must be behaviour-neutral.
 - [ ] **Step 3: Commit**
   ```bash
   git add src test SPECS_ALDO

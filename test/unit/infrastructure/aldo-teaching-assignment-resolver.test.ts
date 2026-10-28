@@ -494,10 +494,7 @@ test('retains each partner owner for wildcard articulated changes and delegation
 
   const assignments = resolver.resolveMateria(parent, MateriaId.of('MAT'), new Date('2026-02-15'));
 
-  expect(assignments.map((assignment) => assignment.classeId.value)).toEqual([
-    '1F-LSO',
-    '1F-LSS'
-  ]);
+  expect(assignments.map((assignment) => assignment.classeId.value)).toEqual(['1F-LSO', '1F-LSS']);
   for (const assignment of assignments) {
     expect(assignment.titolare.id).toBe('articulated-common-new@school.test');
     expect(assignment.docenteEffettivo.id).toBe('articulated-common-sub@school.test');

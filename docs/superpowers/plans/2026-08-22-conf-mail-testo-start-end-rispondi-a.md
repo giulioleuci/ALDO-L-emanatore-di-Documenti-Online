@@ -23,6 +23,7 @@
 ### Task 1: Rename `CONF_MAIL.TESTO` → `TESTO_START`
 
 **Files:**
+
 - Modify: `SPECS_ALDO/01_SCHEMA_DATABASE.md:375` (CONF_MAIL table row), migration note below the table (~line 385)
 - Modify: `SPECS_ALDO/GUIDA_USO_PLACEHOLDER.md:441`
 - Modify: `src/config/schema.ts:39` (`COL_CONF_MAIL.TESTO`)
@@ -32,6 +33,7 @@
 - Test: `test/unit/domain/configurazione-email.test.ts`
 
 **Interfaces:**
+
 - Produces: `ConfigurazioneEmail.getTestoStart(): string` (replaces `getTesto()`), `COL_CONF_MAIL.TESTO_START: 'TESTO_START'` (replaces `COL_CONF_MAIL.TESTO`).
 
 - [ ] **Step 1: Write the failing test for the renamed getter**
@@ -84,13 +86,13 @@ In `src/domain/entities/ConfigurazioneEmail.ts`, apply these three edits:
 
 ```typescript
 // lines 47-48, before:
-    this.testoRaw =
-      typeof data[COL_CONF_MAIL.TESTO] === 'string' ? (data[COL_CONF_MAIL.TESTO] as string) : '';
+this.testoRaw =
+  typeof data[COL_CONF_MAIL.TESTO] === 'string' ? (data[COL_CONF_MAIL.TESTO] as string) : '';
 // after:
-    this.testoStartRaw =
-      typeof data[COL_CONF_MAIL.TESTO_START] === 'string'
-        ? (data[COL_CONF_MAIL.TESTO_START] as string)
-        : '';
+this.testoStartRaw =
+  typeof data[COL_CONF_MAIL.TESTO_START] === 'string'
+    ? (data[COL_CONF_MAIL.TESTO_START] as string)
+    : '';
 ```
 
 ```typescript
@@ -133,9 +135,9 @@ And line 541:
 
 ```typescript
 // before
-    const testo = this.templates.processStringEscaped(conf.getTesto(), cduRecord(ctx));
+const testo = this.templates.processStringEscaped(conf.getTesto(), cduRecord(ctx));
 // after
-    const testo = this.templates.processStringEscaped(conf.getTestoStart(), cduRecord(ctx));
+const testo = this.templates.processStringEscaped(conf.getTestoStart(), cduRecord(ctx));
 ```
 
 Every remaining reference is a plain `COL_CONF_MAIL.TESTO` property-access or a literal `TESTO:` object key in a `CONF_MAIL` row fixture — every occurrence below was verified by hand to belong to `CONF_MAIL`, never `LOG_MAIL` (which also has an unrelated `TESTO` column that must NOT be touched). Run this from the repo root:
@@ -201,7 +203,7 @@ Expected: no output (every match is now `.TESTO_START`).
 In `SPECS_ALDO/01_SCHEMA_DATABASE.md`, change the `TESTO` row (line 375) to:
 
 ```markdown
-| `TESTO_START`   | String  | —   | HTML opzionale inserito prima dei box; supporta placeholder `{{...}}` risolti tramite `WorkspaceTemplateEngine`                                                                                   |
+| `TESTO_START` | String | — | HTML opzionale inserito prima dei box; supporta placeholder `{{...}}` risolti tramite `WorkspaceTemplateEngine` |
 ```
 
 Append to the existing migration-note paragraph below the table (the one starting "**Migrazione database esistenti:**"):
@@ -241,6 +243,7 @@ git commit -m "refactor(onlinetests): rename CONF_MAIL.TESTO to TESTO_START"
 ### Task 2: Add `CONF_MAIL.TESTO_END`
 
 **Files:**
+
 - Modify: `SPECS_ALDO/01_SCHEMA_DATABASE.md` (CONF_MAIL table, migration note)
 - Modify: `SPECS_ALDO/GUIDA_USO_PLACEHOLDER.md` (short note near Example 3)
 - Modify: `src/config/schema.ts` (add `TESTO_END`)
@@ -249,6 +252,7 @@ git commit -m "refactor(onlinetests): rename CONF_MAIL.TESTO to TESTO_START"
 - Test: `test/unit/domain/configurazione-email.test.ts`, `test/unit/application/pipelines/email-steps.test.ts`
 
 **Interfaces:**
+
 - Consumes: `COL_CONF_MAIL.TESTO_START` (Task 1).
 - Produces: `ConfigurazioneEmail.getTestoEnd(): string`, `COL_CONF_MAIL.TESTO_END: 'TESTO_END'`. `ComposeEmailStep` now builds `htmlSoloContenuto` as `saluto + testoStart + boxes + testoEnd`.
 
@@ -311,10 +315,10 @@ In `src/domain/entities/ConfigurazioneEmail.ts`, add a field declaration right a
 Add parsing right after the `testoStartRaw` assignment in the constructor (after the block ending at what was line 48):
 
 ```typescript
-    this.testoEndRaw =
-      typeof data[COL_CONF_MAIL.TESTO_END] === 'string'
-        ? (data[COL_CONF_MAIL.TESTO_END] as string)
-        : '';
+this.testoEndRaw =
+  typeof data[COL_CONF_MAIL.TESTO_END] === 'string'
+    ? (data[COL_CONF_MAIL.TESTO_END] as string)
+    : '';
 ```
 
 Add a getter right after `getTestoStart()`:
@@ -391,19 +395,19 @@ In `src/application/pipelines/emailSteps.ts`, update the doc comment at line 469
 In `_executeLogic`, right after the `testo` assignment (the line changed in Task 1 Step 6), add:
 
 ```typescript
-    const testoEnd = this.templates.processStringEscaped(conf.getTestoEnd(), cduRecord(ctx));
+const testoEnd = this.templates.processStringEscaped(conf.getTestoEnd(), cduRecord(ctx));
 ```
 
 Then change the `htmlSoloContenuto` line from:
 
 ```typescript
-    const htmlSoloContenuto = `<p>${escapeHtml(saluto)},</p>${testo}${boxes.join('')}`;
+const htmlSoloContenuto = `<p>${escapeHtml(saluto)},</p>${testo}${boxes.join('')}`;
 ```
 
 to:
 
 ```typescript
-    const htmlSoloContenuto = `<p>${escapeHtml(saluto)},</p>${testo}${boxes.join('')}${testoEnd}`;
+const htmlSoloContenuto = `<p>${escapeHtml(saluto)},</p>${testo}${boxes.join('')}${testoEnd}`;
 ```
 
 - [ ] **Step 9: Run the tests to verify they pass**
@@ -416,7 +420,7 @@ Expected: PASS (all tests in the file, including the pre-existing ones — `test
 In `SPECS_ALDO/01_SCHEMA_DATABASE.md`, add a new row right after the `TESTO_START` row:
 
 ```markdown
-| `TESTO_END`     | String  | —   | HTML opzionale inserito dopo i box, prima del footer; stessa risoluzione placeholder di `TESTO_START`                                                                                            |
+| `TESTO_END` | String | — | HTML opzionale inserito dopo i box, prima del footer; stessa risoluzione placeholder di `TESTO_START` |
 ```
 
 Append to the migration-note paragraph (same one extended in Task 1):
@@ -454,6 +458,7 @@ git commit -m "feat(onlinetests): add CONF_MAIL.TESTO_END rendered after boxes, 
 ### Task 3: Add `CONF_MAIL.RISPONDI_A` (Reply-To from a CDU placeholder)
 
 **Files:**
+
 - Modify: `SPECS_ALDO/01_SCHEMA_DATABASE.md` (CONF_MAIL table, migration note)
 - Modify: `SPECS_ALDO/GUIDA_USO_PLACEHOLDER.md` (short example)
 - Modify: `src/config/schema.ts` (add `RISPONDI_A`)
@@ -463,6 +468,7 @@ git commit -m "feat(onlinetests): add CONF_MAIL.TESTO_END rendered after boxes, 
 - Test: `test/unit/domain/configurazione-email.test.ts`, `test/unit/infrastructure/gmail-service-facade.test.ts`, `test/unit/application/pipelines/email-steps.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Email.of(raw: string): Email` (`src/domain/value-objects/Email.ts`, throws `ValidationError` on anything not a valid single address — including embedded whitespace/newlines, which also blocks header-injection payloads), `ITemplateEngine.processString(template, context): string` (already imported in `emailSteps.ts`).
 - Produces: `ConfigurazioneEmail.getRispondiA(): string`, `COL_CONF_MAIL.RISPONDI_A: 'RISPONDI_A'`, `EmailSendOptions.replyTo?: string`. `ComposeEmailStep` sets pipeline-context key `'replyTo'` (`string`, present only when `RISPONDI_A` resolved to a valid address) for `SendEmailStep` to read.
 
@@ -524,10 +530,10 @@ In `src/domain/entities/ConfigurazioneEmail.ts`, add a field declaration right a
 Add parsing right after the `testoEndRaw` assignment in the constructor:
 
 ```typescript
-    this.rispondiARaw =
-      typeof data[COL_CONF_MAIL.RISPONDI_A] === 'string'
-        ? (data[COL_CONF_MAIL.RISPONDI_A] as string)
-        : '';
+this.rispondiARaw =
+  typeof data[COL_CONF_MAIL.RISPONDI_A] === 'string'
+    ? (data[COL_CONF_MAIL.RISPONDI_A] as string)
+    : '';
 ```
 
 Add a getter right after `getTestoEnd()`:
@@ -599,7 +605,7 @@ export interface EmailSendOptions {
 In `sendEmail()`, add right after the `bcc` passthrough line:
 
 ```typescript
-    if (opts.replyTo !== undefined) mailOpts.replyTo = opts.replyTo;
+if (opts.replyTo !== undefined) mailOpts.replyTo = opts.replyTo;
 ```
 
 - [ ] **Step 8: Run the test to verify it passes**
@@ -676,29 +682,29 @@ Expected: FAIL — `ctx.get('replyTo')` is always `undefined` and `gmail.sent[0]
 In `src/application/pipelines/emailSteps.ts`, in `ComposeEmailStep._executeLogic`, right after the `allegati`/`corpoHtml` result-setting block (after `this.setResult(ctx, 'allegatiLinks', allegati.links);`), add:
 
 ```typescript
-    const rispondiARaw = conf.getRispondiA();
-    if (rispondiARaw.trim() !== '') {
-      const resolved = this.templates.processString(rispondiARaw, cduRecord(ctx)).trim();
-      try {
-        this.setResult(ctx, 'replyTo', Email.of(resolved).value);
-      } catch {
-        this.logger.warn(
-          `ComposeEmail: RISPONDI_A "${rispondiARaw}" risolto a un indirizzo non valido ("${resolved}") — invio senza intestazione Reply-To`
-        );
-      }
-    }
+const rispondiARaw = conf.getRispondiA();
+if (rispondiARaw.trim() !== '') {
+  const resolved = this.templates.processString(rispondiARaw, cduRecord(ctx)).trim();
+  try {
+    this.setResult(ctx, 'replyTo', Email.of(resolved).value);
+  } catch {
+    this.logger.warn(
+      `ComposeEmail: RISPONDI_A "${rispondiARaw}" risolto a un indirizzo non valido ("${resolved}") — invio senza intestazione Reply-To`
+    );
+  }
+}
 ```
 
 In `SendEmailStep._executeLogic`, add right after the `const testEmail = ctx.get<string>('testEmail');` line:
 
 ```typescript
-    const replyTo = ctx.get<string>('replyTo');
+const replyTo = ctx.get<string>('replyTo');
 ```
 
 Inside the `for (const dest of destinazioni)` loop, right after the `opts.cc`/`opts.bcc` block (after the two `for (const email of ...)` loops that populate `resolvedCc`/`resolvedBcc`), add:
 
 ```typescript
-      if (replyTo !== undefined) opts.replyTo = replyTo;
+if (replyTo !== undefined) opts.replyTo = replyTo;
 ```
 
 - [ ] **Step 12: Run the tests to verify they pass**
@@ -711,7 +717,7 @@ Expected: PASS (full file, including every pre-existing test — `replyTo` stays
 In `SPECS_ALDO/01_SCHEMA_DATABASE.md`, add a new row at the end of the `CONF_MAIL` table, right before the closing `---`:
 
 ```markdown
-| `RISPONDI_A`    | String  | —   | Espressione placeholder `{{...}}` risolta sul CDU destinatario (stesso motore di `TESTO_START`/`TESTO_END`/`OGGETTO`) che deve risolvere a un singolo indirizzo email valido; se non vuota e il risultato non è un indirizzo valido, l'invio prosegue senza intestazione Reply-To e viene emesso un WARN nei log |
+| `RISPONDI_A` | String | — | Espressione placeholder `{{...}}` risolta sul CDU destinatario (stesso motore di `TESTO_START`/`TESTO_END`/`OGGETTO`) che deve risolvere a un singolo indirizzo email valido; se non vuota e il risultato non è un indirizzo valido, l'invio prosegue senza intestazione Reply-To e viene emesso un WARN nei log |
 ```
 
 Append to the migration-note paragraph:
@@ -724,7 +730,7 @@ aggiuntiva, comportamento di invio invariato).
 
 In `SPECS_ALDO/GUIDA_USO_PLACEHOLDER.md`, right after the `TESTO_END` note added in Task 2, add:
 
-```markdown
+````markdown
 `RISPONDI_A` (stessa tabella) è un'espressione placeholder che deve risolvere
 a un singolo indirizzo email — imposta l'intestazione Reply-To del messaggio.
 Esempio per una comunicazione ai genitori che deve tornare al coordinatore
@@ -733,12 +739,14 @@ della classe frequentata dal figlio:
 ```text
 {{focus.classe.coordinatori.elenco.0.email}}
 ```
+````
 
 Se la colonna è vuota, l'invio si comporta come oggi (nessun Reply-To
 impostato). Se non è vuota ma il risultato non è un indirizzo email valido
 (ad esempio la classe non ha coordinatori), l'invio prosegue comunque, senza
 intestazione Reply-To, e viene registrato un WARN nei log operativi.
-```
+
+````
 
 - [ ] **Step 14: Run the full test suite and typecheck**
 
@@ -754,4 +762,4 @@ git add SPECS_ALDO/01_SCHEMA_DATABASE.md SPECS_ALDO/GUIDA_USO_PLACEHOLDER.md \
   test/unit/domain/configurazione-email.test.ts test/unit/infrastructure/gmail-service-facade.test.ts \
   test/unit/application/pipelines/email-steps.test.ts
 git commit -m "feat(onlinetests): add CONF_MAIL.RISPONDI_A to set Reply-To from a CDU placeholder"
-```
+````

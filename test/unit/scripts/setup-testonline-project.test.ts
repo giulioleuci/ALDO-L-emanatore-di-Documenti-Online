@@ -17,22 +17,32 @@ const existing = {
 
 describe('resolveSetupAction', () => {
   test('keeps an existing tracked project when replacement is not requested', () => {
-    expect(resolveSetupAction(existing, { claspExists: true, trackingExists: true }, false)).toBe('existing');
+    expect(resolveSetupAction(existing, { claspExists: true, trackingExists: true }, false)).toBe(
+      'existing'
+    );
   });
 
   test('creates a replacement only when explicitly requested', () => {
-    expect(resolveSetupAction(existing, { claspExists: true, trackingExists: true }, true)).toBe('create');
+    expect(resolveSetupAction(existing, { claspExists: true, trackingExists: true }, true)).toBe(
+      'create'
+    );
   });
 
   test('refuses a partial untracked setup unless replacement is explicitly requested', () => {
-    expect(resolveSetupAction(null, { claspExists: true, trackingExists: false }, false)).toBe('partial-error');
+    expect(resolveSetupAction(null, { claspExists: true, trackingExists: false }, false)).toBe(
+      'partial-error'
+    );
   });
 
   test('refuses mismatched local pointers unless replacement is explicitly requested', () => {
-    expect(resolveSetupAction(null, { claspExists: true, trackingExists: true }, false)).toBe('partial-error');
+    expect(resolveSetupAction(null, { claspExists: true, trackingExists: true }, false)).toBe(
+      'partial-error'
+    );
   });
 
   test('refuses tracking-only local state unless replacement is explicitly requested', () => {
-    expect(resolveSetupAction(null, { claspExists: false, trackingExists: true }, false)).toBe('partial-error');
+    expect(resolveSetupAction(null, { claspExists: false, trackingExists: true }, false)).toBe(
+      'partial-error'
+    );
   });
 });

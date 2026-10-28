@@ -114,7 +114,12 @@ test('class assertion distinguishes real and fallback referees plus ITP omission
           }
         ]
       },
-      { annoScolastico: '2024-2025', classe: { nome: '1C' }, statistiche: { totale: 1 }, progetti: [] }
+      {
+        annoScolastico: '2024-2025',
+        classe: { nome: '1C' },
+        statistiche: { totale: 1 },
+        progetti: []
+      }
     ]
   };
   const materie = [

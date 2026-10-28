@@ -10,7 +10,8 @@ export class ClasseMateriaFocusProvider implements ContextProvider {
     const materia = cdu.focus.classe?.consiglio?.elenco
       .flatMap((docente) => docente.materie)
       .find((item) => item.sigla === sigla);
-    if (materia === undefined) throw new PipelineError(`Materia ${sigla} non trovata nel consiglio`);
+    if (materia === undefined)
+      throw new PipelineError(`Materia ${sigla} non trovata nel consiglio`);
     cdu.focus.materia = materia;
   }
 }

@@ -16,14 +16,14 @@ JavaScript. Do not rewrite SGSA business logic or introduce a second library loa
 - [x] Verify typecheck, lint, integration tests, vendor checksum, and production build.
 - [x] Verify build contracts other than the full online-build smoke test.
 - [x] Restore `GasProcessMonitorLib` in TypeScript after the user's continuation
-  authorized the recommended port. Preserve the original service, sidebar, mocks,
-  storage behavior and all 51 monitoring tests; wire all GLF build/test/doc entry points.
+      authorized the recommended port. Preserve the original service, sidebar, mocks,
+      storage behavior and all 51 monitoring tests; wire all GLF build/test/doc entry points.
 - [x] Re-run all unit tests and full build tests after restoring monitoring.
 - [x] Resolve the review finding about missing external declaration dependencies:
-  add `es-toolkit`, `fuse.js`, and `zod` as ALDO development dependencies.
+      add `es-toolkit`, `fuse.js`, and `zod` as ALDO development dependencies.
 - [x] Check generated declarations with `skipLibCheck: false`, including both
-  instance and static API members. Fix the serialized-error optional stack type
-  and ALDO's missing ambient extraction-method declaration exposed by that check.
+      instance and static API members. Fix the serialized-error optional stack type
+      and ALDO's missing ambient extraction-method declaration exposed by that check.
 - [x] Update GLF's migration fixtures for sixteen libraries and exclude `GLF_OLD/`.
 
 Final runtime verification: ALDO 191/191 unit suites, 2005/2005 tests;

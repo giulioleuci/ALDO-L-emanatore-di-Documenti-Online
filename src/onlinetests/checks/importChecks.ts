@@ -5,7 +5,14 @@ import {
   riprendiJobSospeso
 } from '../../config/Bootstrap';
 import type { ServiceContainer } from '../../config/ServiceContainer';
-import { COL_ASL, COL_CARENZE, COL_CONF_IMP, COL_LOG_DOCS, COL_LOG_FOLD, TABLE } from '../../config/schema';
+import {
+  COL_ASL,
+  COL_CARENZE,
+  COL_CONF_IMP,
+  COL_LOG_DOCS,
+  COL_LOG_FOLD,
+  TABLE
+} from '../../config/schema';
 import { ConfigurationError, ValidationError } from '../../domain/errors/DomainError';
 import type { DocumentGenerationService } from '../../application/services/DocumentGenerationService';
 import type { EmailDb } from '../../application/services/EmailNotificationService';
@@ -358,9 +365,7 @@ function snapshotAslRows(rows: AslRow[]): string {
     }))
     .sort(
       (a, b) =>
-        a.classe.localeCompare(b.classe) ||
-        a.studente.localeCompare(b.studente) ||
-        a.ore - b.ore
+        a.classe.localeCompare(b.classe) || a.studente.localeCompare(b.studente) || a.ore - b.ore
     );
   return JSON.stringify(normalized);
 }
@@ -372,7 +377,11 @@ function snapshotAslRows(rows: AslRow[]): string {
  * `_CLASSE` is one of the eligible classes, no row carries the decoy/baseline ORE=99 sentinel, and
  * each eligible class has the exact per-class shape from `assertClassRowShape`.
  */
-function assertCercaCartelleClasseRun(rows: AslRow[], eligibleClasses: string[], label: string): void {
+function assertCercaCartelleClasseRun(
+  rows: AslRow[],
+  eligibleClasses: string[],
+  label: string
+): void {
   if (rows.length !== eligibleClasses.length * 3) {
     throw new ValidationError(
       `${label}: attese ${eligibleClasses.length * 3} righe (3 per classe eleggibile), ricevute ${rows.length}`

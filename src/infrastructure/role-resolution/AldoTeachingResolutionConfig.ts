@@ -6,7 +6,12 @@ import { MateriaRepository } from '../repositories/MateriaRepository';
 import { SupplenzaRepository } from '../repositories/SupplenzaRepository';
 import { VariazioneCattedraRepository } from '../repositories/VariazioneCattedraRepository';
 import { ANY, expandRowScope } from './RowScopeExpansion';
-import { COL_CLASSI, COL_DOCENTI, COL_SUPPLENZE, COL_VARIAZIONI_CATTEDRA } from '../../config/schema';
+import {
+  COL_CLASSI,
+  COL_DOCENTI,
+  COL_SUPPLENZE,
+  COL_VARIAZIONI_CATTEDRA
+} from '../../config/schema';
 
 const ADAPTER_ID = '__ALDO_ASSIGNMENT_ID';
 const ADAPTER_COLUMN = '__ALDO_SLOT';
@@ -141,9 +146,7 @@ export class AldoTeachingResolutionConfig {
   constructor(private readonly database: RepositoryDatabase) {
     this.classi = new ClasseRepository(database);
     this.actorSource = new AldoActorSource(
-      new DocenteRepository(database)
-        .findAll()
-        .map((d) => d.toData())
+      new DocenteRepository(database).findAll().map((d) => d.toData())
     );
     const variazioni = new VariazioneCattedraRepository(database);
     this.overrideRows = this.withAdapterIds(

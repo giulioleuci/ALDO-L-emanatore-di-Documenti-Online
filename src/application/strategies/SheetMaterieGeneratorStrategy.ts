@@ -6,9 +6,7 @@ import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngin
 import type { TeachingSlotKind } from '../../domain/repositories/IClasseRepository';
 import { MateriaId } from '../../domain/value-objects/MateriaId';
 import { ConfigurationError } from '../../domain/errors/DomainError';
-import {
-  getCduMateriaAssignmentIdentity
-} from '../context-engine/CduInternalMetadata';
+import { getCduMateriaAssignmentIdentity } from '../context-engine/CduInternalMetadata';
 
 /** 0-based column index -> A1 letters ("A", "Z", "AA", ...). Still needed by the
  * `_E_PERMESSI` subclass to turn a `SheetColumnLayout.column` (1-based) into an
@@ -176,7 +174,11 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
       },
       materieColonne: toPrintableGroups(groups)
     };
-    const layout = this.templates.processSheet(fileId, cdu as unknown as Record<string, unknown>, params.sheetName);
+    const layout = this.templates.processSheet(
+      fileId,
+      cdu as unknown as Record<string, unknown>,
+      params.sheetName
+    );
     return { sheetName: resolvedSheetName, layout, groups };
   }
 
@@ -185,7 +187,9 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
     if (classe.isArticolata && classe.articolazione !== undefined) {
       const a = classe.articolazione;
       const partners = a.sottoClassi.map((partner) => partner.nome);
-      const group1 = this.resolveMateriaColumns(a.materieComuni.map((m) => this.columnForId(m.sigla)));
+      const group1 = this.resolveMateriaColumns(
+        a.materieComuni.map((m) => this.columnForId(m.sigla))
+      );
       const group2 = this.resolveMateriaColumns(
         a.materieSeparatePrimo.map((m) => this.columnForId(m.sigla, partners[0]))
       );
@@ -234,7 +238,9 @@ export class SheetMaterieGeneratorStrategy implements GeneratorStrategy {
   }
 
   private catalogId(column: Pick<MateriaColumnInput, 'sigla' | 'specificita'>): string {
-    return column.specificita === undefined ? column.sigla : `${column.sigla}.${column.specificita}`;
+    return column.specificita === undefined
+      ? column.sigla
+      : `${column.sigla}.${column.specificita}`;
   }
 
   /** Resolves each column's display text from MATERIE.SINTESI before template rendering. */

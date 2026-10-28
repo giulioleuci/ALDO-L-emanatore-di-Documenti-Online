@@ -54,7 +54,10 @@ test('a clean database produces no violations and a TUTTO OK report', () => {
 
 test('a broken FK is reported with the sheet row number (index + 2)', () => {
   const tabelle = tabelleValide();
-  tabelle['ALUNNI'] = [{ EMAIL: 'a@x.it', CLASSE: '1A' }, { EMAIL: 'b@x.it', CLASSE: '99X' }];
+  tabelle['ALUNNI'] = [
+    { EMAIL: 'a@x.it', CLASSE: '1A' },
+    { EMAIL: 'b@x.it', CLASSE: '99X' }
+  ];
   const { service, report } = servizio(tabelle);
   const esito = service.esegui();
   const violazione = esito.violazioni.find((v) => v.tabella === 'ALUNNI' && v.campo === 'CLASSE');
@@ -67,42 +70,72 @@ test('a broken FK is reported with the sheet row number (index + 2)', () => {
   });
   expect(report.reports[0]!.righe[0]).toEqual(['TABELLA', 'RIGA', 'CAMPO', 'VALORE', 'ERRORE']);
   expect(report.reports[0]!.righe).toContainEqual([
-    'ALUNNI', '3', 'CLASSE', '99X', 'FK violata: CLASSE "99X" non esiste in CLASSI.ID'
+    'ALUNNI',
+    '3',
+    'CLASSE',
+    '99X',
+    'FK violata: CLASSE "99X" non esiste in CLASSI.ID'
   ]);
 });
 
 test('real table reads report physical row 3 after whitespace-only row 2', () => {
   const records = tabelleValide();
-  records['ALUNNI'] = [{ EMAIL: ' ', CLASSE: '\t' }, { EMAIL: 'b@x.it', CLASSE: '99X' }];
+  records['ALUNNI'] = [
+    { EMAIL: ' ', CLASSE: '\t' },
+    { EMAIL: 'b@x.it', CLASSE: '99X' }
+  ];
   const tables: Record<string, TableService> = {};
   for (const [name, rows] of Object.entries(records)) {
     const header = Object.keys(rows[0]!);
     const raw = [header, ...rows.map((row) => header.map((column) => row[column]))];
     tables[name] = new TableService(
-      name, 'ss1', { getRanges: () => raw }, new LoggerService(), new UtilsService(), raw
+      name,
+      'ss1',
+      { getRanges: () => raw },
+      new LoggerService(),
+      new UtilsService(),
+      raw
     );
   }
   const db = new SheetDbAdapter({
-    tables, save() {}, beginTransaction() {}, commit() {}, rollback() {}
+    tables,
+    save() {},
+    beginTransaction() {},
+    commit() {},
+    rollback() {}
   });
   const report = new FakeSpreadsheetReportFacade();
   const service = new DatabaseValidationService({ db, master: master(), report });
 
   expect(db.table('ALUNNI').findAll()).toEqual([{ EMAIL: 'b@x.it', CLASSE: '99X' }]);
-  expect(service.esegui().violazioni).toEqual([{
-    tabella: 'ALUNNI', riga: 3, campo: 'CLASSE', valore: '99X',
-    errore: 'FK violata: CLASSE "99X" non esiste in CLASSI.ID'
-  }]);
+  expect(service.esegui().violazioni).toEqual([
+    {
+      tabella: 'ALUNNI',
+      riga: 3,
+      campo: 'CLASSE',
+      valore: '99X',
+      errore: 'FK violata: CLASSE "99X" non esiste in CLASSI.ID'
+    }
+  ]);
   expect(report.reports[0]!.righe).toContainEqual([
-    'ALUNNI', '3', 'CLASSE', '99X', 'FK violata: CLASSE "99X" non esiste in CLASSI.ID'
+    'ALUNNI',
+    '3',
+    'CLASSE',
+    '99X',
+    'FK violata: CLASSE "99X" non esiste in CLASSI.ID'
   ]);
   expect(db.table('ALUNNI').findAll()).toEqual([{ EMAIL: 'b@x.it', CLASSE: '99X' }]);
 });
 
 test('an ITP column assigned to a non-ITP docente is reported', () => {
   const tabelle = tabelleValide();
-  tabelle['MATERIE'] = [{ ID: 'MAT', NOME: 'Matematica', LS: '1' }, { ID: 'INF', NOME: 'Informatica' }];
-  tabelle['CLASSI'] = [{ ID: '1A', ANNO: '1', INDIRIZZO: 'LS', MAT: 'p@x.it', 'INF.itp': 'p@x.it' }];
+  tabelle['MATERIE'] = [
+    { ID: 'MAT', NOME: 'Matematica', LS: '1' },
+    { ID: 'INF', NOME: 'Informatica' }
+  ];
+  tabelle['CLASSI'] = [
+    { ID: '1A', ANNO: '1', INDIRIZZO: 'LS', MAT: 'p@x.it', 'INF.itp': 'p@x.it' }
+  ];
   const { service } = servizio(tabelle);
   expect(service.esegui().violazioni.map((v) => v.errore)).toContain(
     'Colonna ITP INF.itp: il docente "p@x.it" non ha DOCENTI.ITP = true'
@@ -117,7 +150,7 @@ test('a curriculum subject with no CLASSI column is reported (Feature 4)', () =>
   ];
   const { service } = servizio(tabelle);
   expect(service.esegui().violazioni.map((v) => v.errore)).toContain(
-    "Materia \"ITA\" obbligatoria per l'indirizzo LS anno 1: colonna assente in CLASSI"
+    'Materia "ITA" obbligatoria per l\'indirizzo LS anno 1: colonna assente in CLASSI'
   );
 });
 

@@ -4,7 +4,12 @@ import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
 import { Genere } from '../../../src/domain/value-objects/enums';
 import { ValidationError } from '../../../src/domain/errors/DomainError';
 
-const rossi = new Docente({ EMAIL: 'rossi@school.it', COGNOME: 'ROSSI', NOME: 'MARIO', GENERE: Genere.M });
+const rossi = new Docente({
+  EMAIL: 'rossi@school.it',
+  COGNOME: 'ROSSI',
+  NOME: 'MARIO',
+  GENERE: Genere.M
+});
 const bianchi = new Docente({
   EMAIL: 'bianchi@school.it',
   COGNOME: 'BIANCHI',

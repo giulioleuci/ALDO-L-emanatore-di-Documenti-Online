@@ -77,6 +77,12 @@ export class StoricoClasseProvider implements ContextProvider {
     const docente = docenti.findById(raw);
     return docente === null
       ? buildPersonaVm({ nome: raw, cognome: null, email: null, genere: null, isEsterno: true })
-      : buildPersonaVm({ nome: docente.nome, cognome: docente.cognome, email: docente.id, genere: docente.genere, isEsterno: false });
+      : buildPersonaVm({
+          nome: docente.nome,
+          cognome: docente.cognome,
+          email: docente.id,
+          genere: docente.genere,
+          isEsterno: false
+        });
   }
 }

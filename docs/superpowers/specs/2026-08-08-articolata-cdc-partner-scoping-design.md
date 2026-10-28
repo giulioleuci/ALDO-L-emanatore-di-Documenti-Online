@@ -30,7 +30,7 @@ private resolutionClasses(classe: Classe): Classe[] {
 This treats **any** articulated classe — the aggregating parent (`3C`) or one
 specific partner (`3C-S`/`3C-C`) — identically: resolution always walks both
 partners' teaching slots. That's correct and necessary when the CDU target
-*is* the parent (needed to compute the `COMUNE`/`SEPARATO_PRIMO`/
+_is_ the parent (needed to compute the `COMUNE`/`SEPARATO_PRIMO`/
 `SEPARATO_SECONDO` split at all), but `ConsiglioClasseProvider.provide()`
 (`src/application/context-engine/providers/ConsiglioClasseProvider.ts`) then
 assigns the **full unfiltered union** to `focus.classe.consiglioDiClasse`
@@ -56,7 +56,7 @@ teachers — that's the 4+4−1(shared MAT)=7 seen in the generated document.
 `RIEPILOGHI_FIRME_CDC`'s template renders `focus.classe.consiglioDiClasse`
 directly (`E2eTemplateProvisioner.ts`); `CONF_DOC_ARTICOLATA`'s template
 renders `consiglioDiClasseComune`/`consiglioDiClasseSeparato` — same bug
-class, since `CONF_DOC_ARTICOLATA` is *also* generated once per partner
+class, since `CONF_DOC_ARTICOLATA` is _also_ generated once per partner
 target (`ARTICOLATA_TARGETS` includes both `CLASSE_C` and
 `CLASSE_C_PARTNER`).
 
@@ -80,7 +80,7 @@ the full union, which is what the aggregate report needs.
 
 Own branch is determined the same way `tipoArticolazione()` already does: via
 `orderedPartners(classe)` — `partners[0].id === classe.id` means this classe
-*is* `SEPARATO_PRIMO`'s owner, otherwise it's `SEPARATO_SECONDO`'s owner.
+_is_ `SEPARATO_PRIMO`'s owner, otherwise it's `SEPARATO_SECONDO`'s owner.
 `IClasseRepository` (already a `ConsiglioClasseProvider` dependency) exposes
 `getArticolazione`/`orderedPartners`, so no new dependency is needed.
 
@@ -191,7 +191,7 @@ This directly exercises the parent/partner scoping contract end-to-end
 - No change to `AldoTeachingResolutionConfig.resolutionClasses()` itself — it
   correctly needs the full partner union to compute the COMUNE/SEPARATO tags
   in the first place; the fix belongs at the point where the CDU decides what
-  to expose for *this* target classe.
+  to expose for _this_ target classe.
 - No change to `PartnerProjectionProvider` (unaffected, see Fix 1).
 - No change to `ESAME_CFG_E2E`/subject curriculum — only the indirizzo FK
   differs between the two partners.

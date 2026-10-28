@@ -116,8 +116,7 @@ export class StoricoAlunniService {
         };
       }
 
-      const classe =
-        alunno.classe !== '' ? classi.findById(ClasseId.of(alunno.classe)) : null;
+      const classe = alunno.classe !== '' ? classi.findById(ClasseId.of(alunno.classe)) : null;
       const annoCorso = classe?.anno.value ?? null;
 
       const carenzeStoriche: CarenzaStorica[] = [];

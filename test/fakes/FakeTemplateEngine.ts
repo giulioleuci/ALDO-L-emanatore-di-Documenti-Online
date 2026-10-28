@@ -40,7 +40,8 @@ export class FakeTemplateEngine implements ITemplateEngine {
     sheetName?: string
   ): SheetColumnLayout[] {
     this.renderedSheets.push({ sheetId, context, sheetName });
-    const focus = context['focus'] as { classe?: { sheet?: { materieColonne?: unknown } } } | undefined;
+    const focus = context['focus'] as
+      { classe?: { sheet?: { materieColonne?: unknown } } } | undefined;
     return this.resolveDynamicColumns(focus?.classe?.sheet?.materieColonne);
   }
 
@@ -54,7 +55,12 @@ export class FakeTemplateEngine implements ITemplateEngine {
 
   private resolveDynamicColumns(materieColonne: unknown): SheetColumnLayout[] {
     if (materieColonne === null || typeof materieColonne !== 'object') return [];
-    const groups = (materieColonne as { gruppi?: Array<{ colonne: { sigla: string; header: string }[]; label: string }> }).gruppi ?? [];
+    const groups =
+      (
+        materieColonne as {
+          gruppi?: Array<{ colonne: { sigla: string; header: string }[]; label: string }>;
+        }
+      ).gruppi ?? [];
     const buckets = groups.map((group) => ({ items: group.colonne, label: group.label }));
 
     const columns: SheetColumnLayout[] = [];

@@ -23,6 +23,7 @@
 ### Task 1: Scaffold del package `template-playground/`
 
 **Files:**
+
 - Create: `template-playground/package.json`
 - Create: `template-playground/tsconfig.json`
 - Create: `template-playground/vite.config.ts`
@@ -83,7 +84,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   base: './',
   build: { outDir: 'dist', target: 'es2020' },
-  test: { include: ['src/**/*.test.ts'] },
+  test: { include: ['src/**/*.test.ts'] }
 });
 ```
 
@@ -107,7 +108,10 @@ export default defineConfig({
       <button id="btn-export" type="button">Esporta .txt</button>
     </header>
     <main id="app">
-      <aside id="tree-pane"><h2>CDU (fittizio)</h2><div id="tree"></div></aside>
+      <aside id="tree-pane">
+        <h2>CDU (fittizio)</h2>
+        <div id="tree"></div>
+      </aside>
       <section id="editor-pane">
         <div id="editor"></div>
         <div id="problems"></div>
@@ -125,7 +129,7 @@ export default defineConfig({
 
 - [ ] **Step 5: crea `src/style.css`** — layout a 3 colonne e stile token/chip
 
-```css
+````css
 * { box-sizing: border-box; }
 :root { --err:#c0392b; --warn:#b7791f; --ok:#27ae60; --chip-bg:#eef3fb; --chip-border:#9db8dd; }
 html, body { margin:0; height:100%; font-family: system-ui, "Segoe UI", sans-serif; font-size:14px; }
@@ -166,7 +170,7 @@ export function main(): void {
 }
 
 main();
-```
+````
 
 - [ ] **Step 7: Test di smoke + verifica**
 
@@ -202,11 +206,13 @@ git commit -m "chore(template-playground): scaffold vite+ts+vitest"
 ### Task 2: Engine — tipi e tokenizer
 
 **Files:**
+
 - Create: `template-playground/src/engine/types.ts`
 - Create: `template-playground/src/engine/tokenizer.ts`
 - Test: `template-playground/src/engine/tokenizer.test.ts`
 
 **Interfaces:**
+
 - Produces (usati da Task 3+):
   - `export type CDUValue = string | number | boolean | null | CDUNode | CDUValue[] | undefined;`
   - `export interface CDUNode { [key: string]: CDUValue }`
@@ -235,7 +241,12 @@ describe('tokenize', () => {
   });
   it('variabile scalare con percorso', () => {
     const r = tokenize('{{focus.classe.nome}}');
-    expect(r.tokens[0]).toMatchObject({ type: 'var', path: 'focus.classe.nome', raw: false, filters: [] });
+    expect(r.tokens[0]).toMatchObject({
+      type: 'var',
+      path: 'focus.classe.nome',
+      raw: false,
+      filters: []
+    });
   });
   it('tripla graffa e ampersand sono raw', () => {
     expect((tokenize('{{{a.b}}}').tokens[0] as any).raw).toBe(true);
@@ -251,7 +262,9 @@ describe('tokenize', () => {
     expect(t.filters.map((f: any) => f.name)).toEqual(['map', 'join']);
   });
   it('inverted section', () => {
-    const r = tokenize('{{^focus.classe.studenti.hasElenco}}vuoto{{/focus.classe.studenti.hasElenco}}');
+    const r = tokenize(
+      '{{^focus.classe.studenti.hasElenco}}vuoto{{/focus.classe.studenti.hasElenco}}'
+    );
     expect(kinds(r.tokens)).toBe('inverted-open,text,section-close');
   });
   it('section bullet_list con target', () => {
@@ -284,17 +297,31 @@ describe('tokenize', () => {
 
 ```ts
 export type Scalar = string | number | boolean | null;
-export interface CDUNode { [key: string]: CDUValue }
+export interface CDUNode {
+  [key: string]: CDUValue;
+}
 export type CDUValue = Scalar | CDUNode | CDUValue[] | undefined;
 
 export type ArgValue = string | number | boolean;
-export interface Filter { name: string; args: ArgValue[] }
+export interface Filter {
+  name: string;
+  args: ArgValue[];
+}
 
-export interface TokenBase { start: number; end: number }
+export interface TokenBase {
+  start: number;
+  end: number;
+}
 
-export interface TextToken extends TokenBase { type: 'text'; value: string }
+export interface TextToken extends TokenBase {
+  type: 'text';
+  value: string;
+}
 export interface VarToken extends TokenBase {
-  type: 'var'; path: string; filters: Filter[]; raw: boolean;
+  type: 'var';
+  path: string;
+  filters: Filter[];
+  raw: boolean;
 }
 export interface SectionOpenToken extends TokenBase {
   type: 'section-open';
@@ -302,16 +329,31 @@ export interface SectionOpenToken extends TokenBase {
   kind: 'path' | 'expr' | 'list' | 'numberList' | 'tablerow';
   target: string;
 }
-export interface SectionCloseToken extends TokenBase { type: 'section-close'; name: string }
-export interface InvertedOpenToken extends TokenBase { type: 'inverted-open'; name: string }
+export interface SectionCloseToken extends TokenBase {
+  type: 'section-close';
+  name: string;
+}
+export interface InvertedOpenToken extends TokenBase {
+  type: 'inverted-open';
+  name: string;
+}
 export interface SheetToken extends TokenBase {
-  type: 'sheet'; kind: 'dynamic_rows' | 'dynamic_columns'; params: Record<string, string>;
+  type: 'sheet';
+  kind: 'dynamic_rows' | 'dynamic_columns';
+  params: Record<string, string>;
 }
 
-export type Token = TextToken | VarToken | SectionOpenToken | SectionCloseToken | InvertedOpenToken | SheetToken;
+export type Token =
+  TextToken | VarToken | SectionOpenToken | SectionCloseToken | InvertedOpenToken | SheetToken;
 
-export interface ParserError { offset: number; message: string }
-export interface ParseResult { tokens: Token[]; errors: ParserError[] }
+export interface ParserError {
+  offset: number;
+  message: string;
+}
+export interface ParseResult {
+  tokens: Token[];
+  errors: ParserError[];
+}
 ```
 
 - [ ] **Step 4: `src/engine/tokenizer.ts`**
@@ -331,9 +373,11 @@ function splitTopLevel(s: string, sep: string): string[] {
       cur += c;
       if (c === quote) quote = null;
     } else if (c === "'" || c === '"') {
-      quote = c; cur += c;
+      quote = c;
+      cur += c;
     } else if (c === sep) {
-      out.push(cur); cur = '';
+      out.push(cur);
+      cur = '';
     } else {
       cur += c;
     }
@@ -367,7 +411,8 @@ export function tokenize(template: string): ParseResult {
   let textStart = 0;
 
   const pushText = (end: number) => {
-    if (end > textStart) tokens.push({ type: 'text', value: template.slice(textStart, end), start: textStart, end });
+    if (end > textStart)
+      tokens.push({ type: 'text', value: template.slice(textStart, end), start: textStart, end });
   };
 
   while (i < template.length) {
@@ -388,18 +433,42 @@ export function tokenize(template: string): ParseResult {
       if (triple) {
         tokens.push({ type: 'var', path: inner, filters: [], raw: true, start, end: stop });
       } else if (inner.startsWith('&')) {
-        tokens.push({ type: 'var', path: inner.slice(1).trim(), filters: [], raw: true, start, end: stop });
+        tokens.push({
+          type: 'var',
+          path: inner.slice(1).trim(),
+          filters: [],
+          raw: true,
+          start,
+          end: stop
+        });
       } else if (inner.startsWith('#')) {
         const name = inner.slice(1).trim();
         const colon = name.indexOf(':');
         const directive = colon >= 0 ? name.slice(0, colon) : null;
         const rest = colon >= 0 ? name.slice(colon + 1) : name;
-        const kind = directive ? (directive === 'bullet_list' ? 'list' : directive === 'number_list' ? 'numberList' : directive === 'tablerow_loop' ? 'tablerow' : 'path') : 'path';
+        const kind = directive
+          ? directive === 'bullet_list'
+            ? 'list'
+            : directive === 'number_list'
+              ? 'numberList'
+              : directive === 'tablerow_loop'
+                ? 'tablerow'
+                : 'path'
+          : 'path';
         if (directive && !STRUCTURALS.has(directive)) {
           errors.push({ offset: start, message: 'Direttiva di sezione sconosciuta: ' + directive });
-          i = stop; textStart = stop; continue;
+          i = stop;
+          textStart = stop;
+          continue;
         }
-        tokens.push({ type: 'section-open', name, kind: exprLike(rest) ? 'expr' : kind, target: rest, start, end: stop });
+        tokens.push({
+          type: 'section-open',
+          name,
+          kind: exprLike(rest) ? 'expr' : kind,
+          target: rest,
+          start,
+          end: stop
+        });
       } else if (inner.startsWith('^')) {
         const name = inner.slice(1).trim();
         tokens.push({ type: 'inverted-open', name, start, end: stop });
@@ -414,7 +483,13 @@ export function tokenize(template: string): ParseResult {
             if (eq < 0) continue;
             params[part.slice(0, eq).trim()] = part.slice(eq + 1).trim();
           }
-          tokens.push({ type: 'sheet', kind: dm[1] as 'dynamic_rows' | 'dynamic_columns', params, start, end: stop });
+          tokens.push({
+            type: 'sheet',
+            kind: dm[1] as 'dynamic_rows' | 'dynamic_columns',
+            params,
+            start,
+            end: stop
+          });
         } else {
           tokens.push(parseVar(inner, start, stop));
         }
@@ -460,12 +535,14 @@ git commit -m "feat(template-playground): tipi e tokenizer mustache"
 ### Task 3: Engine — lookup contesto e renderer core
 
 **Files:**
+
 - Create: `template-playground/src/engine/lookup.ts`
 - Create: `template-playground/src/engine/renderer.ts`
 - Create: `template-playground/src/engine/escape.ts`
 - Test: `template-playground/src/engine/renderer.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `export interface Resolution { found:boolean; value:CDUValue }`
   - `export function lookup(path:string, frames:CDUValue[]): Resolution` — `frames[0]` = root CDU, poi scope annidati (item di loop/oggetto). Supporta `../`, segmenti numerici (indice array), chiavi `@...` (meta da frame), fallback su `hasOwnProperty`.
@@ -475,7 +552,7 @@ git commit -m "feat(template-playground): tipi e tokenizer mustache"
   - `export function renderTemplate(tokens:Token[], root:CDUValue): RenderResult`
 - Consumes: `tokenize`, tipi Task 2; `applyFilters` Task 5 (import optional — renderer lascia i filtri a Task 5, qui implementa il pass `applyFilterChain`).
 
-*Nota task-ordine:* il renderer accetta un parametro `filters: FilterSet` iniettato per evitare dipendenza circolare. In Task 5 `main.ts` fornirà l'implementazione reale. Qui il default mappa a errore "filtro non implementato"; il Task 5 li sostituisce.
+_Nota task-ordine:_ il renderer accetta un parametro `filters: FilterSet` iniettato per evitare dipendenza circolare. In Task 5 `main.ts` fornirà l'implementazione reale. Qui il default mappa a errore "filtro non implementato"; il Task 5 li sostituisce.
 
 - [ ] **Step 1: test falliti** — `src/engine/renderer.test.ts`
 
@@ -488,10 +565,12 @@ import type { CDUNode } from './types';
 const cdu: CDUNode = {
   focus: {
     classe: { nome: '3A INF', anno: 3 },
-    studenti: { elenco: [{ nomeCompleto: 'BIANCHI ANNA', email: 'a@x.it' }, { nomeCompleto: 'ROSSI MARIO' }] },
-    coordinatori: { elenco: [{ nomeCompleto: 'ROSSI LUCA' }] },
+    studenti: {
+      elenco: [{ nomeCompleto: 'BIANCHI ANNA', email: 'a@x.it' }, { nomeCompleto: 'ROSSI MARIO' }]
+    },
+    coordinatori: { elenco: [{ nomeCompleto: 'ROSSI LUCA' }] }
   },
-  meta: { oggi: { estesa: '31 agosto 2026' } },
+  meta: { oggi: { estesa: '31 agosto 2026' } }
 };
 
 const rr = (tpl: string) => renderTemplate(tokenize(tpl).tokens, cdu as any);
@@ -509,12 +588,16 @@ describe('renderTemplate', () => {
     expect(rr('{{focus.classe.nome}}').html).toBe('3A INF');
   });
   it('sezione array itera e risale al contesto', () => {
-    const out = rr('{{#focus.studenti.elenco}}{{nomeCompleto}} in {{../focus.classe.nome}};{{/focus.studenti.elenco}}').html;
+    const out = rr(
+      '{{#focus.studenti.elenco}}{{nomeCompleto}} in {{../focus.classe.nome}};{{/focus.studenti.elenco}}'
+    ).html;
     expect(out).toContain('BIANCHI ANNA in 3A INF');
     expect(out).toContain('ROSSI MARIO in 3A INF');
   });
   it('meta variabili @number e @last', () => {
-    const out = rr('{{#focus.studenti.elenco}}{{@number}}{{^@last}}, {{/@last}}{{/focus.studenti.elenco}}').html;
+    const out = rr(
+      '{{#focus.studenti.elenco}}{{@number}}{{^@last}}, {{/@last}}{{/focus.studenti.elenco}}'
+    ).html;
     expect(out).toBe('1, 2');
   });
   it('indice numerico [n]', () => {
@@ -548,11 +631,16 @@ npx vitest run src/engine/renderer.test.ts
 export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => {
     switch (c) {
-      case '&': return '&amp;';
-      case '<': return '&lt;';
-      case '>': return '&gt;';
-      case '"': return '&quot;';
-      default: return '&#39;';
+      case '&':
+        return '&amp;';
+      case '<':
+        return '&lt;';
+      case '>':
+        return '&gt;';
+      case '"':
+        return '&quot;';
+      default:
+        return '&#39;';
     }
   });
 }
@@ -563,13 +651,19 @@ export function escapeHtml(s: string): string {
 ```ts
 import type { CDUValue, CDUNode } from './types';
 
-export interface Resolution { found: boolean; value: CDUValue }
+export interface Resolution {
+  found: boolean;
+  value: CDUValue;
+}
 
 export function lookup(path: string, frames: CDUValue[]): Resolution {
   const segs = path.split('.');
   let frameIdx = frames.length - 1;
   let i = 0;
-  while (segs[i] === '..') { frameIdx -= 1; i += 1; }
+  while (segs[i] === '..') {
+    frameIdx -= 1;
+    i += 1;
+  }
   if (frameIdx < 0 || frameIdx >= frames.length) return { found: false, value: undefined };
   let cur: CDUValue = frames[frameIdx];
   for (; i < segs.length; i++) {
@@ -614,8 +708,14 @@ import { applyFilters } from './filters';
 import { evalExpr } from './expression';
 import * as structural from './structural';
 
-export interface RenderError { offset: number; message: string }
-export interface RenderResult { html: string; errors: RenderError[] }
+export interface RenderError {
+  offset: number;
+  message: string;
+}
+export interface RenderResult {
+  html: string;
+  errors: RenderError[];
+}
 
 interface Ctx {
   frames: CDUValue[];
@@ -628,14 +728,33 @@ export function renderTemplate(tokens: Token[], root: CDUValue): RenderResult {
   let i = 0;
   while (i < tokens.length) {
     const t = tokens[i];
-    if (t.type === 'text') { ctx.out.push(escapeHtml(t.value)); i++; continue; }
-    if (t.type === 'var') { renderVar(t, ctx); i++; continue; }
-    if (t.type === 'sheet') { ctx.out.push(structural.sheetDirectiveHtml(t, { frames: ctx.frames })); i++; continue; }
-    if (t.type === 'section-open') { i = renderSection(t, i + 1, tokens, ctx); continue; }
-    if (t.type === 'inverted-open') { i = renderInverted(t, i + 1, tokens, ctx); continue; }
+    if (t.type === 'text') {
+      ctx.out.push(escapeHtml(t.value));
+      i++;
+      continue;
+    }
+    if (t.type === 'var') {
+      renderVar(t, ctx);
+      i++;
+      continue;
+    }
+    if (t.type === 'sheet') {
+      ctx.out.push(structural.sheetDirectiveHtml(t, { frames: ctx.frames }));
+      i++;
+      continue;
+    }
+    if (t.type === 'section-open') {
+      i = renderSection(t, i + 1, tokens, ctx);
+      continue;
+    }
+    if (t.type === 'inverted-open') {
+      i = renderInverted(t, i + 1, tokens, ctx);
+      continue;
+    }
     if (t.type === 'section-close') {
       ctx.errors.push({ offset: t.start, message: 'Sezione chiusa senza apertura: /' + t.name });
-      i++; continue;
+      i++;
+      continue;
     }
   }
   return { html: ctx.out.join(''), errors: ctx.errors };
@@ -707,7 +826,12 @@ function renderSection(open: SectionOpenToken, idx: number, tokens: Token[], ctx
   return endIdx;
 }
 
-function renderInverted(t: { name: string; start: number }, idx: number, tokens: Token[], ctx: Ctx): number {
+function renderInverted(
+  t: { name: string; start: number },
+  idx: number,
+  tokens: Token[],
+  ctx: Ctx
+): number {
   const { body, endIdx } = collectBody(t as Token, idx, tokens, ctx);
   if (endIdx < 0) return idx;
   const r = lookup(t.name, ctx.frames);
@@ -718,7 +842,7 @@ function renderInverted(t: { name: string; start: number }, idx: number, tokens:
 /* Frame di loop: item + meta-var; gli item non-oggetto entrano come {value: item}.
    Le chiavi @... sono accessibili come normali chiavi di frame. */
 function makeFrame(item: CDUValue, index: number, total: number): CDUNode {
-  const base = item != null && typeof item === 'object' ? item as CDUNode : { value: item };
+  const base = item != null && typeof item === 'object' ? (item as CDUNode) : { value: item };
   return {
     ...base,
     '@index': index,
@@ -727,7 +851,7 @@ function makeFrame(item: CDUValue, index: number, total: number): CDUNode {
     '@last': index === total - 1,
     '@odd': index % 2 === 1,
     '@even': index % 2 === 0,
-    '@total': total,
+    '@total': total
   };
 }
 
@@ -735,11 +859,29 @@ function renderBody(body: Token[], ctx: Ctx): void {
   let i = 0;
   while (i < body.length) {
     const t = body[i];
-    if (t.type === 'text') { ctx.out.push(escapeHtml(t.value)); i++; continue; }
-    if (t.type === 'var') { renderVar(t, ctx); i++; continue; }
-    if (t.type === 'sheet') { ctx.out.push(structural.sheetDirectiveHtml(t, { frames: ctx.frames })); i++; continue; }
-    if (t.type === 'section-open') { i = renderSection(t, i + 1, body, ctx); continue; }
-    if (t.type === 'inverted-open') { i = renderInverted(t, i + 1, body, ctx); continue; }
+    if (t.type === 'text') {
+      ctx.out.push(escapeHtml(t.value));
+      i++;
+      continue;
+    }
+    if (t.type === 'var') {
+      renderVar(t, ctx);
+      i++;
+      continue;
+    }
+    if (t.type === 'sheet') {
+      ctx.out.push(structural.sheetDirectiveHtml(t, { frames: ctx.frames }));
+      i++;
+      continue;
+    }
+    if (t.type === 'section-open') {
+      i = renderSection(t, i + 1, body, ctx);
+      continue;
+    }
+    if (t.type === 'inverted-open') {
+      i = renderInverted(t, i + 1, body, ctx);
+      continue;
+    }
     i++;
   }
 }
@@ -751,7 +893,12 @@ function renderBodyToString(body: Token[], ctx: Ctx): string {
   return ctx.out.splice(saved).join('');
 }
 
-function collectBody(open: Token, idx: number, tokens: Token[], ctx: Ctx): { body: Token[]; endIdx: number } {
+function collectBody(
+  open: Token,
+  idx: number,
+  tokens: Token[],
+  ctx: Ctx
+): { body: Token[]; endIdx: number } {
   const openKey = open.type === 'section-open' ? open.name.split(':')[0] : open.name;
   const body: Token[] = [];
   let depth = 1;
@@ -776,40 +923,56 @@ function collectBody(open: Token, idx: number, tokens: Token[], ctx: Ctx): { bod
   return { body, endIdx: -1 };
 }
 
-function pushScope(ctx: Ctx, value: CDUValue): void { ctx.frames.push(value); }
-function popScope(ctx: Ctx): void { ctx.frames.pop(); }
+function pushScope(ctx: Ctx, value: CDUValue): void {
+  ctx.frames.push(value);
+}
+function popScope(ctx: Ctx): void {
+  ctx.frames.pop();
+}
 ```
 
-*(Stub temporanei richiesti da Task 3 per gli import statici — sostituiti nei Task 4/6/7:)*
+_(Stub temporanei richiesti da Task 3 per gli import statici — sostituiti nei Task 4/6/7:)_
 
 ```ts
 // src/engine/expression.ts (stub — completo in Task 4)
 import type { CDUValue } from './types';
-export function evalExpr(_expr: string, _frames: CDUValue[]): boolean { return false; }
-export function isExpr(s: string): boolean { return false; }
+export function evalExpr(_expr: string, _frames: CDUValue[]): boolean {
+  return false;
+}
+export function isExpr(s: string): boolean {
+  return false;
+}
 ```
 
 ```ts
 // src/engine/structural.ts (stub — completo in Task 6)
 import type { SheetToken, CDUValue } from './types';
-export const bullet = (htmls: string[]) => '<ul>' + htmls.map((h) => '<li>' + h + '</li>').join('') + '</ul>';
-export const number = (htmls: string[]) => '<ol>' + htmls.map((h) => '<li>' + h + '</li>').join('') + '</ol>';
-export const tablerow = (htmls: string[]) => '<tr>' + htmls.map((h) => '<td>' + h + '</td>').join('') + '</tr>';
-export function sheetDirectiveHtml(_t: SheetToken, _ctx: { frames: CDUValue[] }): string { return '<em>direttiva Sheets non supportata qui</em>'; }
+export const bullet = (htmls: string[]) =>
+  '<ul>' + htmls.map((h) => '<li>' + h + '</li>').join('') + '</ul>';
+export const number = (htmls: string[]) =>
+  '<ol>' + htmls.map((h) => '<li>' + h + '</li>').join('') + '</ol>';
+export const tablerow = (htmls: string[]) =>
+  '<tr>' + htmls.map((h) => '<td>' + h + '</td>').join('') + '</tr>';
+export function sheetDirectiveHtml(_t: SheetToken, _ctx: { frames: CDUValue[] }): string {
+  return '<em>direttiva Sheets non supportata qui</em>';
+}
 ```
 
-*(Il filtro `applyFilters` richiesto da Task 3 in import statico: stub temporaneo in `filters.ts`, sovrascritto dal Task 5:)*
+_(Il filtro `applyFilters` richiesto da Task 3 in import statico: stub temporaneo in `filters.ts`, sovrascritto dal Task 5:)_
 
 ```ts
 // src/engine/filters.ts (stub — completo in Task 5)
 import type { Filter, CDUValue } from './types';
 export const FILTER_NAMES: string[] = [];
-export function applyFilters(value: CDUValue, _filters: Filter[]): { value: CDUValue; error?: string } {
+export function applyFilters(
+  value: CDUValue,
+  _filters: Filter[]
+): { value: CDUValue; error?: string } {
   return { value };
 }
 ```
 
-*(Coerenza: il Task 3 non testa filtri/expr/sheet; i test su quei rami arrivano nei Task 4-6. Nei test di Task 3 le espressioni e le direttive non compaiono.)*
+_(Coerenza: il Task 3 non testa filtri/expr/sheet; i test su quei rami arrivano nei Task 4-6. Nei test di Task 3 le espressioni e le direttive non compaiono.)_
 
 - [ ] **Step 6: run test, expected PASS**
 
@@ -829,10 +992,12 @@ git commit -m "feat(template-playground): contesto mustache + renderer core"
 ### Task 4: Engine — valutatore di espressioni
 
 **Files:**
+
 - Modify: `template-playground/src/engine/expression.ts`
 - Test: `template-playground/src/engine/expression.test.ts`
 
 **Interfaces:**
+
 - Produces: `export function isExpr(s:string): boolean`; `export function evalExpr(expr:string, frames:CDUValue[]): boolean`
 
 - [ ] **Step 1: test falliti** — `src/engine/expression.test.ts`
@@ -843,10 +1008,12 @@ import { evalExpr, isExpr } from './expression';
 import type { CDUNode } from './types';
 
 const root: CDUNode = {
-  a: true, b: false,
-  n: 5, m: 2,
+  a: true,
+  b: false,
+  n: 5,
+  m: 2,
   s: 'x',
-  focus: { classe: { isTerminale: true, progetti: { hasAsl: false } } },
+  focus: { classe: { isTerminale: true, progetti: { hasAsl: false } } }
 };
 
 const frames = [root] as CDUValue[];
@@ -901,7 +1068,8 @@ type ExprToken =
   | { t: 'null' }
   | { t: 'id'; v: string }
   | { t: 'op'; v: string }
-  | { t: 'lparen' } | { t: 'rparen' };
+  | { t: 'lparen' }
+  | { t: 'rparen' };
 
 function lex(expr: string): ExprToken[] {
   const tokens: ExprToken[] = [];
@@ -909,9 +1077,20 @@ function lex(expr: string): ExprToken[] {
   const s = expr.replace(/^\{{2}|\}{2}$/g, '').trim();
   while (i < s.length) {
     const c = s[i];
-    if (/\s/.test(c)) { i++; continue; }
-    if (c === '(') { tokens.push({ t: 'lparen' }); i++; continue; }
-    if (c === ')') { tokens.push({ t: 'rparen' }); i++; continue; }
+    if (/\s/.test(c)) {
+      i++;
+      continue;
+    }
+    if (c === '(') {
+      tokens.push({ t: 'lparen' });
+      i++;
+      continue;
+    }
+    if (c === ')') {
+      tokens.push({ t: 'rparen' });
+      i++;
+      continue;
+    }
     if (c === "'" || c === '"') {
       const end = s.indexOf(c, i + 1);
       const str = s.slice(i + 1, end < 0 ? s.length : end);
@@ -920,11 +1099,34 @@ function lex(expr: string): ExprToken[] {
       continue;
     }
     const three = s.slice(i, i + 3);
-    if (three === '===' || three === '!==') { tokens.push({ t: 'op', v: three }); i += 3; continue; }
+    if (three === '===' || three === '!==') {
+      tokens.push({ t: 'op', v: three });
+      i += 3;
+      continue;
+    }
     const two = s.slice(i, i + 2);
-    if (two === '||' || two === '&&' || two === '==' || two === '!=' || two === '>=' || two === '<=') { tokens.push({ t: 'op', v: two }); i += 2; continue; }
-    if (/[<>=!]/.test(c)) { tokens.push({ t: 'op', v: c }); i++; continue; }
-    if (/[+\-*/%]/.test(c)) { tokens.push({ t: 'op', v: c }); i++; continue; }
+    if (
+      two === '||' ||
+      two === '&&' ||
+      two === '==' ||
+      two === '!=' ||
+      two === '>=' ||
+      two === '<='
+    ) {
+      tokens.push({ t: 'op', v: two });
+      i += 2;
+      continue;
+    }
+    if (/[<>=!]/.test(c)) {
+      tokens.push({ t: 'op', v: c });
+      i++;
+      continue;
+    }
+    if (/[+\-*/%]/.test(c)) {
+      tokens.push({ t: 'op', v: c });
+      i++;
+      continue;
+    }
     if (/\d/.test(c) || c === '-') {
       const m = s.slice(i).match(/^-?\d+(\.\d+)?/);
       tokens.push({ t: 'num', v: Number(m![0]) });
@@ -932,7 +1134,10 @@ function lex(expr: string): ExprToken[] {
       continue;
     }
     const m = s.slice(i).match(/^[A-Za-z@_.0-9]+/);
-    if (!m) { i++; continue; }
+    if (!m) {
+      i++;
+      continue;
+    }
     const word = m[0];
     if (word === 'true' || word === 'false') tokens.push({ t: 'bool', v: word === 'true' });
     else if (word === 'null') tokens.push({ t: 'null' });
@@ -945,13 +1150,32 @@ function lex(expr: string): ExprToken[] {
 class Parser {
   private pos = 0;
   constructor(private toks: ExprToken[]) {}
-  parse(): boolean { const v = this.or(); return v; }
-  private or(): boolean { let v = this.and(); while (this.peekOp('||')) { this.pos++; const r = this.and(); v = v || r; } return v; }
-  private and(): boolean { let v = this.comp(); while (this.peekOp('&&')) { this.pos++; const r = this.comp(); v = v && r; } return v; }
+  parse(): boolean {
+    const v = this.or();
+    return v;
+  }
+  private or(): boolean {
+    let v = this.and();
+    while (this.peekOp('||')) {
+      this.pos++;
+      const r = this.and();
+      v = v || r;
+    }
+    return v;
+  }
+  private and(): boolean {
+    let v = this.comp();
+    while (this.peekOp('&&')) {
+      this.pos++;
+      const r = this.comp();
+      v = v && r;
+    }
+    return v;
+  }
   private comp(): boolean {
     let v = this.arith();
     const t = this.toks[this.pos];
-    if (t && t.t === 'op' && ['==','!=','===','!==','>','>=','<','<='].includes(t.v)) {
+    if (t && t.t === 'op' && ['==', '!=', '===', '!==', '>', '>=', '<', '<='].includes(t.v)) {
       this.pos++;
       const r = this.arith();
       v = compare(t.v, v, r);
@@ -962,7 +1186,7 @@ class Parser {
     let v = this.unary();
     while (true) {
       const t = this.toks[this.pos];
-      if (t && t.t === 'op' && ['+','-','*','/','%'].includes(t.v)) {
+      if (t && t.t === 'op' && ['+', '-', '*', '/', '%'].includes(t.v)) {
         this.pos++;
         const r = this.unary();
         v = applyArith(t.v, v as number, r as number);
@@ -971,19 +1195,39 @@ class Parser {
   }
   private unary(): boolean | number {
     const t = this.toks[this.pos];
-    if (t && t.t === 'op' && t.v === '!') { this.pos++; return !this.unary(); }
+    if (t && t.t === 'op' && t.v === '!') {
+      this.pos++;
+      return !this.unary();
+    }
     return this.primary();
   }
   private primary(): boolean | number | string | null {
     const t = this.toks[this.pos];
     if (!t) return null;
-    if (t.t === 'num' || t.t === 'str' || t.t === 'bool') { this.pos++; return t.v; }
-    if (t.t === 'null') { this.pos++; return null; }
-    if (t.t === 'lparen') { this.pos++; const v = this.or(); this.pos++; return v; }
-    if (t.t === 'id') { this.pos++; return lookup(t.v, framesRef).value; }
+    if (t.t === 'num' || t.t === 'str' || t.t === 'bool') {
+      this.pos++;
+      return t.v;
+    }
+    if (t.t === 'null') {
+      this.pos++;
+      return null;
+    }
+    if (t.t === 'lparen') {
+      this.pos++;
+      const v = this.or();
+      this.pos++;
+      return v;
+    }
+    if (t.t === 'id') {
+      this.pos++;
+      return lookup(t.v, framesRef).value;
+    }
     return null;
   }
-  private peekOp(v: string): boolean { const t = this.toks[this.pos]; return !!t && t.t === 'op' && t.v === v; }
+  private peekOp(v: string): boolean {
+    const t = this.toks[this.pos];
+    return !!t && t.t === 'op' && t.v === v;
+  }
 }
 
 let framesRef: CDUValue[] = [];
@@ -1007,31 +1251,46 @@ function truthyExpr(v: unknown): boolean {
 
 function compare(op: string, a: unknown, b: unknown): boolean {
   switch (op) {
-    case '==': return (a as any) == (b as any);
-    case '===': return a === b;
-    case '!=': return (a as any) != (b as any);
-    case '!==': return a !== b;
-    case '>': return (a as number) > (b as number);
-    case '>=': return (a as number) >= (b as number);
-    case '<': return (a as number) < (b as number);
-    case '<=': return (a as number) <= (b as number);
-    default: return false;
+    case '==':
+      return (a as any) == (b as any);
+    case '===':
+      return a === b;
+    case '!=':
+      return (a as any) != (b as any);
+    case '!==':
+      return a !== b;
+    case '>':
+      return (a as number) > (b as number);
+    case '>=':
+      return (a as number) >= (b as number);
+    case '<':
+      return (a as number) < (b as number);
+    case '<=':
+      return (a as number) <= (b as number);
+    default:
+      return false;
   }
 }
 
 function applyArith(op: string, a: number, b: number): number {
   switch (op) {
-    case '+': return a + b;
-    case '-': return a - b;
-    case '*': return a * b;
-    case '/': return a / b;
-    case '%': return a % b;
-    default: return 0;
+    case '+':
+      return a + b;
+    case '-':
+      return a - b;
+    case '*':
+      return a * b;
+    case '/':
+      return a / b;
+    case '%':
+      return a % b;
+    default:
+      return 0;
   }
 }
 ```
 
-*Nota: l'implementazione usa variabile modulare `framesRef` — accettabile per un eval sincrono locale; i test del renderer eseguono in sequenza.*
+_Nota: l'implementazione usa variabile modulare `framesRef` — accettabile per un eval sincrono locale; i test del renderer eseguono in sequenza._
 
 - [ ] **Step 4: run, expected PASS**
 
@@ -1051,11 +1310,13 @@ git commit -m "feat(template-playground): valutatore espressioni boolean (JSEP-l
 ### Task 5: Engine — filtri pipe
 
 **Files:**
+
 - Create: `template-playground/src/engine/filters.ts`
 - Modify: `template-playground/src/engine/renderer.ts` (collega `applyFilters`)
 - Test: `template-playground/src/engine/filters.test.ts`
 
 **Interfaces:**
+
 - Produces: `export const FILTER_NAMES: string[]`; `export function applyFilters(value:CDUValue, filters:Filter[]): { value:CDUValue; error?:string }`; `export interface FilterError`; il renderer la usa come `ApplyFilterChain`.
 
 - [ ] **Step 1: test falliti** — `src/engine/filters.test.ts`
@@ -1066,7 +1327,15 @@ import { applyFilters } from './filters';
 import type { CDUValue } from './types';
 
 const f = (v: CDUValue, chain: string[][]) =>
-  applyFilters(v, chain.map(([name, ...args]) => ({ name, args: args.map((a) => (isNum(a) ? Number(a) : a === 'true' ? true : a === 'false' ? false : a)) })));
+  applyFilters(
+    v,
+    chain.map(([name, ...args]) => ({
+      name,
+      args: args.map((a) =>
+        isNum(a) ? Number(a) : a === 'true' ? true : a === 'false' ? false : a
+      )
+    }))
+  );
 const isNum = (s: string) => /^-?\d+(\.\d+)?$/.test(s);
 
 describe('filters', () => {
@@ -1075,26 +1344,38 @@ describe('filters', () => {
     expect(f('MARIO', [['lowercase']]).value).toBe('mario');
     expect(f('mARIO', [['capitalize']]).value).toBe('Mario');
     expect(f("Questo e' lungo", [['truncate', '10', "'...'"]]).value).toBe("Questo e'...");
-    expect(f('a,b,c', [["split", "','"]]).value).toEqual(['a', 'b', 'c']);
-    expect(f('Mario', [["replace", "'a'", "'o'"]]).value).toBe('Morio');
+    expect(f('a,b,c', [['split', "','"]]).value).toEqual(['a', 'b', 'c']);
+    expect(f('Mario', [['replace', "'a'", "'o'"]]).value).toBe('Morio');
   });
   it('formato/valuta', () => {
     expect(f('2026-03-30', [['date']]).value).toBe('30/03/2026');
     expect(f('7.5', [['number', '2']]).value).toBe('7.50');
-    expect(f('150', [["currency", "'€'"]]).value).toContain('150,00');
-    expect(f('true', [["yesNo", "'SÌ'", "'NO'"]]).value).toBe('SÌ');
+    expect(f('150', [['currency', "'€'"]]).value).toContain('150,00');
+    expect(f('true', [['yesNo', "'SÌ'", "'NO'"]]).value).toBe('SÌ');
   });
   it('array', () => {
     const arr = [{ nomeCompleto: 'ZZ' }, { nomeCompleto: 'AA' }];
-    expect(f(arr, [["map", "'nomeCompleto'"], ['sort'], ["join", "', '"], ['uppercase']]).value).toBe('AA, ZZ');
-    expect(f(arr, [["map", "'nomeCompleto'"], ["limit", "1"]]).value).toEqual(['ZZ']);
-    expect(f(arr, [["map", "'nomeCompleto'"], ["skip", "1"]]).value).toEqual(['AA']);
+    expect(
+      f(arr, [['map', "'nomeCompleto'"], ['sort'], ['join', "', '"], ['uppercase']]).value
+    ).toBe('AA, ZZ');
+    expect(
+      f(arr, [
+        ['map', "'nomeCompleto'"],
+        ['limit', '1']
+      ]).value
+    ).toEqual(['ZZ']);
+    expect(
+      f(arr, [
+        ['map', "'nomeCompleto'"],
+        ['skip', '1']
+      ]).value
+    ).toEqual(['AA']);
   });
   it('default/fallback e aritmetici', () => {
-    expect(f(null, [["default", "'Nessuno'"]]).value).toBe('Nessuno');
+    expect(f(null, [['default', "'Nessuno'"]]).value).toBe('Nessuno');
     expect(f('6', [['plus', '1']]).value).toBe(7);
     expect(f('30', [['minus', '5']]).value).toBe(25);
-    expect(f('2', [["pluralize", "'carenza'", "'carenze'"]]).value).toBe('carenze');
+    expect(f('2', [['pluralize', "'carenza'", "'carenze'"]]).value).toBe('carenze');
   });
   it('catena con errore su tipo', () => {
     const r = applyFilters(5, [{ name: 'uppercase', args: [] }]);
@@ -1110,14 +1391,41 @@ describe('filters', () => {
 ```ts
 import type { ArgValue, CDUValue, Filter } from './types';
 
-export interface FilterError { message: string }
-export interface FilterResult { value: CDUValue; error?: string }
+export interface FilterError {
+  message: string;
+}
+export interface FilterResult {
+  value: CDUValue;
+  error?: string;
+}
 
 export const FILTER_NAMES = [
-  'uppercase', 'lowercase', 'capitalize', 'truncate', 'split', 'replace', 'urlEncode',
-  'date', 'number', 'currency', 'yesNo',
-  'map', 'join', 'limit', 'skip', 'sort', 'sortBy', 'reverse', 'where', 'exclude',
-  'default', 'fallback', 'plus', 'minus', 'pluralize', 'json',
+  'uppercase',
+  'lowercase',
+  'capitalize',
+  'truncate',
+  'split',
+  'replace',
+  'urlEncode',
+  'date',
+  'number',
+  'currency',
+  'yesNo',
+  'map',
+  'join',
+  'limit',
+  'skip',
+  'sort',
+  'sortBy',
+  'reverse',
+  'where',
+  'exclude',
+  'default',
+  'fallback',
+  'plus',
+  'minus',
+  'pluralize',
+  'json'
 ] as const;
 
 type Fn = (v: CDUValue, args: ArgValue[]) => CDUValue;
@@ -1132,30 +1440,90 @@ function str(v: CDUValue, which: string): string {
 const filters: Record<string, Fn> = {
   uppercase: (v) => str(v, '').toUpperCase(),
   lowercase: (v) => str(v, '').toLowerCase(),
-  capitalize: (v) => { const s = str(v, ''); return s === '' ? '' : s[0].toUpperCase() + s.slice(1).toLowerCase(); },
-  truncate: (v, a) => { const s = str(v, ''); const len = num(a[0], 50); const suffix = a[1] != null ? String(a[1]) : '...'; return s.length > len ? s.slice(0, len) + suffix : s; },
+  capitalize: (v) => {
+    const s = str(v, '');
+    return s === '' ? '' : s[0].toUpperCase() + s.slice(1).toLowerCase();
+  },
+  truncate: (v, a) => {
+    const s = str(v, '');
+    const len = num(a[0], 50);
+    const suffix = a[1] != null ? String(a[1]) : '...';
+    return s.length > len ? s.slice(0, len) + suffix : s;
+  },
   split: (v, a) => String(v ?? '').split(String(a[0] ?? ',')),
-  replace: (v, a) => { const s = str(v, ''); if (a[0] == null) return s; const repl = String(a[1] ?? ''); const reg = a[0] as string; return s.split(reg).join(repl); },
+  replace: (v, a) => {
+    const s = str(v, '');
+    if (a[0] == null) return s;
+    const repl = String(a[1] ?? '');
+    const reg = a[0] as string;
+    return s.split(reg).join(repl);
+  },
   urlEncode: (v) => encodeURIComponent(str(v, '')),
-  date: (v) => { const d = toDate(v); if (!d) return str(v, ''); const dd = String(d.getDate()).padStart(2, '0'); const mm = String(d.getMonth() + 1).padStart(2, '0'); return dd + '/' + mm + '/' + d.getFullYear(); },
+  date: (v) => {
+    const d = toDate(v);
+    if (!d) return str(v, '');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return dd + '/' + mm + '/' + d.getFullYear();
+  },
   number: (v, a) => num(v).toFixed(Math.max(0, num(a[0], 0))),
-  currency: (v, a) => { const sym = a[0] != null ? String(a[0]) : '€'; return sym + ' ' + num(v).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
+  currency: (v, a) => {
+    const sym = a[0] != null ? String(a[0]) : '€';
+    return (
+      sym +
+      ' ' +
+      num(v).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    );
+  },
   yesNo: (v, a) => (v ? String(a[0] ?? 'Sì') : String(a[1] ?? 'No')),
-  map: (v, a) => { const key = String(a[0] ?? ''); return (v as CDUValue[]).map((it) => (it && typeof it === 'object' ? (it as Record<string, CDUValue>)[key] : undefined)); },
-  join: (v, a) => { const key = String(a[0] ?? ''); const sep = a[1] != null ? String(a[1]) : ', '; const arr = v as CDUValue[]; return (key ? arr.map((it) => (it as Record<string, CDUValue>)[key]) : arr).filter((x) => x != null).join(sep); },
+  map: (v, a) => {
+    const key = String(a[0] ?? '');
+    return (v as CDUValue[]).map((it) =>
+      it && typeof it === 'object' ? (it as Record<string, CDUValue>)[key] : undefined
+    );
+  },
+  join: (v, a) => {
+    const key = String(a[0] ?? '');
+    const sep = a[1] != null ? String(a[1]) : ', ';
+    const arr = v as CDUValue[];
+    return (key ? arr.map((it) => (it as Record<string, CDUValue>)[key]) : arr)
+      .filter((x) => x != null)
+      .join(sep);
+  },
   limit: (v, a) => (v as CDUValue[]).slice(0, Math.max(0, num(a[0], 10))),
   skip: (v, a) => (v as CDUValue[]).slice(Math.max(0, num(a[0], 0))),
   reverse: (v) => (v as CDUValue[]).slice().reverse(),
-  sort: (v, a) => { const arr = (v as CDUValue[]).slice(); const key = a[0] != null ? String(a[0]) : null; const desc = String(a[1] ?? '') === 'desc'; arr.sort((x, y) => { const l = key ? (x as Record<string, CDUValue>)[key] : x; const r = key ? (y as Record<string, CDUValue>)[key] : y; return cmp(l, r) * (desc ? -1 : 1); }); return arr; },
+  sort: (v, a) => {
+    const arr = (v as CDUValue[]).slice();
+    const key = a[0] != null ? String(a[0]) : null;
+    const desc = String(a[1] ?? '') === 'desc';
+    arr.sort((x, y) => {
+      const l = key ? (x as Record<string, CDUValue>)[key] : x;
+      const r = key ? (y as Record<string, CDUValue>)[key] : y;
+      return cmp(l, r) * (desc ? -1 : 1);
+    });
+    return arr;
+  },
   sortBy: (v, a) => filters.sort(v, a),
-  where: (v, a) => { const key = String(a[0]); const want = a[1]; return (v as CDUValue[]).filter((it) => (it as Record<string, CDUValue>)[key] === want); },
-  exclude: (v, a) => { const key = String(a[0]); const want = a[1]; return (v as CDUValue[]).filter((it) => (it as Record<string, CDUValue>)[key] !== want); },
+  where: (v, a) => {
+    const key = String(a[0]);
+    const want = a[1];
+    return (v as CDUValue[]).filter((it) => (it as Record<string, CDUValue>)[key] === want);
+  },
+  exclude: (v, a) => {
+    const key = String(a[0]);
+    const want = a[1];
+    return (v as CDUValue[]).filter((it) => (it as Record<string, CDUValue>)[key] !== want);
+  },
   default: (v, a) => (v == null || v === '' ? a[0] : v),
   fallback: (v, a) => filters.default(v, a),
   plus: (v, a) => num(v) + num(a[0]),
   minus: (v, a) => num(v) - num(a[0]),
-  pluralize: (v, a) => { const n = num(v); return Math.abs(n) === 1 ? String(a[0] ?? '') : String(a[1] ?? a[0] ?? ''); },
-  json: (v, a) => JSON.stringify(v, null, num(a[0], 0)),
+  pluralize: (v, a) => {
+    const n = num(v);
+    return Math.abs(n) === 1 ? String(a[0] ?? '') : String(a[1] ?? a[0] ?? '');
+  },
+  json: (v, a) => JSON.stringify(v, null, num(a[0], 0))
 };
 
 function toDate(v: CDUValue): Date | null {
@@ -1182,7 +1550,10 @@ export function applyFilters(value: CDUValue, filters: Filter[]): FilterResult {
     try {
       v = fn(v, f.args);
     } catch (e) {
-      return { value: undefined, error: 'Filtro ' + f.name + ': ' + ((e as Error).message || String(e)) };
+      return {
+        value: undefined,
+        error: 'Filtro ' + f.name + ': ' + ((e as Error).message || String(e))
+      };
     }
   }
   return { value: v };
@@ -1211,15 +1582,17 @@ git commit -m "feat(template-playground): filtri pipe (guida sez. 6)"
 ### Task 6: Engine — direttive strutturali Docs e Sheets
 
 **Files:**
+
 - Modify: `template-playground/src/engine/structural.ts`
 - Modify: `template-playground/src/engine/renderer.ts` (hook `sheetDirectiveHtml`)
 - Test: `template-playground/src/engine/structural.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `export function bullet(htmls:string[]): string` — `<ul><li>…`
   - `export function number(htmls:string[]): string` — `<ol><li>…`
-  - `export function tablerow(htmls:string[]): string` — il body è *testo* (già renderizzato plain), split su `,` → `<tr><td>` (con minima robustezza: se i cell <2 e body non contiene virgole, unica cella).
+  - `export function tablerow(htmls:string[]): string` — il body è _testo_ (già renderizzato plain), split su `,` → `<tr><td>` (con minima robustezza: se i cell <2 e body non contiene virgole, unica cella).
   - `export function dynamicRows(params:Record<string,string>, ctx:{ frames:CDUValue[] }): string`
   - `export function dynamicColumns(params:Record<string,string>, ctx:{ frames:CDUValue[] }): string`
   - `export function sheetDirectiveHtml(t:SheetToken, ctx:{ frames:CDUValue[] }): string`
@@ -1236,12 +1609,16 @@ const root: CDUNode = {
   focus: {
     classe: {
       studenti: { elenco: [{ nomeCompleto: 'A' }, { nomeCompleto: 'B' }] },
-      sheet: { materieColonne: { gruppi: [
-        { label: 'Comuni', colonne: [{ header: 'M1' }, { header: 'M2' }] },
-        { label: 'Articol', colonne: [{ header: 'IR1' }] },
-      ] } },
-    },
-  },
+      sheet: {
+        materieColonne: {
+          gruppi: [
+            { label: 'Comuni', colonne: [{ header: 'M1' }, { header: 'M2' }] },
+            { label: 'Articol', colonne: [{ header: 'IR1' }] }
+          ]
+        }
+      }
+    }
+  }
 };
 const frames = [root];
 
@@ -1254,14 +1631,25 @@ describe('strutturali', () => {
     expect(tablerow(['1', 'A', '3A INF'])).toBe('<tr><td>1</td><td>A</td><td>3A INF</td></tr>');
   });
   it('dynamic_rows: una riga per elemento', () => {
-    const html = dynamicRows({ source: 'focus.classe.studenti.elenco', value: 'nomeCompleto' }, { frames });
-    expect(html).toBe('<table class="sheet"><tbody><tr><td>A</td></tr><tr><td>B</td></tr></tbody></table>');
+    const html = dynamicRows(
+      { source: 'focus.classe.studenti.elenco', value: 'nomeCompleto' },
+      { frames }
+    );
+    expect(html).toBe(
+      '<table class="sheet"><tbody><tr><td>A</td></tr><tr><td>B</td></tr></tbody></table>'
+    );
   });
   it('dynamic_columns: header label + colonne per gruppo', () => {
     const html = dynamicColumns(
-      { source: 'focus.classe.sheet.materieColonne.gruppi.0.colonne', value: 'header', label: 'focus.classe.sheet.materieColonne.gruppi.0.label',
-        source2: 'focus.classe.sheet.materieColonne.gruppi.1.colonne', value2: 'header', label2: 'focus.classe.sheet.materieColonne.gruppi.1.label' },
-      { frames },
+      {
+        source: 'focus.classe.sheet.materieColonne.gruppi.0.colonne',
+        value: 'header',
+        label: 'focus.classe.sheet.materieColonne.gruppi.0.label',
+        source2: 'focus.classe.sheet.materieColonne.gruppi.1.colonne',
+        value2: 'header',
+        label2: 'focus.classe.sheet.materieColonne.gruppi.1.label'
+      },
+      { frames }
     );
     expect(html).toContain('<th>Comuni</th>');
     expect(html).toContain('<th>M1</th>');
@@ -1269,7 +1657,11 @@ describe('strutturali', () => {
     expect(html).toContain('</table>');
   });
   it('source inesistente: marker di errore', () => {
-    expect(dynamicRows({ source: 'nope.elenco', value: 'x' }, { frames }).startsWith('<mark class="render-err">')).toBe(true);
+    expect(
+      dynamicRows({ source: 'nope.elenco', value: 'x' }, { frames }).startsWith(
+        '<mark class="render-err">'
+      )
+    ).toBe(true);
   });
 });
 ```
@@ -1282,8 +1674,10 @@ describe('strutturali', () => {
 import type { CDUValue, SheetToken } from './types';
 import { lookup, readable } from './lookup';
 
-export const bullet = (htmls: string[]) => '<ul>' + htmls.map((h) => '<li>' + h + '</li>').join('') + '</ul>';
-export const number = (htmls: string[]) => '<ol>' + htmls.map((h) => '<li>' + h + '</li>').join('') + '</ol>';
+export const bullet = (htmls: string[]) =>
+  '<ul>' + htmls.map((h) => '<li>' + h + '</li>').join('') + '</ul>';
+export const number = (htmls: string[]) =>
+  '<ol>' + htmls.map((h) => '<li>' + h + '</li>').join('') + '</ol>';
 export const tablerow = (htmls: string[]) => {
   const raw = htmls.map((h) => stripHtml(h)).join('');
   const cells = raw.split(',').map((c) => c.trim());
@@ -1301,7 +1695,7 @@ function valueOf(item: CDUValue, path: string): CDUValue {
   let cur = item;
   for (const seg of segs) {
     if (cur == null || typeof cur !== 'object') return undefined;
-    const dir = (cur as Record<string, CDUValue>);
+    const dir = cur as Record<string, CDUValue>;
     if (!Object.prototype.hasOwnProperty.call(dir, seg)) return undefined;
     cur = dir[seg];
   }
@@ -1311,16 +1705,23 @@ function valueOf(item: CDUValue, path: string): CDUValue {
 export function dynamicRows(params: Record<string, string>, ctx: { frames: CDUValue[] }): string {
   const src = lookup(params.source ?? '', ctx.frames);
   if (!Array.isArray(src.value)) {
-    return '<mark class="render-err">dynamic_rows: source non è un array (' + params.source + ')</mark>';
+    return (
+      '<mark class="render-err">dynamic_rows: source non è un array (' + params.source + ')</mark>'
+    );
   }
-  const rows = (src.value as CDUValue[]).map((item) => {
-    const cell = readable(valueOf(item, params.value ?? ''));
-    return '<tr><td>' + cell + '</td></tr>';
-  }).join('');
+  const rows = (src.value as CDUValue[])
+    .map((item) => {
+      const cell = readable(valueOf(item, params.value ?? ''));
+      return '<tr><td>' + cell + '</td></tr>';
+    })
+    .join('');
   return '<table class="sheet"><tbody>' + rows + '</tbody></table>';
 }
 
-export function dynamicColumns(params: Record<string, string>, ctx: { frames: CDUValue[] }): string {
+export function dynamicColumns(
+  params: Record<string, string>,
+  ctx: { frames: CDUValue[] }
+): string {
   const groups: Array<{ label: CDUValue; items: CDUValue[] }> = [];
   for (let g = 0; g < 3; g++) {
     const suffix = g === 0 ? '' : String(g + 1);
@@ -1330,21 +1731,50 @@ export function dynamicColumns(params: Record<string, string>, ctx: { frames: CD
     const label = params['label' + suffix];
     const src = lookup(source, ctx.frames);
     if (!Array.isArray(src.value)) {
-      return '<mark class="render-err">dynamic_columns: source non è un array (' + source + ')</mark>';
+      return (
+        '<mark class="render-err">dynamic_columns: source non è un array (' + source + ')</mark>'
+      );
     }
-    const labelVal = label ? readonly(valueOf(lookup(label, ctx.frames).value ?? ctx.frames[0], label)) : '';
+    const labelVal = label
+      ? readonly(valueOf(lookup(label, ctx.frames).value ?? ctx.frames[0], label))
+      : '';
     void labelVal;
-    const labelCell = label ? (lookup(label, ctx.frames).found ? readable(lookup(label, ctx.frames).value) : '') : '';
-    groups.push({ label: src.value.length ? (lookup(label ?? '', ctx.frames).value) : '', items: src.value as CDUValue[] });
+    const labelCell = label
+      ? lookup(label, ctx.frames).found
+        ? readable(lookup(label, ctx.frames).value)
+        : ''
+      : '';
+    groups.push({
+      label: src.value.length ? lookup(label ?? '', ctx.frames).value : '',
+      items: src.value as CDUValue[]
+    });
     void value;
-    groups[groups.length - 1].items; groups[groups.length - 1].label = labelCell;
+    groups[groups.length - 1].items;
+    groups[groups.length - 1].label = labelCell;
   }
   const headers: string[] = [];
   for (const gr of groups) {
     headers.push('<th>' + readable(gr.label || '') + '</th>');
-    for (const it of gr.items) headers.push('<th>' + readable(valueOf(it, params['value' + (groups.indexOf(gr) === 0 ? '' : String(groups.indexOf(gr) + 1))] ?? '')) + '</th>');
+    for (const it of gr.items)
+      headers.push(
+        '<th>' +
+          readable(
+            valueOf(
+              it,
+              params['value' + (groups.indexOf(gr) === 0 ? '' : String(groups.indexOf(gr) + 1))] ??
+                ''
+            )
+          ) +
+          '</th>'
+      );
   }
-  return '<table class="sheet"><thead><tr>' + headers.join('') + '</tr></thead><tbody><tr>' + headers.map((h, i) => (i === 0 ? '<td></td>' : '')).join('') + '</tr></tbody></table>';
+  return (
+    '<table class="sheet"><thead><tr>' +
+    headers.join('') +
+    '</tr></thead><tbody><tr>' +
+    headers.map((h, i) => (i === 0 ? '<td></td>' : '')).join('') +
+    '</tr></tbody></table>'
+  );
 }
 
 export function sheetDirectiveHtml(t: SheetToken, ctx: { frames: CDUValue[] }): string {
@@ -1352,7 +1782,7 @@ export function sheetDirectiveHtml(t: SheetToken, ctx: { frames: CDUValue[] }): 
 }
 ```
 
-*Semplificazione annotata (`ponytail:`): `tablerow` splitta il testo su `,` — ignora virgole dentro placeholder con output contenente virgole. Upgrade: split a livello di token, non di testo renderizzato.* Il clone multi-gruppo `dynamicColumns` produce riga corpo placeholder vuota — accettato per v1 preview (le istruzioni sulle celle popolare vengono generate ma visivamente basta l'header).
+_Semplificazione annotata (`ponytail:`): `tablerow` splitta il testo su `,` — ignora virgole dentro placeholder con output contenente virgole. Upgrade: split a livello di token, non di testo renderizzato._ Il clone multi-gruppo `dynamicColumns` produce riga corpo placeholder vuota — accettato per v1 preview (le istruzioni sulle celle popolare vengono generate ma visivamente basta l'header).
 
 - [ ] **Step 4: collega in `renderer.ts`**: nei due punti che già chiamano `structural.sheetDirectiveHtml` passare `{ frames: ctx.frames }` e rimuovere `require` (import statico esistente).
 
@@ -1374,6 +1804,7 @@ git commit -m "feat(template-playground): direttive Docs (list, tablerow) e Shee
 ### Task 7: Dati — scenari CDU fittizi
 
 **Files:**
+
 - Create: `template-playground/src/data/scenario.ts`
 - Create: `template-playground/src/data/3a-inf.ts`
 - Create: `template-playground/src/data/5a-terminale.ts`
@@ -1382,6 +1813,7 @@ git commit -m "feat(template-playground): direttive Docs (list, tablerow) e Shee
 - Test: `template-playground/src/data/scenario.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `export interface NodeMeta { type:'string'|'number'|'boolean'|'array'|'object'; ready?:boolean; privacy?:boolean; alwaysPresent?:boolean; domainOrdered?:boolean; atomic?:boolean; }`
   - `export interface Scenario { id:string; label:string; context:CDUNode; meta:Record<string,NodeMeta>; outputContexts:string[]; privacyAuthorized:Record<string,string[]> }`
@@ -1395,11 +1827,22 @@ import { scenarios } from './scenario';
 
 describe('scenari', () => {
   it('ci sono 4 scenari con ids unici', () => {
-    expect(scenarios.map((s) => s.id)).toEqual(['3a-inf', '5a-terminale', 'alunno-bes', 'docente-cattedre']);
+    expect(scenarios.map((s) => s.id)).toEqual([
+      '3a-inf',
+      '5a-terminale',
+      'alunno-bes',
+      'docente-cattedre'
+    ]);
   });
   it('meta copre i percorsi usati negli esempi della guida', () => {
     const s = scenarios[0];
-    for (const p of ['focus.classe.nome', 'focus.classe.consiglio.elenco', 'focus.classe.studenti.elenco', 'istituto.annoScolastico', 'meta.oggi.estesa']) {
+    for (const p of [
+      'focus.classe.nome',
+      'focus.classe.consiglio.elenco',
+      'focus.classe.studenti.elenco',
+      'istituto.annoScolastico',
+      'meta.oggi.estesa'
+    ]) {
       expect(s.meta[p], p).toBeTruthy();
     }
   });
@@ -1455,10 +1898,24 @@ import type { CDUNode } from '../engine/types';
 
 export const context: CDUNode = {
   meta: {
-    oggi: { breve: '31/08/2026', estesa: '31 agosto 2026', giorno: '31', mese: '08', meseNome: 'agosto', anno: '2026', ora: '09:30' },
-    annoScolastico: null as unknown as string,
+    oggi: {
+      breve: '31/08/2026',
+      estesa: '31 agosto 2026',
+      giorno: '31',
+      mese: '08',
+      meseNome: 'agosto',
+      anno: '2026',
+      ora: '09:30'
+    },
+    annoScolastico: null as unknown as string
   } as never,
-  istituto: { annoScolastico: '2026-2027', dirigente: { nomeCompleto: 'DOTT. PROF. NERO GIULIO', appellativoCompleto: 'Il Dirigente Scolastico' } },
+  istituto: {
+    annoScolastico: '2026-2027',
+    dirigente: {
+      nomeCompleto: 'DOTT. PROF. NERO GIULIO',
+      appellativoCompleto: 'Il Dirigente Scolastico'
+    }
+  },
   focus: {
     classe: {
       nome: '3A INF',
@@ -1466,50 +1923,120 @@ export const context: CDUNode = {
       isTerminale: false,
       indirizzo: { nome: 'Informatica e telecomunicazioni', nomeSintetico: 'Informatica' },
       coordinatori: {
-        elenco: [{ nomeCompleto: 'BIANCHI ANNA', genere: 'F', materieDescrizione: 'Lingua inglese' }],
+        elenco: [
+          { nomeCompleto: 'BIANCHI ANNA', genere: 'F', materieDescrizione: 'Lingua inglese' }
+        ],
         elencoDescrizione: 'Prof.ssa BIANCHI ANNA',
-        hasElenco: true,
+        hasElenco: true
       },
       consiglio: {
         hasElenco: true,
         numero: 5,
-        elencoDescrizione: 'Prof.ssa BIANCHI ANNA, prof. FERRI LUCIA, prof. NERI PAOLO, prof. ROSSI MARIO e prof.ssa VERDI ELENA',
+        elencoDescrizione:
+          'Prof.ssa BIANCHI ANNA, prof. FERRI LUCIA, prof. NERI PAOLO, prof. ROSSI MARIO e prof.ssa VERDI ELENA',
         elenco: [
-          { nomeCompleto: 'BIANCHI ANNA', appellativoCompleto: 'Prof.ssa BIANCHI ANNA', cognome: 'BIANCHI', nome: 'ANNA', genere: 'F', materieDescrizione: 'Lingua inglese', ruoliDescrizioneTesto: 'Coordinatrice', isSupplente: false },
-          { nomeCompleto: 'FERRI LUCIA', appellativoCompleto: 'Prof.ssa FERRI LUCIA', cognome: 'FERRI', nome: 'LUCIA', genere: 'F', materieDescrizione: 'Lingua e letteratura italiana, Storia', ruoliDescrizioneTesto: '', isSupplente: false },
-          { nomeCompleto: 'NERI PAOLO', appellativoCompleto: 'Prof. NERI PAOLO', cognome: 'NERI', nome: 'PAOLO', materieDescrizione: 'Fisica', ruoliDescrizioneTesto: '', isSupplente: true },
-          { nomeCompleto: 'ROSSI MARIO', appellativoCompleto: 'Prof. ROSSI MARIO', cognome: 'ROSSI', nome: 'MARIO', materieDescrizione: 'Matematica', ruoliDescrizioneTesto: 'Tutor ASL/FSL', isSupplente: false },
-          { nomeCompleto: 'VERDI ELENA', appellativoCompleto: 'Prof.ssa VERDI ELENA', cognome: 'VERDI', nome: 'ELENA', genere: 'F', materieDescrizione: 'Informatica', ruoliDescrizioneTesto: '', isSupplente: false },
-        ],
+          {
+            nomeCompleto: 'BIANCHI ANNA',
+            appellativoCompleto: 'Prof.ssa BIANCHI ANNA',
+            cognome: 'BIANCHI',
+            nome: 'ANNA',
+            genere: 'F',
+            materieDescrizione: 'Lingua inglese',
+            ruoliDescrizioneTesto: 'Coordinatrice',
+            isSupplente: false
+          },
+          {
+            nomeCompleto: 'FERRI LUCIA',
+            appellativoCompleto: 'Prof.ssa FERRI LUCIA',
+            cognome: 'FERRI',
+            nome: 'LUCIA',
+            genere: 'F',
+            materieDescrizione: 'Lingua e letteratura italiana, Storia',
+            ruoliDescrizioneTesto: '',
+            isSupplente: false
+          },
+          {
+            nomeCompleto: 'NERI PAOLO',
+            appellativoCompleto: 'Prof. NERI PAOLO',
+            cognome: 'NERI',
+            nome: 'PAOLO',
+            materieDescrizione: 'Fisica',
+            ruoliDescrizioneTesto: '',
+            isSupplente: true
+          },
+          {
+            nomeCompleto: 'ROSSI MARIO',
+            appellativoCompleto: 'Prof. ROSSI MARIO',
+            cognome: 'ROSSI',
+            nome: 'MARIO',
+            materieDescrizione: 'Matematica',
+            ruoliDescrizioneTesto: 'Tutor ASL/FSL',
+            isSupplente: false
+          },
+          {
+            nomeCompleto: 'VERDI ELENA',
+            appellativoCompleto: 'Prof.ssa VERDI ELENA',
+            cognome: 'VERDI',
+            nome: 'ELENA',
+            genere: 'F',
+            materieDescrizione: 'Informatica',
+            ruoliDescrizioneTesto: '',
+            isSupplente: false
+          }
+        ]
       },
       supplenze: {
         hasElenco: true,
-        elenco: [{
-          supplente: { appellativoCompleto: 'Prof. CONTI LUCA' },
-          titolare: { appellativoCompleto: 'Prof. NERI PAOLO' },
-          materieDescrizione: 'Fisica',
-        }],
+        elenco: [
+          {
+            supplente: { appellativoCompleto: 'Prof. CONTI LUCA' },
+            titolare: { appellativoCompleto: 'Prof. NERI PAOLO' },
+            materieDescrizione: 'Fisica'
+          }
+        ]
       },
       materie: {
         numero: 8,
         hasElenco: true,
-        elencoDescrizione: 'Lingua e letteratura italiana, Storia, Informatica, Matematica, Fisica, Lingua inglese, Religione, Scienze motorie',
+        elencoDescrizione:
+          'Lingua e letteratura italiana, Storia, Informatica, Matematica, Fisica, Lingua inglese, Religione, Scienze motorie',
         elenco: [
-          { nome: 'Lingua e letteratura italiana' }, { nome: 'Storia' }, { nome: 'Informatica' }, { nome: 'Matematica' },
-          { nome: 'Fisica' }, { nome: 'Lingua inglese' }, { nome: 'Religione' }, { nome: 'Scienze motorie' },
-        ],
+          { nome: 'Lingua e letteratura italiana' },
+          { nome: 'Storia' },
+          { nome: 'Informatica' },
+          { nome: 'Matematica' },
+          { nome: 'Fisica' },
+          { nome: 'Lingua inglese' },
+          { nome: 'Religione' },
+          { nome: 'Scienze motorie' }
+        ]
       },
       studenti: {
         numero: 24,
         hasElenco: true,
         elenco: [
-          { nomeCompleto: 'ADAMO LUCIA', religioneLabel: 'Sì', email: 'lucia.adamo@x.it', isBes: false },
-          { nomeCompleto: 'BIONDI MARCELLO', religioneLabel: 'No', email: 'marcello.biondi@x.it', isBes: true },
-        ],
+          {
+            nomeCompleto: 'ADAMO LUCIA',
+            religioneLabel: 'Sì',
+            email: 'lucia.adamo@x.it',
+            isBes: false
+          },
+          {
+            nomeCompleto: 'BIONDI MARCELLO',
+            religioneLabel: 'No',
+            email: 'marcello.biondi@x.it',
+            isBes: true
+          }
+        ]
       },
-      pianiPersonalizzati: { nonVerbalizzati: { hasElenco: true, elenco: [{ studente: { nomeCompleto: 'BIONDI MARCELLO' }, tipoLabel: 'PEI' }] } },
-    },
-  },
+      pianiPersonalizzati: {
+        nonVerbalizzati: {
+          hasElenco: true,
+          elenco: [{ studente: { nomeCompleto: 'BIONDI MARCELLO' }, tipoLabel: 'PEI' }]
+        }
+      }
+    }
+  }
 };
 ```
 
@@ -1560,8 +2087,14 @@ const meta: Record<string, NodeMeta> = {
   'focus.classe.studenti.elenco.*.isBes': { type: 'boolean' },
   'focus.classe.pianiPersonalizzati.nonVerbalizzati.elenco': { type: 'array', domainOrdered: true },
   'focus.classe.pianiPersonalizzati.nonVerbalizzati.hasElenco': { type: 'boolean' },
-  'focus.classe.pianiPersonalizzati.nonVerbalizzati.elenco.*.studente.nomeCompleto': { type: 'string', ready: true },
-  'focus.classe.pianiPersonalizzati.nonVerbalizzati.elenco.*.tipoLabel': { type: 'string', ready: true },
+  'focus.classe.pianiPersonalizzati.nonVerbalizzati.elenco.*.studente.nomeCompleto': {
+    type: 'string',
+    ready: true
+  },
+  'focus.classe.pianiPersonalizzati.nonVerbalizzati.elenco.*.tipoLabel': {
+    type: 'string',
+    ready: true
+  }
 };
 
 export const scenario: Scenario = {
@@ -1570,7 +2103,7 @@ export const scenario: Scenario = {
   context,
   meta,
   outputContexts: ['VERBALE', 'CONVOCAZIONE', 'ELENCO_INTERNO'],
-  privacyAuthorized: { 'ELENCO_INTERNO': ['focus.classe.studenti.elenco.*.email'] },
+  privacyAuthorized: { ELENCO_INTERNO: ['focus.classe.studenti.elenco.*.email'] }
 };
 ```
 
@@ -1600,10 +2133,12 @@ git commit -m "feat(template-playground): 4 scenari CDU fittizi con annotazioni"
 ### Task 8: Rules — regole bloccanti e warning
 
 **Files:**
+
 - Create: `template-playground/src/rules/rules.ts`
 - Test: `template-playground/src/rules/rules.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `export type Severity = 'error' | 'warning'`
   - `export interface RuleIssue { severity:Severity; offset:number; message:string }`
@@ -1626,13 +2161,16 @@ const onlyWarn = (issues: any[]) => issues.filter((i) => i.severity === 'warning
 
 describe('normalizePath', () => {
   it('sostituisce indici con *', () => {
-    expect(normalizePath('focus.classe.studenti.elenco.1.email')).toBe('focus.classe.studenti.elenco.*.email');
+    expect(normalizePath('focus.classe.studenti.elenco.1.email')).toBe(
+      'focus.classe.studenti.elenco.*.email'
+    );
   });
 });
 
 describe('validateTemplate', () => {
   it('template pulito: nessun errore', () => {
-    const tpl = '{{#focus.classe.consiglio.hasElenco}}Consiglio {{focus.classe.consiglio.numero}} docenti{{/focus.classe.consiglio.hasElenco}}';
+    const tpl =
+      '{{#focus.classe.consiglio.hasElenco}}Consiglio {{focus.classe.consiglio.numero}} docenti{{/focus.classe.consiglio.hasElenco}}';
     expect(onlyErrs(V(tpl))).toEqual([]);
   });
   it('budget percorsi: 5 segmenti fuori loop = errore', () => {
@@ -1640,40 +2178,76 @@ describe('validateTemplate', () => {
     expect(onlyErrs(V(tpl)).length).toBeGreaterThan(0);
   });
   it('budget dentro loop: 4 segmenti = errore', () => {
-    const tpl = '{{#focus.classe.consiglio.elenco}}{{focus.classe.indirizzo.nomeSintetico}}{{/focus.classe.consiglio.elenco}}';
+    const tpl =
+      '{{#focus.classe.consiglio.elenco}}{{focus.classe.indirizzo.nomeSintetico}}{{/focus.classe.consiglio.elenco}}';
     expect(onlyErrs(V(tpl)).length).toBeGreaterThan(0);
   });
   it('where/exclude su valore di dominio = errore', () => {
-    const tpl = "{{#focus.classe.materie.elenco}}{{nome | where:'nome':'Informatica'}}{{/focus.classe.materie.elenco}}";
+    const tpl =
+      "{{#focus.classe.materie.elenco}}{{nome | where:'nome':'Informatica'}}{{/focus.classe.materie.elenco}}";
     expect(onlyErrs(V(tpl)).length).toBeGreaterThan(0);
   });
   it("where:'isBes':true consentito", () => {
-    const tpl = "{{#focus.classe.studenti.elenco}}{{#isBes}}B{{/isBes}}{{/focus.classe.studenti.elenco}}";
+    const tpl =
+      '{{#focus.classe.studenti.elenco}}{{#isBes}}B{{/isBes}}{{/focus.classe.studenti.elenco}}';
     /* il filtro dove su booleano è superfluo qui; usiamo il caso rules direttamente */
     const issues = V(tpl);
     expect(onlyErrs(issues.find((i) => i.message.includes('where')) as any)).toBeUndefined();
   });
   it('sort su array di dominio = errore; su split = ok', () => {
-    expect(onlyErrs(V("{{focus.classe.studenti.elenco | sort:'nomeCompleto'}}")).length).toBeGreaterThan(0);
+    expect(
+      onlyErrs(V("{{focus.classe.studenti.elenco | sort:'nomeCompleto'}}")).length
+    ).toBeGreaterThan(0);
     const ok = V("{{'a,b' | split:',' | sort}}");
     expect(onlyErrs(ok)).toEqual([]);
   });
   it('manca hasElenco prima di iterare elenco = errore', () => {
-    const tpl = '{{#focus.classe.studenti.elenco}}{{nomeCompleto}}{{/focus.classe.studenti.elenco}}';
+    const tpl =
+      '{{#focus.classe.studenti.elenco}}{{nomeCompleto}}{{/focus.classe.studenti.elenco}}';
     expect(onlyErrs(V(tpl)).length).toBeGreaterThan(0);
   });
   it('guardia hasElenco presente = ok', () => {
-    const tpl = '{{#focus.classe.studenti.hasElenco}}{{#focus.classe.studenti.elenco}}{{nomeCompleto}}{{/focus.classe.studenti.elenco}}{{/focus.classe.studenti.hasElenco}}';
+    const tpl =
+      '{{#focus.classe.studenti.hasElenco}}{{#focus.classe.studenti.elenco}}{{nomeCompleto}}{{/focus.classe.studenti.elenco}}{{/focus.classe.studenti.hasElenco}}';
     expect(onlyErrs(V(tpl))).toEqual([]);
   });
   it('privacy: email studente in VERBALE = errore, in ELENCO_INTERNO = ok', () => {
-    expect(onlyErrs(V('{{#focus.classe.studenti.elenco}}{{email}}{{/focus.classe.studenti.elenco}}', 'VERBALE')).length).toBeGreaterThan(0);
-    expect(onlyErrs(V('{{#focus.classe.studenti.hasElenco}}{{#focus.classe.studenti.elenco}}{{email}}{{/focus.classe.studenti.elenco}}{{/focus.classe.studenti.hasElenco}}', 'ELENCO_INTERNO'))).toEqual([]);
+    expect(
+      onlyErrs(
+        V('{{#focus.classe.studenti.elenco}}{{email}}{{/focus.classe.studenti.elenco}}', 'VERBALE')
+      ).length
+    ).toBeGreaterThan(0);
+    expect(
+      onlyErrs(
+        V(
+          '{{#focus.classe.studenti.hasElenco}}{{#focus.classe.studenti.elenco}}{{email}}{{/focus.classe.studenti.elenco}}{{/focus.classe.studenti.hasElenco}}',
+          'ELENCO_INTERNO'
+        )
+      )
+    ).toEqual([]);
   });
   it('concatenazione inequivoca cognome+nome = errore; generica = warning', () => {
-    expect(onlyErrs(V('{{#focus.classe.consiglio.elenco}}{{cognome}} {{nome}}{{/focus.classe.consiglio.elenco}}')).length).toBeGreaterThan(0);
-    expect(onlyErr(V('{{#focus.classe.consiglio.elenco}}{{materieDescrizione}} {{ruoliDescrizioneTesto | default:\'—\'}}{{/focus.classe.consiglio.elenco}}'))).toBe(undefined);
-    expect(onlyWarn(V('{{#focus.classe.consiglio.elenco}}{{appellativoCompleto}} {{materieDescrizione}}{{/focus.classe.consiglio.elenco}}')).length).toBeGreaterThan(0);
+    expect(
+      onlyErrs(
+        V(
+          '{{#focus.classe.consiglio.elenco}}{{cognome}} {{nome}}{{/focus.classe.consiglio.elenco}}'
+        )
+      ).length
+    ).toBeGreaterThan(0);
+    expect(
+      onlyErr(
+        V(
+          "{{#focus.classe.consiglio.elenco}}{{materieDescrizione}} {{ruoliDescrizioneTesto | default:'—'}}{{/focus.classe.consiglio.elenco}}"
+        )
+      )
+    ).toBe(undefined);
+    expect(
+      onlyWarn(
+        V(
+          '{{#focus.classe.consiglio.elenco}}{{appellativoCompleto}} {{materieDescrizione}}{{/focus.classe.consiglio.elenco}}'
+        )
+      ).length
+    ).toBeGreaterThan(0);
   });
 });
 ```
@@ -1682,7 +2256,7 @@ describe('validateTemplate', () => {
 
 - [ ] **Step 3: implementazione `rules.ts`**
 
-```ts
+````ts
 import type { Filter as FilterToken, Token, VarToken, SectionOpenToken } from '../engine/types';
 import type { Scenario, NodeMeta } from '../data/scenario';
 import { lookup } from '../engine/lookup';
@@ -1849,7 +2423,7 @@ const sameObjectPrefix = (p: string, q: string): boolean => {
 
 ```bash
 npx vitest run src/rules/rules.test.ts
-```
+````
 
 - [ ] **Step 5: commit**
 
@@ -1863,6 +2437,7 @@ git commit -m "feat(template-playground): regole bloccanti guida sez.7"
 ### Task 9: UI — albero, editor, inserimento, anteprima, wiring
 
 **Files:**
+
 - Create: `template-playground/src/ui/tree.ts`
 - Create: `template-playground/src/ui/editor.ts`
 - Create: `template-playground/src/ui/insert.ts`
@@ -1871,6 +2446,7 @@ git commit -m "feat(template-playground): regole bloccanti guida sez.7"
 - Modify: `template-playground/src/main.ts` (wiring completo)
 
 **Interfaces:**
+
 - Produces:
   - `export function buildTree(scenario: Scenario, host: HTMLElement, onPick: (path: string, meta: NodeMeta) => void): void`
   - `export class TemplateEditor { constructor(host: HTMLElement, onChange: () => void); get text(): string; set text(v: string); insert(snippet: string, caretIndex: number): void; highlight(tokens: Token[], issues: RuleIssue[]): void }`
@@ -1884,12 +2460,22 @@ git commit -m "feat(template-playground): regole bloccanti guida sez.7"
 import type { Scenario, NodeMeta } from '../data/scenario';
 import type { CDUNode, CDUValue } from '../engine/types';
 
-export function buildTree(scenario: Scenario, host: HTMLElement, onPick: (path: string, meta: NodeMeta) => void): void {
+export function buildTree(
+  scenario: Scenario,
+  host: HTMLElement,
+  onPick: (path: string, meta: NodeMeta) => void
+): void {
   host.innerHTML = '';
   host.appendChild(buildNode(scenario, '', scenario.context as CDUNode, 0, onPick));
 }
 
-function buildNode(scenario: Scenario, prefix: string, node: CDUNode, depth: number, onPick: (p: string, m: NodeMeta) => void): HTMLElement {
+function buildNode(
+  scenario: Scenario,
+  prefix: string,
+  node: CDUNode,
+  depth: number,
+  onPick: (p: string, m: NodeMeta) => void
+): HTMLElement {
   const ul = document.createElement('ul');
   ul.style.listStyle = 'none';
   ul.style.paddingLeft = depth ? '10px' : '0';
@@ -1899,7 +2485,14 @@ function buildNode(scenario: Scenario, prefix: string, node: CDUNode, depth: num
     const li = document.createElement('li');
     li.style.margin = '0';
     if (Array.isArray(value)) {
-      const row = rowEl('tree-row', '<span class="tree-key">' + key + '</span> <span class="tree-arr">[' + value.length + ']</span>');
+      const row = rowEl(
+        'tree-row',
+        '<span class="tree-key">' +
+          key +
+          '</span> <span class="tree-arr">[' +
+          value.length +
+          ']</span>'
+      );
       row.title = 'Array — clicca per iterare/inserire';
       row.onclick = () => onPick(path, scenario.meta[path] ?? { type: 'array' });
       li.appendChild(row);
@@ -1914,7 +2507,15 @@ function buildNode(scenario: Scenario, prefix: string, node: CDUNode, depth: num
     } else {
       const meta = scenario.meta[path];
       const liCls = meta?.privacy ? 'tree-row tree-leaf privacy' : 'tree-row tree-leaf';
-      const row = rowEl(liCls, '<span class="tree-key">' + key + '</span> <span class="tree-leaf">' + JSON.stringify(value) + '</span>' + badge(meta));
+      const row = rowEl(
+        liCls,
+        '<span class="tree-key">' +
+          key +
+          '</span> <span class="tree-leaf">' +
+          JSON.stringify(value) +
+          '</span>' +
+          badge(meta)
+      );
       row.title = 'Clicca per inserire come placeholder';
       row.onclick = () => onPick(path, meta ?? { type: leafType(value) });
       li.appendChild(row);
@@ -1931,11 +2532,15 @@ const rowEl = (cls: string, html: string) => {
   return div;
 };
 
-const leafType = (v: unknown): NodeMeta['type'] => typeof v === 'number' ? 'number' : typeof v === 'boolean' ? 'boolean' : 'string';
+const leafType = (v: unknown): NodeMeta['type'] =>
+  typeof v === 'number' ? 'number' : typeof v === 'boolean' ? 'boolean' : 'string';
 
 const badge = (meta?: NodeMeta) =>
-  meta?.privacy ? ' <span class="tree-leaf" title="sensibile">🔒</span>' :
-  meta?.ready ? ' <span class="tree-leaf" title="già pronto">✓</span>' : '';
+  meta?.privacy
+    ? ' <span class="tree-leaf" title="sensibile">🔒</span>'
+    : meta?.ready
+      ? ' <span class="tree-leaf" title="già pronto">✓</span>'
+      : '';
 ```
 
 - [ ] **Step 2: TemplateEditor** (`ui/editor.ts`) — `textarea` + `pre.backdrop`
@@ -1949,19 +2554,29 @@ export class TemplateEditor {
   private ta: HTMLTextAreaElement;
   private backdrop: HTMLPreElement;
 
-  constructor(private host: HTMLElement, private onChange: () => void) {
+  constructor(
+    private host: HTMLElement,
+    private onChange: () => void
+  ) {
     host.innerHTML = '';
     this.backdrop = document.createElement('pre');
     this.backdrop.className = 'backdrop';
     this.ta = document.createElement('textarea');
     this.ta.spellcheck = false;
-    this.ta.addEventListener('input', () => { this.onChange(); });
+    this.ta.addEventListener('input', () => {
+      this.onChange();
+    });
     host.appendChild(this.backdrop);
     host.appendChild(this.ta);
   }
 
-  get text(): string { return this.ta.value; }
-  set text(v: string) { this.ta.value = v; this.onChange(); }
+  get text(): string {
+    return this.ta.value;
+  }
+  set text(v: string) {
+    this.ta.value = v;
+    this.onChange();
+  }
 
   insert(snippet: string, caretIndex: number): void {
     const start = this.ta.selectionStart ?? this.ta.value.length;
@@ -1976,14 +2591,21 @@ export class TemplateEditor {
 
   highlight(tokens: Token[], issues: RuleIssue[]): void {
     const errOffsets = new Set(issues.filter((i) => i.severity === 'error').map((i) => i.offset));
-    const warnOffsets = new Set(issues.filter((i) => i.severity === 'warning').map((i) => i.offset));
+    const warnOffsets = new Set(
+      issues.filter((i) => i.severity === 'warning').map((i) => i.offset)
+    );
     let html = '';
     let cursor = 0;
     for (const t of tokens) {
       if (t.type === 'text') continue;
       html += escapeHtml(this.ta.value.slice(cursor, t.start));
-      const cls = errOffsets.has(t.start) ? 'tok err' : warnOffsets.has(t.start) ? 'tok warn' : 'tok';
-      html += '<span class="' + cls + '">' + escapeHtml(this.ta.value.slice(t.start, t.end)) + '</span>';
+      const cls = errOffsets.has(t.start)
+        ? 'tok err'
+        : warnOffsets.has(t.start)
+          ? 'tok warn'
+          : 'tok';
+      html +=
+        '<span class="' + cls + '">' + escapeHtml(this.ta.value.slice(t.start, t.end)) + '</span>';
       cursor = t.end;
     }
     html += escapeHtml(this.ta.value.slice(cursor));
@@ -1992,7 +2614,7 @@ export class TemplateEditor {
 }
 ```
 
-*(Nota: gli offset degli errori di rules puntano a `t.start`; il backdrop li evidenzia per matching range.)*
+_(Nota: gli offset degli errori di rules puntano a `t.start`; il backdrop li evidenzia per matching range.)_
 
 - [ ] **Step 3: `openInsertPanel`** (`ui/insert.ts`) — voce di scelta filtri/wrapper e assembly snippet
 
@@ -2005,15 +2627,18 @@ import { lookup } from '../engine/lookup';
 import { readable } from '../engine/lookup';
 
 export function openInsertPanel(
-  path: string, meta: NodeMeta, scenario: Scenario,
-  onApply: (snippet: string, caret: number) => void,
+  path: string,
+  meta: NodeMeta,
+  scenario: Scenario,
+  onApply: (snippet: string, caret: number) => void
 ): void {
   const overlay = document.getElementById('insert-overlay') as HTMLDivElement;
   overlay.hidden = false;
   overlay.innerHTML = '';
 
   const box = document.createElement('div');
-  box.style.cssText = 'margin:60px auto;max-width:620px;background:#fff;border:1px solid #ccc;border-radius:8px;padding:16px;';
+  box.style.cssText =
+    'margin:60px auto;max-width:620px;background:#fff;border:1px solid #ccc;border-radius:8px;padding:16px;';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10;';
   overlay.appendChild(box);
 
@@ -2024,8 +2649,12 @@ export function openInsertPanel(
   const info = document.createElement('p');
   info.style.fontSize = '12px';
   const sample = lookupSample(scenario.context, path);
-  info.textContent = 'Tipo: ' + meta.type + (meta.ready ? ' · pronto per la stampa' : '') +
-    (meta.privacy ? ' · 🔒 sensibile' : '') + (sample !== undefined ? ' · esempio: ' + sample : '');
+  info.textContent =
+    'Tipo: ' +
+    meta.type +
+    (meta.ready ? ' · pronto per la stampa' : '') +
+    (meta.privacy ? ' · 🔒 sensibile' : '') +
+    (sample !== undefined ? ' · esempio: ' + sample : '');
   box.appendChild(info);
 
   const list = document.createElement('div');
@@ -2034,18 +2663,53 @@ export function openInsertPanel(
     b.type = 'button';
     b.textContent = label;
     b.style.margin = '4px';
-    b.onclick = () => { overlay.hidden = true; onApply(snippet, caret); };
+    b.onclick = () => {
+      overlay.hidden = true;
+      onApply(snippet, caret);
+    };
     list.appendChild(b);
   };
 
   if (meta.type === 'array') {
     addBtn('Itera ({{#…}})…', '{{#' + path + '}}\n\n{{/' + path + '}}', 2 + path.length + 4 + 1);
-    addBtn('Iterazione guardata (hasElenco)', '{{#' + parentOf(path) + '.hasElenco}}\n{{#' + path + '}}\n\n{{/' + path + '}}\n{{/' + parentOf(path) + '.hasElenco}}', 2 + parentOf(path).length + 13 + 3);
-    addBtn('Sezione invertita (vuoto)', '{{^' + parentOf(path) + '.hasElenco}}\n\n{{/' + parentOf(path) + '.hasElenco}}', 2);
-    addBtn('Elenco puntato Docs', '{{#bullet_list:' + path + '}}\n\n{{/bullet_list}}', '{{#bullet_list:' + path + '}}\n'.length + 1);
-    addBtn('Elenco numerato Docs', '{{#number_list:' + path + '}}\n\n{{/number_list}}', '{{#number_list:' + path + '}}\n'.length + 1);
-    addBtn('Riga tabella Docs', '{{#tablerow_loop:' + path + '}}COL1,COL2{{/tablerow_loop}}', '{{#tablerow_loop:' + path + '}}'.length);
-    addBtn('Righe dinamiche Sheets', '{{dynamic_rows[source=' + path + ',value=]}}', 2 + 'dynamic_rows[source='.length + path.length + 6);
+    addBtn(
+      'Iterazione guardata (hasElenco)',
+      '{{#' +
+        parentOf(path) +
+        '.hasElenco}}\n{{#' +
+        path +
+        '}}\n\n{{/' +
+        path +
+        '}}\n{{/' +
+        parentOf(path) +
+        '.hasElenco}}',
+      2 + parentOf(path).length + 13 + 3
+    );
+    addBtn(
+      'Sezione invertita (vuoto)',
+      '{{^' + parentOf(path) + '.hasElenco}}\n\n{{/' + parentOf(path) + '.hasElenco}}',
+      2
+    );
+    addBtn(
+      'Elenco puntato Docs',
+      '{{#bullet_list:' + path + '}}\n\n{{/bullet_list}}',
+      '{{#bullet_list:' + path + '}}\n'.length + 1
+    );
+    addBtn(
+      'Elenco numerato Docs',
+      '{{#number_list:' + path + '}}\n\n{{/number_list}}',
+      '{{#number_list:' + path + '}}\n'.length + 1
+    );
+    addBtn(
+      'Riga tabella Docs',
+      '{{#tablerow_loop:' + path + '}}COL1,COL2{{/tablerow_loop}}',
+      '{{#tablerow_loop:' + path + '}}'.length
+    );
+    addBtn(
+      'Righe dinamiche Sheets',
+      '{{dynamic_rows[source=' + path + ',value=]}}',
+      2 + 'dynamic_rows[source='.length + path.length + 6
+    );
     addBtn('Colonne dinamiche Sheets', '{{dynamic_columns[source=' + path + ',value=,label=]}}', 0);
   } else {
     addBtn('Placeholder semplice', '{{' + path + '}}', 2 + path.length + 2);
@@ -2058,7 +2722,8 @@ export function openInsertPanel(
   fh.textContent = 'Filtri applicabili';
   box.appendChild(fh);
   const fdiv = document.createElement('div');
-  fdiv.style.maxHeight = '180px'; fdiv.style.overflow = 'auto';
+  fdiv.style.maxHeight = '180px';
+  fdiv.style.overflow = 'auto';
   for (const name of FILTERS_BY_TYPE[meta.type] ?? []) {
     const b = document.createElement('button');
     b.type = 'button';
@@ -2077,19 +2742,29 @@ export function openInsertPanel(
   const close = document.createElement('button');
   close.type = 'button';
   close.textContent = 'Chiudi';
-  close.onclick = () => { overlay.hidden = true; };
+  close.onclick = () => {
+    overlay.hidden = true;
+  };
   box.appendChild(close);
 }
 
 const parentOf = (p: string) => p.replace(/\.\*.*$/, '').replace(/\.elenco$/, '');
-const lookupSample = (root: CDUNode, path: string): CDUValue => { void root; void path; return undefined; };
-const assemble = (path: string, meta: NodeMeta, filter: string): { snippet: string; caret: number } => {
+const lookupSample = (root: CDUNode, path: string): CDUValue => {
+  void root;
+  void path;
+  return undefined;
+};
+const assemble = (
+  path: string,
+  meta: NodeMeta,
+  filter: string
+): { snippet: string; caret: number } => {
   const f = path + ' | ' + filter;
   return { snippet: '{{' + f + '}}', caret: 2 + f.length + 2 };
 };
 ```
 
-*(Da completare nella stessa Task: `SIGNATURE` e `FILTERS_BY_TYPE` importati da un piccolo catalogo derivato dalla guida opportuno `filtersCatalogue.ts` con firme come testo; `lookupSample` esegue la risoluzione vera sul `scenario.context` con `lookup`.)*
+_(Da completare nella stessa Task: `SIGNATURE` e `FILTERS_BY_TYPE` importati da un piccolo catalogo derivato dalla guida opportuno `filtersCatalogue.ts` con firme come testo; `lookupSample` esegue la risoluzione vera sul `scenario.context` con `lookup`.)_
 
 - [ ] **Step 4: `ui/preview.ts`**
 
@@ -2109,13 +2784,14 @@ import type { Scenario } from '../data/scenario';
 
 export function wireToolbar(
   scenarios: Scenario[],
-  onChange: (scenario: Scenario, outputContext: string) => void,
+  onChange: (scenario: Scenario, outputContext: string) => void
 ): void {
   const sel = document.getElementById('scenario-select') as HTMLSelectElement;
   sel.innerHTML = '';
   for (const s of scenarios) {
     const o = document.createElement('option');
-    o.value = s.id; o.textContent = s.label;
+    o.value = s.id;
+    o.textContent = s.label;
     sel.appendChild(o);
   }
   const ctx = document.getElementById('output-context-select') as HTMLSelectElement;
@@ -2124,21 +2800,29 @@ export function wireToolbar(
     ctx.innerHTML = '';
     for (const c of s.outputContexts) {
       const o = document.createElement('option');
-      o.value = c; o.textContent = c;
+      o.value = c;
+      o.textContent = c;
       ctx.appendChild(o);
     }
     onChange(s, ctx.value);
   };
   sel.addEventListener('change', fillCtx);
-  ctx.addEventListener('change', () => { const s = scenarios[sel.selectedIndex] ?? scenarios[0]; onChange(s, ctx.value); });
+  ctx.addEventListener('change', () => {
+    const s = scenarios[sel.selectedIndex] ?? scenarios[0];
+    onChange(s, ctx.value);
+  });
 
-  document.getElementById('btn-copy')!.addEventListener('click', () => { void navigator.clipboard.writeText(currentText()); });
+  document.getElementById('btn-copy')!.addEventListener('click', () => {
+    void navigator.clipboard.writeText(currentText());
+  });
   document.getElementById('btn-export')!.addEventListener('click', () => exportTxt());
   fillCtx();
 }
 
 let currentText = () => '';
-export function bindCurrentText(fn: () => string): void { currentText = fn; }
+export function bindCurrentText(fn: () => string): void {
+  currentText = fn;
+}
 
 function exportTxt(): void {
   const blob = new Blob([currentText()], { type: 'text/plain;charset=utf-8' });
@@ -2180,12 +2864,13 @@ editor.text = [
   '{{#focus.classe.consiglio.elenco}}',
   '{{@number}}. {{appellativoCompleto}} — {{materieDescrizione}}',
   '{{/focus.classe.consiglio.elenco}}',
-  '{{/focus.classe.consiglio.hasElenco}}',
+  '{{/focus.classe.consiglio.hasElenco}}'
 ].join('\n');
 
 function refresh(): void {
   const { tokens, errors } = tokenize(editor.text);
-  const issues = errors.map((e) => ({ severity: 'error' as const, offset: e.offset, message: e.message }))
+  const issues = errors
+    .map((e) => ({ severity: 'error' as const, offset: e.offset, message: e.message }))
     .concat(validateTemplate(tokens, editor.text, scenario, outputContext));
   editor.highlight(tokens, issues);
   const result = renderTemplate(tokens, scenario.context);
@@ -2203,21 +2888,27 @@ function refresh(): void {
     div.textContent = e.message;
     problems.appendChild(div);
   }
-  validity.className = issues.some((i) => i.severity === 'error') || result.errors.length ? 'err' : 'ok';
+  validity.className =
+    issues.some((i) => i.severity === 'error') || result.errors.length ? 'err' : 'ok';
 }
 
 bindCurrentText(() => editor.text);
-buildTree(scenario, tree, (path, meta) => openInsertPanel(path, meta, scenario, (snippet, caret) => editor.insert(snippet, caret)));
+buildTree(scenario, tree, (path, meta) =>
+  openInsertPanel(path, meta, scenario, (snippet, caret) => editor.insert(snippet, caret))
+);
 wireToolbar(scenarios, (s, c) => {
-  scenario = s; outputContext = c;
+  scenario = s;
+  outputContext = c;
   editor.text = '';
-  buildTree(s, tree, (path, meta) => openInsertPanel(path, meta, s, (snip, caret) => editor.insert(snip, caret)));
+  buildTree(s, tree, (path, meta) =>
+    openInsertPanel(path, meta, s, (snip, caret) => editor.insert(snip, caret))
+  );
   refresh();
 });
 refresh();
 ```
 
-*(Nota: `renderTemplate` ha firma `(tokens, root)` — senza terzo argomento. La pick array arriva già come path pieno dell'elenco; il pannello di inserimento usa `parentOf`/`hasElenco` per costruire le snippet.)*
+_(Nota: `renderTemplate` ha firma `(tokens, root)` — senza terzo argomento. La pick array arriva già come path pieno dell'elenco; il pannello di inserimento usa `parentOf`/`hasElenco` per costruire le snippet.)_
 
 - [ ] **Step 7: verifica**
 
@@ -2239,6 +2930,7 @@ git commit -m "feat(template-playground): UI tree+editor+insert+preview e wiring
 ### Task 10: Verifica finale e hardening
 
 **Files:**
+
 - Modify: (eventuali fix)
 - Test: verifica completa
 
@@ -2270,11 +2962,13 @@ describe('end-to-end', () => {
       '{{#bullet_list:focus.classe.consiglio.elenco}}',
       '{{appellativoCompleto}} — {{materieDescrizione}}',
       '{{/bullet_list}}',
-      '{{/focus.classe.consiglio.hasElenco}}',
+      '{{/focus.classe.consiglio.hasElenco}}'
     ].join('\n');
     const { tokens, errors } = tokenize(tpl);
     expect(errors).toEqual([]);
-    expect(validateTemplate(tokens, tpl, s, 'VERBALE').filter((i) => i.severity === 'error')).toEqual([]);
+    expect(
+      validateTemplate(tokens, tpl, s, 'VERBALE').filter((i) => i.severity === 'error')
+    ).toEqual([]);
     const html = renderTemplate(tokens, s.context).html;
     expect(html).toContain('<ul>');
     expect(html).toContain('BIANCHI ANNA');
@@ -2282,7 +2976,8 @@ describe('end-to-end', () => {
 
   it('template con violazione regola: dove su dominio -> errori', () => {
     const s = scenarios[0];
-    const tpl = "{{#focus.classe.studenti.elenco}}{{nomeCompleto | where:'isBes':true}}{{/focus.classe.studenti.elenco}}";
+    const tpl =
+      "{{#focus.classe.studenti.elenco}}{{nomeCompleto | where:'isBes':true}}{{/focus.classe.studenti.elenco}}";
     const { tokens } = tokenize(tpl);
     const errs = validateTemplate(tokens, tpl, s, 'VERBALE').filter((i) => i.severity === 'error');
     expect(errs.length).toBeGreaterThan(0);

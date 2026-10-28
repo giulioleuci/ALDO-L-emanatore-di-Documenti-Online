@@ -83,17 +83,17 @@ regole bloccanti:
 
 ## Moduli
 
-| Modulo | Responsabilità |
-|---|---|
-| `engine/tokenizer.ts` | Tokenizza il template: testo, `{{var}}`, `{{{var}}}`, `{{&var}}`, `{{#sez}}`, `{{^sez}}`, `{{/sez}}`, direttive Docs (`{{#bullet_list:...}}`, `number_list`, `tablerow_loop`), direttive Sheets (`dynamic_rows[...]`, `dynamic_columns[...]`), espressioni nelle sezioni; errori di delimitatori |
-| `engine/renderer.ts` | Context stack con fallback bottom-up e `../`, meta-var (`@index`, `@number`, `@first`, `@last`, `@odd`, `@even`, `@total`, `@key`), sezioni/invertite, triple graffe raw, indicizzazione `[0]`, sezioni condizionate da espressioni booleane |
-| `engine/filters.ts` | I ~25 filtri pipe della guida; argomenti posizionali con stringhe quotate; chaining da sinistra a destra |
-| `engine/structural.ts` | `bullet_list`, `number_list`, `tablerow_loop`, `dynamic_rows`, `dynamic_columns` → HTML per l'anteprima |
-| `engine/expression.ts` | Valutatore booleano leggero (sintassi stile `GasExpressionEngineLib`) per espressioni con placeholder |
-| `rules/rules.ts` | Regole bloccanti + warning (vedi §Regole) |
-| `data/scenarios/*.ts` | I 4 scenari CDU fittizi con annotazioni |
-| `ui/tree.ts`, `ui/editor.ts`, `ui/insert.ts`, `ui/preview.ts` | Arte, editing, menù inserimento, anteprima |
-| `main.ts` | Bootstrap e wiring |
+| Modulo                                                        | Responsabilità                                                                                                                                                                                                                                                                                   |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `engine/tokenizer.ts`                                         | Tokenizza il template: testo, `{{var}}`, `{{{var}}}`, `{{&var}}`, `{{#sez}}`, `{{^sez}}`, `{{/sez}}`, direttive Docs (`{{#bullet_list:...}}`, `number_list`, `tablerow_loop`), direttive Sheets (`dynamic_rows[...]`, `dynamic_columns[...]`), espressioni nelle sezioni; errori di delimitatori |
+| `engine/renderer.ts`                                          | Context stack con fallback bottom-up e `../`, meta-var (`@index`, `@number`, `@first`, `@last`, `@odd`, `@even`, `@total`, `@key`), sezioni/invertite, triple graffe raw, indicizzazione `[0]`, sezioni condizionate da espressioni booleane                                                     |
+| `engine/filters.ts`                                           | I ~25 filtri pipe della guida; argomenti posizionali con stringhe quotate; chaining da sinistra a destra                                                                                                                                                                                         |
+| `engine/structural.ts`                                        | `bullet_list`, `number_list`, `tablerow_loop`, `dynamic_rows`, `dynamic_columns` → HTML per l'anteprima                                                                                                                                                                                          |
+| `engine/expression.ts`                                        | Valutatore booleano leggero (sintassi stile `GasExpressionEngineLib`) per espressioni con placeholder                                                                                                                                                                                            |
+| `rules/rules.ts`                                              | Regole bloccanti + warning (vedi §Regole)                                                                                                                                                                                                                                                        |
+| `data/scenarios/*.ts`                                         | I 4 scenari CDU fittizi con annotazioni                                                                                                                                                                                                                                                          |
+| `ui/tree.ts`, `ui/editor.ts`, `ui/insert.ts`, `ui/preview.ts` | Arte, editing, menù inserimento, anteprima                                                                                                                                                                                                                                                       |
+| `main.ts`                                                     | Bootstrap e wiring                                                                                                                                                                                                                                                                               |
 
 Architettura a flusso unidirezionale: editor (token) → `rules` (validazione in
 background) → `renderer` → anteprima. Tutto client-side.

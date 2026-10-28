@@ -11,11 +11,11 @@ AnalyzeContext -> CheckDuplicates -> PrepareInfrastructure -> GenerateName -> ..
 ```
 
 `CheckDuplicatesStep` renders `CONF_DOC.FILE_NAME` (to build the identity key
-compared against `LOG_DOCS.NOME`) *before* `PrepareInfrastructureStep` sets
+compared against `LOG_DOCS.NOME`) _before_ `PrepareInfrastructureStep` sets
 `progressivo`. If `FILE_NAME` uses `{{progressivo}}`, the value is unresolved
 at that point, so the identity key `CheckDuplicatesStep` computes never
 matches the `NOME` actually stored by a prior run (whose `GenerateNameStep`
-ran *after* `progressivo` was set).
+ran _after_ `progressivo` was set).
 
 ### Why reordering the pipeline (rejected alternative) doesn't fix it
 
@@ -66,7 +66,7 @@ differentiates occasions — `NOME`/`{{progressivo}}` no longer needs to.
 - **`VERBALE`-style types (the motivating case)**: today `PATH_OUT`
   (`Verbali/{{anno}}`) and `TIPO`/`SOTTOTIPO`/`ID_GEN` are identical across
   every meeting for the same class when one `CONF_DOC` row is reused —
-  `NOME` (via `{{meta.date.oggi.breve}}`) was the *only* thing distinguishing
+  `NOME` (via `{{meta.date.oggi.breve}}`) was the _only_ thing distinguishing
   meetings. Under the one-`CONF_DOC`-row-per-meeting model, `ID_GEN` takes
   over that role, so dropping `NOME` from the compare stays correct instead
   of causing every subsequent meeting to be wrongly flagged as a duplicate of
@@ -85,7 +85,7 @@ per instance.
 ### What does NOT change
 
 - Pipeline step order (`AnalyzeContext -> CheckDuplicates ->
-  PrepareInfrastructure -> GenerateName -> ...`) stays as-is. No reorder
+PrepareInfrastructure -> GenerateName -> ...`) stays as-is. No reorder
   needed — `{{progressivo}}` in the actual generated `FILE_NAME` already
   resolves correctly today, since `GenerateNameStep` already runs after
   `PrepareInfrastructureStep`. The only broken piece was the identity check,
@@ -129,7 +129,7 @@ per instance.
    - Add a regression test: `FILE_NAME` containing `{{progressivo}}`,
      `DUPLICAZIONE=NEGATA`, a `LOG_DOCS` row matching on
      `TIPO`/`SOTTOTIPO`/`ID_GEN`/`PATH` but with a `NOME` reflecting a
-     *different* `progressivo` value than what today's render would produce
+     _different_ `progressivo` value than what today's render would produce
      — assert `shouldGenerate === false` (correctly recognized as a
      duplicate despite the numeric mismatch in `NOME`).
 
@@ -140,4 +140,4 @@ per instance.
   identity tests keep passing unmodified (their fixtures already match on
   `UTENTI`/`SOTTOTIPO`, `NOME` was never load-bearing there).
 - Run `npm test`, `npm run test:integration`, `npm run typecheck`, `npm run
-  lint` after the change.
+lint` after the change.

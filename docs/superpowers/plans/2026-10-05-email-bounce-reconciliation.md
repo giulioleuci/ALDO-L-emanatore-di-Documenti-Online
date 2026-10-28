@@ -35,6 +35,7 @@
 ### Task 1: Docs + `BOUNCED` status + repository seam
 
 **Files:**
+
 - Modify: `SPECS_ALDO/01_SCHEMA_DATABASE.md` (rows: `NOREPLY` ≈l.427, `LOG_MAIL.STATO` ≈l.549, action catalog ≈l.489-491)
 - Modify: `src/domain/value-objects/enums.ts:80-84`
 - Modify: `src/domain/repositories/ILogEmailRepository.ts`
@@ -42,6 +43,7 @@
 - Test: `test/unit/infrastructure/log-email-repository-bounce.test.ts` (new)
 
 **Interfaces:**
+
 - Produces: `StatoEmail.BOUNCED = 'BOUNCED'`; on `ILogEmailRepository`: `findByStato(stato: StatoEmail): LogEmail[]` (already on the class, add to interface) and `marcaRimbalzo(log: LogEmail, diagnostica: string, meta: Record<string, unknown>): void`.
 
 - [ ] **Step 1: Failing test.** Look at how `test/unit/application/email-retry-service.test.ts` builds a `FakeDatabase` + `LogEmailRepository` and copy that setup.
@@ -56,10 +58,19 @@ import { Email } from '../../../src/domain/value-objects/Email';
 describe('LogEmailRepository.marcaRimbalzo', () => {
   it('flips SUCCESS to BOUNCED, appends diagnostic and merges meta into ALLEGATI', () => {
     const repo = new LogEmailRepository(makeDb()); // makeDb(): same helper as email-retry-service.test.ts
-    const log = repo.registraInvio('NOTIFICA_PDP', [Email.create('a@x.it')], StatoEmail.SUCCESS, '<p>hi</p>', {
-      logicalTargetId: 't1'
+    const log = repo.registraInvio(
+      'NOTIFICA_PDP',
+      [Email.create('a@x.it')],
+      StatoEmail.SUCCESS,
+      '<p>hi</p>',
+      {
+        logicalTargetId: 't1'
+      }
+    );
+    repo.marcaRimbalzo(log, '550 5.1.1 User unknown', {
+      bouncedAt: '2026-10-05T08:00:00.000Z',
+      bounceMessageId: 'm1'
     });
-    repo.marcaRimbalzo(log, '550 5.1.1 User unknown', { bouncedAt: '2026-10-05T08:00:00.000Z', bounceMessageId: 'm1' });
     const [row] = repo.findByStato(StatoEmail.BOUNCED);
     expect(row!.errore).toBe('Bounce: 550 5.1.1 User unknown');
     expect(row!.getAllegati()).toEqual({
@@ -79,6 +90,7 @@ describe('LogEmailRepository.marcaRimbalzo', () => {
 `enums.ts`: add `BOUNCED = 'BOUNCED'` to `StatoEmail`. Then `grep -rn "StatoEmail" src config 2>/dev/null` and `grep -rn "SUCCESS.*ERROR.*PENDING" src` — if a schema/validation enum lists the allowed `LOG_MAIL.STATO` values, add `BOUNCED` there too.
 
 `ILogEmailRepository.ts`: add
+
 ```ts
 findByStato(stato: StatoEmail): LogEmail[];
 /** SUCCESS → BOUNCED after an NDR; ERRORE = "Bounce: <diagnostica>", meta merged into ALLEGATI. */
@@ -86,6 +98,7 @@ marcaRimbalzo(log: LogEmail, diagnostica: string, meta: Record<string, unknown>)
 ```
 
 `LogEmailRepository.ts` (after `marcaSuccesso`):
+
 ```ts
 marcaRimbalzo(log: LogEmail, diagnostica: string, meta: Record<string, unknown>): void {
   this.database.tables[TABLE.LOG_MAIL]!.updateRowWhere(
@@ -113,6 +126,7 @@ marcaRimbalzo(log: LogEmail, diagnostica: string, meta: Record<string, unknown>)
   - Catalog table: add row `VERIFICA_EMAIL_INVIATE` — "Cerca nella casella del mittente gli NDR di `mailer-daemon` e porta a `BOUNCED` le righe `LOG_MAIL` (`STATO=SUCCESS`) corrispondenti; parametri opzionali `daTimestamp`/`aTimestamp` (`GG-MM-AAAA HH:MM:SS`), `lookbackGiorni` (default 2), `pattern` (stringa o array di `CONF_MAIL.ID`). Invia un riepilogo a chi esegue e a `SUPERVISORE_EMAIL` (deduplicati). Ritorna il numero di righe aggiornate." Fix the sentence at l.491: "i quattro tipi infra" → "i cinque tipi infra" and list `VERIFICA_EMAIL_INVIATE`.
 
 - [ ] **Step 6: Commit**
+
 ```bash
 git add SPECS_ALDO src test && git commit -m "feat(log-mail): BOUNCED status, marcaRimbalzo seam, bounce docs"
 ```
@@ -122,6 +136,7 @@ git add SPECS_ALDO src test && git commit -m "feat(log-mail): BOUNCED status, ma
 ### Task 2: Gmail search seam (GasLibraryFactory → facade)
 
 **Files:**
+
 - Modify: `GasLibraryFactory/GoogleApiWrapper/src/services/MailService.js`
 - Test: `GasLibraryFactory/GoogleApiWrapper/src/services/__tests__/MailService.test.js`
 - Modify: `types/gaslibs/index.d.ts` (`class MailService`, ≈l.1201)
@@ -130,6 +145,7 @@ git add SPECS_ALDO src test && git commit -m "feat(log-mail): BOUNCED status, ma
 - Test: `test/unit/infrastructure/gmail-service-facade.test.ts` (new, small)
 
 **Interfaces:**
+
 - Produces (GLF): `MailService.searchMessages(query: string, maxResults?: number): Array<{id: string; threadId: string; subject: string; from: string; date: Date; plainBody: string}>` — returns `[]` and logs on error, never throws.
 - Produces (ALDO): `export interface BounceMessage { id: string; date: Date; subject: string; body: string }`; `IGmailFacade.searchBounceMessages(lookbackDays: number): BounceMessage[]`; `FakeGmailFacade.bounces: BounceMessage[]` (+ records `lastLookbackDays`).
 
@@ -139,9 +155,11 @@ git add SPECS_ALDO src test && git commit -m "feat(log-mail): BOUNCED status, ma
 describe('searchMessages()', () => {
   it('flattens threads to message summaries and honours maxResults', () => {
     const msg = (id) => ({
-      getId: () => id, getSubject: () => 'Delivery Status Notification (Failure)',
+      getId: () => id,
+      getSubject: () => 'Delivery Status Notification (Failure)',
       getFrom: () => 'Mail Delivery Subsystem <mailer-daemon@googlemail.com>',
-      getDate: () => new Date('2026-10-05T08:00:00Z'), getPlainBody: () => 'body ' + id
+      getDate: () => new Date('2026-10-05T08:00:00Z'),
+      getPlainBody: () => 'body ' + id
     });
     GmailApp.search.mockReturnValue([
       { getId: () => 't1', getMessages: () => [msg('m1'), msg('m2')] },
@@ -154,7 +172,9 @@ describe('searchMessages()', () => {
   });
 
   it('returns [] and logs when GmailApp throws', () => {
-    GmailApp.search.mockImplementation(() => { throw new Error('quota'); });
+    GmailApp.search.mockImplementation(() => {
+      throw new Error('quota');
+    });
     expect(service.searchMessages('x')).toEqual([]);
     expect(logger.error).toHaveBeenCalled();
   });
@@ -191,18 +211,22 @@ searchMessages(query, maxResults = 50) {
   }
 }
 ```
+
 (`maxResults` is a thread cap for `GmailApp.search` and a message cap on output — fine for NDRs, one message per thread.)
 
 - [ ] **Step 4:** test passes. Then `cd GasLibraryFactory && npm run build`, back in ALDO `npm run refresh:vendor && npm run verify:vendor`. Check `GasLibraryFactory/DOCS_LIBS/GoogleApiWrapper.md` is regenerated by GLF's own docs script (see `GasLibraryFactory/CLAUDE.md`); if it is manual, add a `MailService.searchMessages` entry.
 
 - [ ] **Step 5: ALDO side.**
-`types/gaslibs/index.d.ts`, inside `class MailService`:
+      `types/gaslibs/index.d.ts`, inside `class MailService`:
+
 ```ts
 searchMessages(query: string, maxResults?: number): Array<{
   id: string; threadId: string; subject: string; from: string; date: Date; plainBody: string;
 }>;
 ```
+
 `GmailServiceFacade.ts`: add the `BounceMessage` interface, extend `IGmailFacade`, and implement:
+
 ```ts
 searchBounceMessages(lookbackDays: number): BounceMessage[] {
   return this.mail
@@ -210,7 +234,9 @@ searchBounceMessages(lookbackDays: number): BounceMessage[] {
     .map((m) => ({ id: m.id, date: m.date, subject: m.subject, body: m.plainBody }));
 }
 ```
+
 `FakeGmailFacade.ts`:
+
 ```ts
 public bounces: BounceMessage[] = [];
 public lastLookbackDays = 0;
@@ -219,11 +245,13 @@ searchBounceMessages(lookbackDays: number): BounceMessage[] {
   return this.bounces;
 }
 ```
+
 Facade test: build `new GmailServiceFacade({ searchMessages: jest.fn(() => [{ id: 'm', threadId: 't', subject: 's', from: 'f', date: new Date(0), plainBody: 'b' }]) } as unknown as MailService)`, assert `searchBounceMessages(1.2)` calls `searchMessages('from:mailer-daemon newer_than:2d', 100)` and maps `plainBody`→`body`.
 
 - [ ] **Step 6:** `npm run typecheck && npx jest --config jest.config.cjs test/unit/infrastructure/gmail-service-facade.test.ts` → PASS.
 
 - [ ] **Step 7: Commit** (GLF is its own git repo — commit there first, then ALDO incl. `vendor/`):
+
 ```bash
 cd GasLibraryFactory && git add -A && git commit -m "feat(GoogleApiWrapper): MailService.searchMessages" && cd ..
 git add types src test vendor && git commit -m "feat(gmail): searchBounceMessages facade seam"
@@ -234,23 +262,51 @@ git add types src test vendor && git commit -m "feat(gmail): searchBounceMessage
 ### Task 3: `NdrParser` + `BounceReconciliationService`
 
 **Files:**
+
 - Create: `src/application/email/NdrParser.ts`
 - Create: `src/application/email/BounceReconciliationService.ts`
 - Test: `test/unit/application/email/ndr-parser.test.ts`, `test/unit/application/email/bounce-reconciliation-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `IGmailFacade.searchBounceMessages`, `ILogEmailRepository.findByStato/marcaRimbalzo`, `IMasterSheetRepository.findConfigAnnoCorrente()` (`.hasSupervisore()`, `.supervisoreEmail`), `IActiveUserFacade.getEmail()`.
 - Produces:
+
 ```ts
-export interface ParsedNdr { recipient: string; code: string; reason: string }
+export interface ParsedNdr {
+  recipient: string;
+  code: string;
+  reason: string;
+}
 export function parseNdr(body: string): ParsedNdr | null; // null = not a permanent (5xx) NDR
 
-export interface BounceFilters { da?: Date; a?: Date; patterns?: string[]; lookbackGiorni?: number }
-export interface BounceDetail { pattern: string; destinatari: string; rejected: string; diagnostica: string }
-export interface BounceSummary { ispezionati: number; riconciliati: number; anomalie: number; dettagli: BounceDetail[] }
+export interface BounceFilters {
+  da?: Date;
+  a?: Date;
+  patterns?: string[];
+  lookbackGiorni?: number;
+}
+export interface BounceDetail {
+  pattern: string;
+  destinatari: string;
+  rejected: string;
+  diagnostica: string;
+}
+export interface BounceSummary {
+  ispezionati: number;
+  riconciliati: number;
+  anomalie: number;
+  dettagli: BounceDetail[];
+}
 export class BounceReconciliationService {
-  constructor(deps: { gmail: IGmailFacade; logMail: ILogEmailRepository; master: IMasterSheetRepository;
-                      activeUser: IActiveUserFacade; logger: LoggerService; now: () => Date });
+  constructor(deps: {
+    gmail: IGmailFacade;
+    logMail: ILogEmailRepository;
+    master: IMasterSheetRepository;
+    activeUser: IActiveUserFacade;
+    logger: LoggerService;
+    now: () => Date;
+  });
   riconcilia(f: BounceFilters): BounceSummary;
 }
 ```
@@ -278,11 +334,16 @@ The response was:
 452 4.2.2 Mailbox full`;
 
 describe('parseNdr', () => {
-  it('Google format', () => expect(parseNdr(GOOGLE)).toEqual({
-    recipient: 'nobody.123@scuola.it', code: '550',
-    reason: '550 5.1.1 The email account that you tried to reach does not exist.' }));
-  it('RFC 3464', () => expect(parseNdr(RFC3464)).toMatchObject({ recipient: 'mario.rossi@dominio.it', code: '550' }));
-  it('Microsoft 365', () => expect(parseNdr(M365)).toMatchObject({ recipient: 'anna@azienda.com', code: '550' }));
+  it('Google format', () =>
+    expect(parseNdr(GOOGLE)).toEqual({
+      recipient: 'nobody.123@scuola.it',
+      code: '550',
+      reason: '550 5.1.1 The email account that you tried to reach does not exist.'
+    }));
+  it('RFC 3464', () =>
+    expect(parseNdr(RFC3464)).toMatchObject({ recipient: 'mario.rossi@dominio.it', code: '550' }));
+  it('Microsoft 365', () =>
+    expect(parseNdr(M365)).toMatchObject({ recipient: 'anna@azienda.com', code: '550' }));
   it('ignores transient 4xx', () => expect(parseNdr(TRANSIENT)).toBeNull());
   it('ignores non-NDR text', () => expect(parseNdr('hello')).toBeNull());
 });
@@ -293,9 +354,13 @@ describe('parseNdr', () => {
 - [ ] **Step 3: Implement `NdrParser.ts`:**
 
 ```ts
-export interface ParsedNdr { recipient: string; code: string; reason: string }
+export interface ParsedNdr {
+  recipient: string;
+  code: string;
+  reason: string;
+}
 
-const EMAIL = '[\\w.+\'-]+@[\\w.-]+\\.[A-Za-z]{2,}';
+const EMAIL = "[\\w.+'-]+@[\\w.-]+\\.[A-Za-z]{2,}";
 const RECIPIENT = [
   new RegExp(`Final-Recipient:\\s*rfc822;\\s*(${EMAIL})`, 'i'),
   new RegExp(`wasn't delivered to\\s+<?(${EMAIL})`, 'i'),
@@ -309,11 +374,13 @@ export function parseNdr(body: string): ParsedNdr | null {
   if (status === null || !status[1]!.startsWith('5')) return null;
   for (const re of RECIPIENT) {
     const m = re.exec(body);
-    if (m !== null) return { recipient: m[1]!.toLowerCase(), code: status[1]!, reason: status[0].trim() };
+    if (m !== null)
+      return { recipient: m[1]!.toLowerCase(), code: status[1]!, reason: status[0].trim() };
   }
   return null;
 }
 ```
+
 Adjust the regexes until all five tests pass (the Google `reason` must equal the full `550 5.1.1 …does not exist.` line).
 
 - [ ] **Step 4: Failing service tests** — use plain stub objects (no FakeDatabase), a `logMail` stub with an array of `LogEmail.fromData({...})` rows whose `marcaRimbalzo` is a `jest.fn` that records calls; `FakeGmailFacade` for gmail (set `.bounces`); `gmail.sent` captures the summary. Cases (one `it` each):
@@ -325,7 +392,7 @@ Adjust the regexes until all five tests pass (the Google `reason` must equal the
   6. summary mail goes to `[initiator, supervisor]` deduplicated; supervisor blank → only initiator; both equal → one recipient.
   7. `lookbackGiorni` omitted and `da` omitted → `gmail.lastLookbackDays === 2`; `da` = now−5d → `lastLookbackDays >= 5`.
   8. zero NDRs → returns zeros, `logger.info` called, no mail.
-  Construct rows: `LogEmail.fromData({ PATTERN:'NOTIFICA_PDP', DESTINATARI:'a@x.it', DATA:'2026-10-05T07:00:00.000Z', STATO:'SUCCESS' })` (use the `COL_LOG_MAIL` keys).
+     Construct rows: `LogEmail.fromData({ PATTERN:'NOTIFICA_PDP', DESTINATARI:'a@x.it', DATA:'2026-10-05T07:00:00.000Z', STATO:'SUCCESS' })` (use the `COL_LOG_MAIL` keys).
 
 - [ ] **Step 5:** run → FAIL.
 
@@ -378,11 +445,13 @@ private notifica(s: BounceSummary): void {
   });
 }
 ```
+
 Import `escapeHtml`/`PiiRedactor` exactly as `EmailRetryService.ts` does (check its import lines). Idempotency comes from only scanning `SUCCESS` rows; `bounceMessageId` is the audit trail.
 
 - [ ] **Step 7:** `npx jest --config jest.config.cjs test/unit/application/email` → PASS; `npm run typecheck && npm run lint`.
 
 - [ ] **Step 8: Commit**
+
 ```bash
 git add src/application/email test/unit/application/email && git commit -m "feat(email): NdrParser and BounceReconciliationService"
 ```
@@ -392,6 +461,7 @@ git add src/application/email test/unit/application/email && git commit -m "feat
 ### Task 4: `VERIFICA_EMAIL_INVIATE` handler, wiring, seeds
 
 **Files:**
+
 - Modify: `src/application/pipelines/standaloneActions.ts` (`Azione`, ≈l.22-43)
 - Modify: `src/application/pipelines/azioniInfra.ts` (`AzioniInfraDeps`, `creaHandlersInfra` map)
 - Modify: `src/application/services/ActionBatchService.ts` (deps ≈l.80-90, `creaHandlersInfra({...})` ≈l.251)
@@ -400,6 +470,7 @@ git add src/application/email test/unit/application/email && git commit -m "feat
 - Test: `test/unit/application/pipelines/azioni-infra-verifica-email.test.ts` (new)
 
 **Interfaces:**
+
 - Consumes: `BounceReconciliationService.riconcilia(f): BounceSummary`, `BounceFilters`.
 - Produces: `Azione` fields `daTimestamp?: string; aTimestamp?: string; lookbackGiorni?: number; pattern?: string | string[]`; `AzioniInfraDeps.bounces?: { riconcilia(f: BounceFilters): BounceSummary }`; handler `VERIFICA_EMAIL_INVIATE` returns `summary.riconciliati`; Bootstrap key `'bounceReconciliationService'`; `ActionBatchDeps.bounces?`.
 
@@ -413,7 +484,8 @@ git add src/application/email test/unit/application/email && git commit -m "feat
 - [ ] **Step 2:** `npx jest --config jest.config.cjs test/unit/application/pipelines/azioni-infra-verifica-email.test.ts` → FAIL.
 
 - [ ] **Step 3: Implement.**
-`standaloneActions.ts` — append to `Azione`:
+      `standaloneActions.ts` — append to `Azione`:
+
 ```ts
 /** VERIFICA_EMAIL_INVIATE: "GG-MM-AAAA HH:MM:SS" bounds, relative lookback (default 2) and CONF_MAIL id filter. */
 daTimestamp?: string;
@@ -421,7 +493,9 @@ aTimestamp?: string;
 lookbackGiorni?: number;
 pattern?: string | string[];
 ```
+
 `azioniInfra.ts` — add dep + parser + handler:
+
 ```ts
 import type { BounceFilters, BounceSummary } from '../email/BounceReconciliationService';
 // in AzioniInfraDeps:
@@ -436,7 +510,9 @@ function parseTimestampIt(campo: string, raw: string): Date {
   return new Date(+m[3]!, +m[2]! - 1, +m[1]!, +m[4]!, +m[5]!, +m[6]!);
 }
 ```
+
 handler (in the returned map, next to `VALIDA_DB`):
+
 ```ts
 VERIFICA_EMAIL_INVIATE: (azione) => {
   if (bounces === undefined) {
@@ -451,16 +527,25 @@ VERIFICA_EMAIL_INVIATE: (azione) => {
   return bounces.riconcilia(f).riconciliati;
 },
 ```
+
 Destructure `bounces` from `deps`. `ActionBatchService.ts`: add `bounces?: { riconcilia(f: BounceFilters): BounceSummary }` to its deps and pass `...(this.deps.bounces !== undefined ? { bounces: this.deps.bounces } : {})` in the `creaHandlersInfra` call (same exactOptionalPropertyTypes pattern as `validator`).
 `Bootstrap.ts`: register
+
 ```ts
-c.register('bounceReconciliationService', () =>
-  new BounceReconciliationService({
-    gmail: deps.gmail, logMail: new LogEmailRepository(deps.db), master: deps.master,
-    activeUser, logger, now: () => new Date()
-  })
+c.register(
+  'bounceReconciliationService',
+  () =>
+    new BounceReconciliationService({
+      gmail: deps.gmail,
+      logMail: new LogEmailRepository(deps.db),
+      master: deps.master,
+      activeUser,
+      logger,
+      now: () => new Date()
+    })
 );
 ```
+
 (match how `activeUser` is obtained for `emailRetryService`; if `deps.now` is a fixed `Date`, use `() => deps.now`-style consistent with neighbours), then in the `actionBatchService` factory add `bounces: container.get<BounceReconciliationService>('bounceReconciliationService'),`.
 
 - [ ] **Step 4:** new test PASS; full `npm test` (adds to existing 1945+), `npm run typecheck`, `npm run lint`.
@@ -470,6 +555,7 @@ c.register('bounceReconciliationService', () =>
 - [ ] **Step 6:** `npm test && npm run test:integration && npm run test:build && npm run build:readable` → all green.
 
 - [ ] **Step 7: Commit**
+
 ```bash
 git add -A && git commit -m "feat(azioni): VERIFICA_EMAIL_INVIATE bounce reconciliation action"
 ```

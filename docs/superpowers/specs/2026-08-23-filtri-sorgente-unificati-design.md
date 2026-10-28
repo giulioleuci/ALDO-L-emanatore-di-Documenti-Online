@@ -8,11 +8,11 @@ Area: pipeline email / box CONF_MAIL / AggregatoreDati
 
 Il filtraggio dei dati sorgente nei box `CONF_MAIL` è oggi frammentato su tre percorsi divergenti:
 
-| Percorso | File | Dialetto | Campi |
-| --- | --- | --- | --- |
-| Link visibili nei box `documenti` | `src/application/email/boxes.ts` (`aggregaDati`) | `FILTRO_TIPO` / `FILTRO_STATO` a livello box | solo tipo, stato |
-| Allegati (`ALLEGA=true`) | `src/application/pipelines/emailSteps.ts` (`ComposeEmailStep.resolveAllegati`) | `DATI_SORGENTE.filtri` | solo tipo, stato |
-| Accessori `AggregatoreDati.perMetodo` | `src/application/services/AggregatoreDati.ts` (`matchesDoc`) | `DATI_SORGENTE.filtri` | tipo, stato, sottotipo |
+| Percorso                              | File                                                                           | Dialetto                                     | Campi                  |
+| ------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------- | ---------------------- |
+| Link visibili nei box `documenti`     | `src/application/email/boxes.ts` (`aggregaDati`)                               | `FILTRO_TIPO` / `FILTRO_STATO` a livello box | solo tipo, stato       |
+| Allegati (`ALLEGA=true`)              | `src/application/pipelines/emailSteps.ts` (`ComposeEmailStep.resolveAllegati`) | `DATI_SORGENTE.filtri`                       | solo tipo, stato       |
+| Accessori `AggregatoreDati.perMetodo` | `src/application/services/AggregatoreDati.ts` (`matchesDoc`)                   | `DATI_SORGENTE.filtri`                       | tipo, stato, sottotipo |
 
 Problemi:
 
@@ -83,10 +83,10 @@ Regole:
 
 ### 4.1 Campi validi per entità
 
-| Entità | Chiavi ammesse |
-| --- | --- |
+| Entità                 | Chiavi ammesse                                                                               |
+| ---------------------- | -------------------------------------------------------------------------------------------- |
 | documenti (`LOG_DOCS`) | `tipo`, `stato`, `sottotipo`, `idGen`, `idOrig`, `notificato`, `classi`, `utenti`, `materie` |
-| cartelle (`LOG_FOLD`) | `idGen` (→ colonna `TIPO`), `nome`, `path`, `classi`, `utenti`, `materie` |
+| cartelle (`LOG_FOLD`)  | `idGen` (→ colonna `TIPO`), `nome`, `path`, `classi`, `utenti`, `materie`                    |
 
 Una chiave valida per un'entità usata sull'altra (es. `sottotipo` su un box cartelle) è **errore di validazione**, non viene ignorata.
 
@@ -96,7 +96,7 @@ Una chiave valida per un'entità usata sull'altra (es. `sottotipo` su un box car
 - Campi scalari (`tipo`, `stato`, `sottotipo`, `idGen`, `idOrig`): uguaglianza esatta case-sensitive.
 - `notificato`: boolean sulla presenza (`true`) / assenza (`false`) del timestamp `NOTIFICATO`.
 - Campi CSV (`classi`, `utenti`, `materie`):
-  - `"csv": "any"` *(default)* → basta **un valore** in comune tra filtro ed entità;
+  - `"csv": "any"` _(default)_ → basta **un valore** in comune tra filtro ed entità;
   - `"csv": "all"` → **tutti** i valori del filtro devono essere presenti nell'entità.
   - La modalità si applica anche ai campi CSV dentro `not`.
 - `nome`, `path` (solo cartelle): sottostringa case-sensitive.
@@ -106,14 +106,14 @@ Una chiave valida per un'entità usata sull'altra (es. `sottotipo` su un box car
 
 `AggregatoreDati.perMetodo` espone sei metodi dati + due invariati:
 
-| Metodo | Scope di base (prima dei filtri) | Stato |
-| --- | --- | --- |
-| `documentiPerClasse` | `findByClasse` con regola classe-partner esistente | esiste |
-| `documentiPerUtente` | `LOG_DOCS.UTENTI` ∋ email utente (param `utenteEmail` o focus) | **rinomina** di `documentiPerAlunno` |
-| `documentiPerDipartimento` | `LOG_DOCS.MATERIE` interseca il set materie del dipartimento (`MateriePerDipartimentoSpec`) | nuovo |
-| `cartellePerClasse` | `LOG_FOLD.CLASSI` ∋ classe | esiste |
-| `cartellePerUtente` | `LOG_FOLD.UTENTI` ∋ email utente | nuovo |
-| `cartellePerDipartimento` | `LOG_FOLD.MATERIE` interseca materie dipartimento | nuovo |
+| Metodo                     | Scope di base (prima dei filtri)                                                            | Stato                                |
+| -------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `documentiPerClasse`       | `findByClasse` con regola classe-partner esistente                                          | esiste                               |
+| `documentiPerUtente`       | `LOG_DOCS.UTENTI` ∋ email utente (param `utenteEmail` o focus)                              | **rinomina** di `documentiPerAlunno` |
+| `documentiPerDipartimento` | `LOG_DOCS.MATERIE` interseca il set materie del dipartimento (`MateriePerDipartimentoSpec`) | nuovo                                |
+| `cartellePerClasse`        | `LOG_FOLD.CLASSI` ∋ classe                                                                  | esiste                               |
+| `cartellePerUtente`        | `LOG_FOLD.UTENTI` ∋ email utente                                                            | nuovo                                |
+| `cartellePerDipartimento`  | `LOG_FOLD.MATERIE` interseca materie dipartimento                                           | nuovo                                |
 
 Invariati: `carenzePerAlunno`, `emailCoordinatori`.
 
@@ -144,11 +144,11 @@ specCartelle(filtri: FiltriSorgente): Specification<LogCartella>
 
 ### 7.2 Consumer convergenti
 
-| Consumer | Oggi | Dopo |
-| --- | --- | --- |
-| `AggregatoreDati.perMetodo` | `matchesDoc` inline su 3 campi; cartelle senza filtri | parser+spec per documenti e cartelle; `matchesDoc` eliminato |
-| `ComposeEmailStep.resolveAllegati` | filtri inline solo `tipo`/`stato` | stesso parser+spec → parità totale col rendering (`sottotipo`, esclusioni, CSV inclusi) |
-| `aggregaDati` / `renderBoxes` | legge `FILTRO_TIPO`/`FILTRO_STATO`; cartelle opt-in solo via `metodo` | legge `DATI_SORGENTE.filtri` del box per entrambi i `TIPO_BOX`; le cartelle applicano i filtri via `AggregatoreDati` |
+| Consumer                           | Oggi                                                                  | Dopo                                                                                                                 |
+| ---------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `AggregatoreDati.perMetodo`        | `matchesDoc` inline su 3 campi; cartelle senza filtri                 | parser+spec per documenti e cartelle; `matchesDoc` eliminato                                                         |
+| `ComposeEmailStep.resolveAllegati` | filtri inline solo `tipo`/`stato`                                     | stesso parser+spec → parità totale col rendering (`sottotipo`, esclusioni, CSV inclusi)                              |
+| `aggregaDati` / `renderBoxes`      | legge `FILTRO_TIPO`/`FILTRO_STATO`; cartelle opt-in solo via `metodo` | legge `DATI_SORGENTE.filtri` del box per entrambi i `TIPO_BOX`; le cartelle applicano i filtri via `AggregatoreDati` |
 
 Un solo percorso di verità: la stessa config produce gli stessi insiemi sia che il box mostri link sia che allegi file.
 

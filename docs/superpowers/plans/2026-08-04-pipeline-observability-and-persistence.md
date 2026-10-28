@@ -26,6 +26,7 @@
 ### Task 1: GasLibraryFactory observability and correctness foundation
 
 **Files:**
+
 - Modify: `GasLibraryFactory/CoreUtilsLib/src/internal/StructuredLogFormatter.js`
 - Modify: `GasLibraryFactory/CoreUtilsLib/src/LoggerService.js`
 - Modify: `GasLibraryFactory/CoreUtilsLib/src/testing/mocks.js`
@@ -43,6 +44,7 @@
 - Modify: `GasLibraryFactory/JobRunnerLib/src/internal/CapturingLogger.js`
 
 **Interfaces:**
+
 - Produces: `LoggerService.withPosition<T>(position, callback: () => T): T`, restoring the prior position in `finally`.
 - Produces: `Step._getLogDetails(context): LogDetails | null`; the base implementation returns `null`, where detail records may contain scalar values or short scalar arrays.
 - Produces: `StepExecutionResult.logDetails` on successful non-skipped execution.
@@ -64,9 +66,7 @@ expect(
     { content: 'PDP_DSA_Rossi_Mario_2026', durationMs: 4 },
     { depth: 2, isLast: false, ancestorHasNext: [true] }
   )
-).toEqual([
-  '  │    ├─ ✅ [GenerateName] PDP_DSA_Rossi_Mario_2026 (EXECUTED in 4ms)'
-]);
+).toEqual(['  │    ├─ ✅ [GenerateName] PDP_DSA_Rossi_Mario_2026 (EXECUTED in 4ms)']);
 
 expect(
   formatter.pipelineStep(
@@ -77,13 +77,10 @@ expect(
   )
 ).toEqual(['  │    ├─ ✅ [AnalyzeContext] EXECUTED in 0ms']);
 
-const result = logger.withPosition(
-  { depth: 2, isLast: false, ancestorHasNext: [true] },
-  () => {
-    logger.info('nested');
-    return 42;
-  }
-);
+const result = logger.withPosition({ depth: 2, isLast: false, ancestorHasNext: [true] }, () => {
+  logger.info('nested');
+  return 42;
+});
 expect(result).toBe(42);
 expect(Logger.log).toHaveBeenCalledWith('  │    ├─ [INFO] nested');
 logger.info('root');
@@ -96,15 +93,12 @@ Use this literal summary expectation:
 
 ```js
 expect(
-  formatter.summary(
-    'Document generated',
-    8572,
-    'PDP_DSA_Rossi_Mario_2026',
-    { depth: 1, isLast: true, ancestorHasNext: [] }
-  )
-).toEqual([
-  '  └─ Document generated: PDP_DSA_Rossi_Mario_2026 (COMPLETED in 8572ms)'
-]);
+  formatter.summary('Document generated', 8572, 'PDP_DSA_Rossi_Mario_2026', {
+    depth: 1,
+    isLast: true,
+    ancestorHasNext: []
+  })
+).toEqual(['  └─ Document generated: PDP_DSA_Rossi_Mario_2026 (COMPLETED in 8572ms)']);
 ```
 
 - [ ] **Step 2: Run the CoreUtils tests and verify RED**
@@ -200,11 +194,7 @@ In `Pipeline.execute()`, invoke `_executeStep()` through `logger.withPosition()`
 In `DatabaseService.test.js`, arrange two registered table doubles with pending mutations and record call order:
 
 ```js
-expect(callOrder).toEqual([
-  'LOG_FOLD.flush',
-  'LOG_DOCS.flush',
-  'spreadsheet.flushBatch'
-]);
+expect(callOrder).toEqual(['LOG_FOLD.flush', 'LOG_DOCS.flush', 'spreadsheet.flushBatch']);
 expect(database.inTransaction()).toBe(false);
 ```
 
@@ -272,6 +262,7 @@ git commit -m "feat: add content-first pipeline observability"
 ### Task 2: ALDO document and email operational details
 
 **Files:**
+
 - Modify: `src/application/pipelines/documentSteps.ts`
 - Modify: `src/application/pipelines/emailSteps.ts`
 - Modify: `src/application/services/DocumentGenerationService.ts`
@@ -286,6 +277,7 @@ git commit -m "feat: add content-first pipeline observability"
 - Modify: `test/unit/application/email-batch-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Step._getLogDetails(context)` and scoped/content-first rendering from Task 1.
 - Produces: `DocumentGenerationResult = { fileId: string | null, fileName: string | null, fileLink: string | null, status: string, durationMs: number }`.
 - Produces: `EmailTargetResult = { sent: number, errors: string[], skipped: boolean, recipients: string[], subject: string, durationMs: number }`.
@@ -431,6 +423,7 @@ git commit -m "feat: expose document and email pipeline results"
 ### Task 3: Contracts, vendor refresh, regression verification, and graph audit
 
 **Files:**
+
 - Modify: `GasLibraryFactory/DOCS_LIBS/CoreUtilsLib.md`
 - Modify: `GasLibraryFactory/DOCS_LIBS/PipelineFramework.md`
 - Modify: `GasLibraryFactory/DOCS_LIBS/SheetDBLib.md`
@@ -441,6 +434,7 @@ git commit -m "feat: expose document and email pipeline results"
 - Create: `test/integration/pipeline-observability-persistence.test.ts`
 
 **Interfaces:**
+
 - Consumes: all Task 1 library APIs and Task 2 ALDO result types.
 - Produces: vendored runtime/type parity for `withPosition`, `_getLogDetails`/step results, and content-first semantic formatting.
 - Verifies: persistent `LOG_FOLD`, `LOG_DOCS`, and `LOG_MAIL` writes through the real SheetDbAdapter/SheetDBLib flush seam.

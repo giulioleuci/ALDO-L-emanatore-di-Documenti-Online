@@ -87,7 +87,6 @@ export class AlberoCartelle {
     if (current === null) table.insert(row);
     else table.updateRowWhere({ [COL_LOG_FOLD.ID]: String(current[COL_LOG_FOLD.ID]) }, row);
   }
-
 }
 
 function firstNonBlank(...values: Array<unknown>): string {

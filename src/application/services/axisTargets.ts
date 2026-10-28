@@ -85,7 +85,10 @@ function perClasseConCattedre(
   return out;
 }
 
-export function targetsClasse(classi: IClasseRepository, gestione: GestioneArticolazione): Classe[] {
+export function targetsClasse(
+  classi: IClasseRepository,
+  gestione: GestioneArticolazione
+): Classe[] {
   return classi.filterPerGestioneArticolazione(classi.findAttive(), gestione);
 }
 
@@ -115,7 +118,12 @@ export function targetsClasseDocenteMateria(
 ): DocenteClasseMateriaBatchTarget[] {
   const seen = new Set<string>();
   const targets: DocenteClasseMateriaBatchTarget[] = [];
-  for (const { classeId, docenteEmail, materiaId } of perClasseConCattedre(classi, teachingAssignments, now, gestione)) {
+  for (const { classeId, docenteEmail, materiaId } of perClasseConCattedre(
+    classi,
+    teachingAssignments,
+    now,
+    gestione
+  )) {
     const key = `${classeId}:${materiaId}:${docenteEmail}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -132,7 +140,12 @@ export function targetsClasseMateria(
 ): ClasseMateriaBatchTarget[] {
   const seen = new Set<string>();
   const targets: ClasseMateriaBatchTarget[] = [];
-  for (const { classeId, materiaId } of perClasseConCattedre(classi, teachingAssignments, now, gestione)) {
+  for (const { classeId, materiaId } of perClasseConCattedre(
+    classi,
+    teachingAssignments,
+    now,
+    gestione
+  )) {
     const key = `${classeId}:${materiaId}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -149,7 +162,12 @@ export function targetsClasseDocente(
 ): ClasseDocenteBatchTarget[] {
   const seen = new Set<string>();
   const targets: ClasseDocenteBatchTarget[] = [];
-  for (const { classeId, docenteEmail } of perClasseConCattedre(classi, teachingAssignments, now, gestione)) {
+  for (const { classeId, docenteEmail } of perClasseConCattedre(
+    classi,
+    teachingAssignments,
+    now,
+    gestione
+  )) {
     const key = `${classeId}:${docenteEmail}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -165,7 +183,12 @@ export function targetsDocenti(
   gestione: GestioneArticolazione
 ): DocenteBatchTarget[] {
   const classiPerDocente = new Map<string, Set<string>>();
-  for (const { classeId, docenteEmail } of perClasseConCattedre(classi, teachingAssignments, now, gestione)) {
+  for (const { classeId, docenteEmail } of perClasseConCattedre(
+    classi,
+    teachingAssignments,
+    now,
+    gestione
+  )) {
     const acc = classiPerDocente.get(docenteEmail) ?? new Set<string>();
     acc.add(classeId);
     classiPerDocente.set(docenteEmail, acc);

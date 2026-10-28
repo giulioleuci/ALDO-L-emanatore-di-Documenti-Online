@@ -33,12 +33,15 @@
 ### Task 1: `PersonVM` builder
 
 **Files:**
+
 - Create: `src/application/context-engine/mappers/personVmMapper.ts`
 - Test: `test/unit/application/context-engine/mappers/person-vm-mapper.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Docente` (`nome: string`, `cognome: string`, `genere: Genere`, `id: string | null`, `getAppellativo(): string`), `Genere`/`appellativo()` from `../../../domain/value-objects/enums`.
 - Produces:
+
   ```typescript
   export interface PersonVM {
     nome: string;
@@ -63,20 +66,29 @@
   export function buildPersonVm(input: PersonVmInput): PersonVM;
   export function buildPersonVmFromDocente(docente: Docente, materia?: string | null): PersonVM;
   ```
+
   Later tasks (2 onward) import `buildPersonVm`/`buildPersonVmFromDocente` from this file.
 
 - [ ] **Step 1: Write the failing test — internal (docente) person**
 
 ```typescript
 // test/unit/application/context-engine/mappers/person-vm-mapper.test.ts
-import { buildPersonVm, buildPersonVmFromDocente } from '../../../../../src/application/context-engine/mappers/personVmMapper';
+import {
+  buildPersonVm,
+  buildPersonVmFromDocente
+} from '../../../../../src/application/context-engine/mappers/personVmMapper';
 import { Docente } from '../../../../../src/domain/entities/Docente';
 import { Email } from '../../../../../src/domain/value-objects/Email';
 import { Genere } from '../../../../../src/domain/value-objects/enums';
 
 describe('personVmMapper', () => {
   it('builds a complete PersonVM for a male internal docente', () => {
-    const docente = Docente.create(Email.of('mario.rossi@scuola.edu.it'), 'Rossi', 'Mario', Genere.M);
+    const docente = Docente.create(
+      Email.of('mario.rossi@scuola.edu.it'),
+      'Rossi',
+      'Mario',
+      Genere.M
+    );
     const vm = buildPersonVmFromDocente(docente);
     expect(vm).toEqual({
       nome: 'Mario',
@@ -94,7 +106,12 @@ describe('personVmMapper', () => {
   });
 
   it('builds a complete PersonVM for a female internal docente with a materia tag', () => {
-    const docente = Docente.create(Email.of('laura.gialli@scuola.edu.it'), 'Gialli', 'Laura', Genere.F);
+    const docente = Docente.create(
+      Email.of('laura.gialli@scuola.edu.it'),
+      'Gialli',
+      'Laura',
+      Genere.F
+    );
     const vm = buildPersonVmFromDocente(docente, 'Greco');
     expect(vm.genere).toBe('F');
     expect(vm.appellativo).toBe('Prof.ssa');
@@ -107,7 +124,12 @@ describe('personVmMapper', () => {
   });
 
   it('degrades gracefully for an external expert (no cognome, no genere)', () => {
-    const vm = buildPersonVm({ nome: 'Studio Legale Bianchi', cognome: null, email: null, genere: null });
+    const vm = buildPersonVm({
+      nome: 'Studio Legale Bianchi',
+      cognome: null,
+      email: null,
+      genere: null
+    });
     expect(vm).toEqual({
       nome: 'Studio Legale Bianchi',
       cognome: null,
@@ -206,7 +228,10 @@ export function buildPersonVm(input: PersonVmInput): PersonVM {
   };
 }
 
-export function buildPersonVmFromDocente(docente: Docente, materia: string | null = null): PersonVM {
+export function buildPersonVmFromDocente(
+  docente: Docente,
+  materia: string | null = null
+): PersonVM {
   return buildPersonVm({
     nome: docente.nome,
     cognome: docente.cognome,
@@ -234,12 +259,15 @@ git commit -m "feat: add shared PersonVM builder for CDU restructuring"
 ### Task 2: `SubjectVM` builder (materia resolver)
 
 **Files:**
+
 - Create: `src/application/context-engine/mappers/subjectVmMapper.ts`
 - Test: `test/unit/application/context-engine/mappers/subject-vm-mapper.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Materia` (`id`, `nome`, `sintesi`, `colore1`, `colore2`, `esameConfig: EsameConfig | null`, `getEvoluzione(): Record<string, number[]>`), `IndirizzoId`, `PersonVM`/`buildPersonVmFromDocente` (Task 1).
 - Produces:
+
   ```typescript
   export interface SubjectVmEvoluzione {
     siglePrecedenti: Array<{ sigla: string; nome: string | null; anni: number[] }>;
@@ -260,16 +288,28 @@ git commit -m "feat: add shared PersonVM builder for CDU restructuring"
     docenti?: PersonVM[];
     docentiDescrizione?: string;
   }
-  export function buildSubjectVm(materia: Materia, opts?: { indirizzo?: IndirizzoId; isITP?: boolean; principale?: string | null; specificita?: string | null }): SubjectVM;
+  export function buildSubjectVm(
+    materia: Materia,
+    opts?: {
+      indirizzo?: IndirizzoId;
+      isITP?: boolean;
+      principale?: string | null;
+      specificita?: string | null;
+    }
+  ): SubjectVM;
   export function docentiDescrizione(docenti: PersonVM[]): string;
   ```
+
   This is the single place `MATERIE.EVOLUZIONE`/`ESAME_CFG` get resolved into a printable shape; every provider building a materia object (Tasks 5, 8, 14, 15) imports from here.
 
 - [ ] **Step 1: Write the failing test**
 
 ```typescript
 // test/unit/application/context-engine/mappers/subject-vm-mapper.test.ts
-import { buildSubjectVm, docentiDescrizione } from '../../../../../src/application/context-engine/mappers/subjectVmMapper';
+import {
+  buildSubjectVm,
+  docentiDescrizione
+} from '../../../../../src/application/context-engine/mappers/subjectVmMapper';
 import { buildPersonVm } from '../../../../../src/application/context-engine/mappers/personVmMapper';
 import { Materia } from '../../../../../src/domain/entities/Materia';
 import { IndirizzoId } from '../../../../../src/domain/value-objects/IndirizzoId';
@@ -296,11 +336,17 @@ describe('subjectVmMapper', () => {
     expect(vm.isMateriaSecondaProva).toBe(false);
     expect(vm.principale).toBeNull();
     expect(vm.specificita).toBeNull();
-    expect(vm.evoluzione).toEqual({ siglePrecedenti: [{ sigla: 'GST', nome: null, anni: [1, 2] }] });
+    expect(vm.evoluzione).toEqual({
+      siglePrecedenti: [{ sigla: 'GST', nome: null, anni: [1, 2] }]
+    });
   });
 
   it('defaults isMateriaPrimaProva/SecondaProva to false when ESAME_CFG is absent, and evoluzione to null when empty', () => {
-    const materia = Materia.fromData({ [COL_MATERIE.ID]: 'STO', [COL_MATERIE.NOME]: 'Storia', [COL_MATERIE.SINTESI]: 'Storia' });
+    const materia = Materia.fromData({
+      [COL_MATERIE.ID]: 'STO',
+      [COL_MATERIE.NOME]: 'Storia',
+      [COL_MATERIE.SINTESI]: 'Storia'
+    });
     const vm = buildSubjectVm(materia, { indirizzo: IndirizzoId.of('LC') });
     expect(vm.isMateriaPrimaProva).toBe(false);
     expect(vm.isMateriaSecondaProva).toBe(false);
@@ -411,6 +457,7 @@ git commit -m "feat: add shared SubjectVM builder for CDU restructuring"
 ### Task 3: Label maps + `ReligioneScelta` enum migration (`SI`→`IRC`)
 
 **Files:**
+
 - Create: `src/application/context-engine/mappers/labels.ts`
 - Modify: `src/domain/value-objects/enums.ts:37-41`
 - Modify: `src/domain/entities/Alunno.ts:33`
@@ -422,7 +469,9 @@ git commit -m "feat: add shared SubjectVM builder for CDU restructuring"
 - Test: `test/unit/domain/value-objects/enums.test.ts` (extend if it exists; otherwise create)
 
 **Interfaces:**
+
 - Produces:
+
   ```typescript
   export const TIPO_PIANO_LABELS: Record<TipoPiano, string>; // { PDP_DSA: 'PDP DSA', PDP_BES: 'PDP BES', PDP_STRANIERI: 'PDP Stranieri', PEI: 'PEI', PFP: 'PFP' }
   export function tipoPianoLabel(tipo: TipoPiano): string;
@@ -431,14 +480,23 @@ git commit -m "feat: add shared SubjectVM builder for CDU restructuring"
   export const TIPO_PROGETTO_LABELS: Record<TipoProgetto, string>; // { ASL: 'PCTO/ASL', ORIENTAMENTO: 'Orientamento', ALTRO: 'Altro' }
   export function tipoProgettoLabel(tipo: TipoProgetto): string;
   ```
+
   Tasks 11 (`StudentVM`), 13 (`focus.alunno`/`StudentStoricoVM`), and 16 (`ProgettiProvider`) import these.
 
 - [ ] **Step 1: Write the failing test for labels**
 
 ```typescript
 // test/unit/application/context-engine/mappers/labels.test.ts
-import { tipoPianoLabel, religioneLabel, tipoProgettoLabel } from '../../../../../src/application/context-engine/mappers/labels';
-import { TipoPiano, ReligioneScelta, TipoProgetto } from '../../../../../src/domain/value-objects/enums';
+import {
+  tipoPianoLabel,
+  religioneLabel,
+  tipoProgettoLabel
+} from '../../../../../src/application/context-engine/mappers/labels';
+import {
+  TipoPiano,
+  ReligioneScelta,
+  TipoProgetto
+} from '../../../../../src/domain/value-objects/enums';
 
 describe('labels', () => {
   it('maps every TipoPiano to a readable label', () => {
@@ -575,13 +633,16 @@ git commit -m "feat: migrate ReligioneScelta SI to IRC and add CDU label maps"
 ### Task 4: `SchoolProvider` — `PersonVM` staff + object `dirigente`
 
 **Files:**
+
 - Modify: `src/application/context-engine/providers/SchoolProvider.ts` (full file, 44 lines)
 - Modify: `src/application/context-engine/Cdu.ts:111-115` (`CduIstituto`)
 - Test: `test/unit/application/context-engine/providers/school-provider.test.ts` (extend or create)
 
 **Interfaces:**
+
 - Consumes: `PersonVM`/`buildPersonVmFromDocente` (Task 1).
 - Produces (new `CduIstituto` shape read by Task 5):
+
   ```typescript
   export interface CduIstituto {
     organizzazione: { annoScolastico: string; dirigente: { nomeCompleto: string } };
@@ -603,7 +664,12 @@ function makeCdu(): Cdu {
 
 describe('SchoolProvider', () => {
   it('builds istituto.organizzazione.dirigente as an object and staff as PersonVM', () => {
-    const master = { findConfigAnnoCorrente: () => ({ annoScolasticoRaw: '2025-2026', dirigente: 'Prof.ssa Maria Bianchi' }) };
+    const master = {
+      findConfigAnnoCorrente: () => ({
+        annoScolasticoRaw: '2025-2026',
+        dirigente: 'Prof.ssa Maria Bianchi'
+      })
+    };
     const ruoli = {
       findAllCached: () => [
         { id: 'REF_BES', getEmails: () => [{ value: 'mario.rossi@scuola.edu.it' }] },
@@ -720,14 +786,17 @@ git commit -m "feat: SchoolProvider emits PersonVM staff and object dirigente"
 ### Task 5: `ClasseProvider` — `annoScolastico` self-containment, `SubjectVM` articolazione, descriptive `parent`
 
 **Files:**
+
 - Modify: `src/application/context-engine/providers/ClasseProvider.ts` (full file)
 - Modify: `src/application/context-engine/Cdu.ts:117-138` (`CduClasse.anagrafica`, `CduClasse.articolazione`)
 - Modify: `src/application/context-engine/CduInternalMetadata.ts` (`attachCduArticolazionePartners` — check its exact signature before editing, since `articolazione.materieCondivise` etc. change from `string[]` to `SubjectVM[]`)
 - Test: `test/unit/application/context-engine/providers/classe-provider.test.ts` (extend or create)
 
 **Interfaces:**
+
 - Consumes: `CduIstituto.organizzazione.annoScolastico` (Task 4 — `school` MUST run before `class`, already guaranteed by every `RECIPES` entry per `Recipe.ts:76-105,107-167`), `SubjectVM`/`buildSubjectVm` (Task 2), `IClasseRepository.getMaterieArticolazione` (returns `{condivise, separatePrimoGruppo, separateSecondoGruppo}: string[]` — sigle, resolved to `SubjectVM[]` via `IMateriaRepository.findByIdCached`), `IClasseRepository.findById`/`getIndirizzo`/`orderedPartners`.
 - Produces (new `CduClasse` slices consumed by Task 12/17/18):
+
   ```typescript
   articolazione?: {
     partner: string | null;
@@ -760,7 +829,10 @@ it('copies annoScolastico from istituto and builds SubjectVM articolazione with 
       { sigla: 'LS', nome: 'Liceo Scientifico', nomeSintetico: 'Scientifico', tipo: 'LICEO' }
     ]
   });
-  expect(cdu.focus.classe?.articolazione?.materieCondivise[0]).toMatchObject({ sigla: 'ITA', nome: expect.any(String) });
+  expect(cdu.focus.classe?.articolazione?.materieCondivise[0]).toMatchObject({
+    sigla: 'ITA',
+    nome: expect.any(String)
+  });
 });
 ```
 
@@ -804,6 +876,7 @@ export interface CduClasse {
   // ... coordinatori/tutor/etc updated by Tasks 6/7, unchanged here ...
 }
 ```
+
 (Add `import type { SubjectVM } from './mappers/subjectVmMapper';` at the top.)
 
 - [ ] **Step 4: Rewrite `ClasseProvider.provide`/`buildArticolazione`**
@@ -918,6 +991,7 @@ git commit -m "feat: ClasseProvider emits self-contained anagrafica and SubjectV
 ### Task 6: Aggregate person-group declension helper + `TutorProvider`
 
 **Files:**
+
 - Modify: `src/application/context-engine/mappers/personVmMapper.ts` (add aggregate helper, extending Task 1's file)
 - Modify: `src/application/context-engine/providers/TutorProvider.ts` (full file, 39 lines)
 - Modify: `src/application/context-engine/Cdu.ts` (`CduClasse.tutor`)
@@ -925,12 +999,17 @@ git commit -m "feat: ClasseProvider emits self-contained anagrafica and SubjectV
 - Test: `test/unit/application/context-engine/providers/tutor-provider.test.ts` (extend or create)
 
 **Interfaces:**
+
 - Produces (appended to `personVmMapper.ts`, reused by Task 7's `coordinatori` container):
   ```typescript
-  export interface PersonGroupDeclension { appellativo: string; articolo: string }
+  export interface PersonGroupDeclension {
+    appellativo: string;
+    articolo: string;
+  }
   export function declinePersonGroup(persone: PersonVM[]): PersonGroupDeclension | undefined; // undefined when persone is empty (02 §8.1: "Se l'elenco è vuoto le proprietà non vengono esposte")
   ```
 - Produces (`CduClasse.tutor`, consumed by nothing further in this plan — leaf node):
+
   ```typescript
   tutor?: {
     appellativo?: string;
@@ -994,7 +1073,9 @@ export function declinePersonGroup(persone: PersonVM[]): PersonGroupDeclension |
   if (persone.length === 0) return undefined;
   const tutteF = persone.every((p) => p.genere === 'F');
   if (tutteF) {
-    return persone.length >= 2 ? { appellativo: 'prof.sse', articolo: 'le' } : { appellativo: 'prof.ssa', articolo: 'la' };
+    return persone.length >= 2
+      ? { appellativo: 'prof.sse', articolo: 'le' }
+      : { appellativo: 'prof.ssa', articolo: 'la' };
   }
   return { appellativo: 'prof.', articolo: persone.length >= 2 ? 'i' : 'il' };
 }
@@ -1022,7 +1103,12 @@ it('builds PersonVM tutor lists with aggregate declension, omitted when both lis
     appellativo: 'prof.ssa',
     articolo: 'la',
     tutor: 'tutor',
-    asl: [expect.objectContaining({ nomeCompleto: 'Giulia Russo', appellativoCompleto: 'Prof.ssa Giulia Russo' })],
+    asl: [
+      expect.objectContaining({
+        nomeCompleto: 'Giulia Russo',
+        appellativoCompleto: 'Prof.ssa Giulia Russo'
+      })
+    ],
     orientamento: []
   });
 });
@@ -1117,14 +1203,17 @@ git commit -m "feat: TutorProvider emits PersonVM tutor lists with aggregate dec
 ### Task 7: `ClasseProvider.buildCoordinatori` — `coordinatori` container (PersonVM `elenco` + aggregate)
 
 **Files:**
+
 - Modify: `src/application/context-engine/providers/ClasseProvider.ts` (`buildCoordinatori`, `Cdu.ts` import already present from Task 5)
 - Modify: `src/application/context-engine/mappers/personVmMapper.ts` (add `coordinatoriVerbs` helper)
 - Modify: `src/application/context-engine/Cdu.ts:139-145` (`CduClasse.coordinatori`)
 - Test: `test/unit/application/context-engine/providers/classe-provider.test.ts` (extend)
 
 **Interfaces:**
+
 - Consumes: `declinePersonGroup` (Task 6), `buildPersonVmFromDocente` (Task 1).
 - Produces:
+
   ```typescript
   coordinatori?: {
     appellativo?: string;
@@ -1178,7 +1267,9 @@ coordinatori?: {
 ```typescript
 /** "coordina"/"presiede" for 1 person, "coordinano"/"presiedono" for ≥2 (02 §8.1). */
 export function coordinatoriVerbs(count: number): { coordina: string; presiede: string } {
-  return count >= 2 ? { coordina: 'coordinano', presiede: 'presiedono' } : { coordina: 'coordina', presiede: 'presiede' };
+  return count >= 2
+    ? { coordina: 'coordinano', presiede: 'presiedono' }
+    : { coordina: 'coordina', presiede: 'presiede' };
 }
 ```
 
@@ -1221,6 +1312,7 @@ git commit -m "feat: ClasseProvider coordinatori container with PersonVM elenco 
 ### Task 8: `TeachingCouncilProjection`/`DocenteCdcVM` — `PersonVM`, `SubjectVM`, `materieSigle`
 
 **Files:**
+
 - Modify: `src/application/context-engine/TeachingCouncilProjection.ts` (full file, 359 lines — `teacher()`:94-104, `dedupeMaterie`:197-207, `councilVmStrategy`:209-281)
 - Modify: `src/application/context-engine/Cdu.ts:17-34` (`DocenteCdcVM`)
 - Modify: `src/application/context-engine/providers/ConsiglioClasseProvider.ts` — no change needed to partition logic (`materieSigle` flows through automatically since it's on `DocenteCdcVM`), only re-verify after this task's changes.
@@ -1228,15 +1320,22 @@ git commit -m "feat: ClasseProvider coordinatori container with PersonVM elenco 
 - Test: `test/unit/application/context-engine/teaching-council-projection.test.ts` (check if it exists; extend or create)
 
 **Interfaces:**
+
 - Consumes: `buildPersonVm`, `PersonVM` (Task 1); `buildSubjectVm`, `docentiDescrizione`, `SubjectVM` (Task 2); `IMateriaRepository.findByIdCached` (already injected).
 - Produces (new `DocenteCdcVM`, consumed by Tasks 12 (`consiglioDiClasseFiltrato`), 26 (e2e)):
+
   ```typescript
   export interface DocenteCdcVM {
     anagrafica: PersonVM;
     materie: SubjectVM[];
     materieDescrizione: string;
     materieSigle: string;
-    ruoli: { isCoordinatore: boolean; isTutorAsl: boolean; isTutorOrientamento: boolean; descrizione: string[] };
+    ruoli: {
+      isCoordinatore: boolean;
+      isTutorAsl: boolean;
+      isTutorOrientamento: boolean;
+      descrizione: string[];
+    };
     stato: { isSupplente: boolean; sostituisce: PersonVM | null };
     tipoArticolazione: 'COMUNE' | 'SEPARATO_PRIMO' | 'SEPARATO_SECONDO' | null;
     gruppoNome: string | null;
@@ -1294,6 +1393,7 @@ export interface DocenteCdcVM {
   flags: { isNotLast: boolean };
 }
 ```
+
 (Add `import type { SubjectVM } from './mappers/subjectVmMapper';` alongside the existing `PersonVM` import from Task 4/5.)
 
 - [ ] **Step 4: Update `TeachingCouncilProjection.ts`**
@@ -1316,39 +1416,44 @@ function materiaVm(
 }
 
 function personVmOf(teacher: ProjectionTeacher): PersonVM {
-  return buildPersonVm({ nome: teacher.nome, cognome: teacher.cognome, email: teacher.id, genere: teacher.genere as 'M' | 'F' });
+  return buildPersonVm({
+    nome: teacher.nome,
+    cognome: teacher.cognome,
+    email: teacher.id,
+    genere: teacher.genere as 'M' | 'F'
+  });
 }
 ```
 
 Inside `councilVmStrategy`'s `groups.map(...)` callback (was lines 225-279), replace the `materieVm` line and the returned object:
 
 ```typescript
-      const materieVm = dedupeMaterie(
-        assignments
-          .map((assignment) => materiaVm(materie, classe, assignment))
-          .filter((vm): vm is SubjectVM => vm !== null)
-      );
-      const tipoArt = tipoArticolazione(classi, classe, assignments);
-      return {
-        anagrafica: personVmOf(rowDocente),
-        materie: materieVm,
-        materieDescrizione: docentiDescrizioneMaterie(materieVm),
-        materieSigle: materieVm.map((m) => m.sigla).join(', '),
-        ruoli: {
-          isCoordinatore,
-          isTutorAsl,
-          isTutorOrientamento,
-          descrizione: descrizione(isCoordinatore, isTutorAsl, isTutorOrientamento)
-        },
-        stato: {
-          isSupplente,
-          sostituisce: sostituisce === null ? null : personVmOf(sostituisce)
-        },
-        tipoArticolazione: tipoArt,
-        gruppoNome: gruppoNome(classi, classe, tipoArt),
-        isITP: assignments.some((assignment) => assignment.slot.kind === 'ITP'),
-        flags: { isNotLast: index < groups.length - 1 }
-      } satisfies DocenteCdcVM;
+const materieVm = dedupeMaterie(
+  assignments
+    .map((assignment) => materiaVm(materie, classe, assignment))
+    .filter((vm): vm is SubjectVM => vm !== null)
+);
+const tipoArt = tipoArticolazione(classi, classe, assignments);
+return {
+  anagrafica: personVmOf(rowDocente),
+  materie: materieVm,
+  materieDescrizione: docentiDescrizioneMaterie(materieVm),
+  materieSigle: materieVm.map((m) => m.sigla).join(', '),
+  ruoli: {
+    isCoordinatore,
+    isTutorAsl,
+    isTutorOrientamento,
+    descrizione: descrizione(isCoordinatore, isTutorAsl, isTutorOrientamento)
+  },
+  stato: {
+    isSupplente,
+    sostituisce: sostituisce === null ? null : personVmOf(sostituisce)
+  },
+  tipoArticolazione: tipoArt,
+  gruppoNome: gruppoNome(classi, classe, tipoArt),
+  isITP: assignments.some((assignment) => assignment.slot.kind === 'ITP'),
+  flags: { isNotLast: index < groups.length - 1 }
+} satisfies DocenteCdcVM;
 ```
 
 `dedupeMaterie<T extends {sigla, specificita}>` (lines 197-207) already works unchanged against `SubjectVM[]` — no edit needed there beyond the generic constraint already matching `SubjectVM`'s `sigla`/`specificita` fields. `materieDescrizione` (02 §8.4) joins `materie.nomeSintetico`, distinct from `SubjectVM.docentiDescrizione` (Task 2's `docentiDescrizione` joins people, not subjects) — add a small local helper to avoid the name clash:
@@ -1383,19 +1488,32 @@ git commit -m "feat: DocenteCdcVM emits PersonVM anagrafica/sostituisce, Subject
 ### Task 9: `destinatario` — `PersonVM` anagrafica + `sostituisce`
 
 **Files:**
+
 - Modify: the file containing `BuildCDUStep.buildDestinatario()` (fork located this at `emailSteps.ts:156-186` — confirm exact path with `grep -rn "buildDestinatario" src/` before editing, since the fork's path may be abbreviated)
 - Modify: `src/application/context-engine/Cdu.ts:261-284` (`CduDestinatario`)
 - Test: locate and extend the existing test file for `BuildCDUStep` (search `test/unit` for `BuildCDUStep` or `buildDestinatario`)
 
 **Interfaces:**
+
 - Consumes: `buildPersonVm`/`PersonVM` (Task 1).
 - Produces:
+
   ```typescript
   export interface CduDestinatario {
     anagrafica: PersonVM;
     ruoliAttivi: string[];
-    flags: { isCoordinatore: boolean; isTutor: boolean; isTutorAsl: boolean; isDocenteSostegno: boolean; isSupplente: boolean };
-    contesto: { sostituisce: PersonVM | null; classiCompetenza: string[]; materieCompetenza: string[] };
+    flags: {
+      isCoordinatore: boolean;
+      isTutor: boolean;
+      isTutorAsl: boolean;
+      isDocenteSostegno: boolean;
+      isSupplente: boolean;
+    };
+    contesto: {
+      sostituisce: PersonVM | null;
+      classiCompetenza: string[];
+      materieCompetenza: string[];
+    };
     comunicazione: { salutoIniziale: string; oggettoCalcolato: string; testoContenutoPuro: string };
   }
   ```
@@ -1413,6 +1531,7 @@ it('builds destinatario.anagrafica as a PersonVM and contesto.sostituisce as Per
   expect(cdu.anagrafica.appellativoCognome).toBe('Prof. Rossi');
 });
 ```
+
 Adapt to the existing test file's fixture-construction pattern once Step 1 locates it.
 
 - [ ] **Step 3: Run test to verify it fails**
@@ -1463,6 +1582,7 @@ git commit -m "feat: destinatario emits PersonVM anagrafica and sostituisce"
 ### Task 10: `CurriculumVM` — `curriculum` map → array
 
 **Files:**
+
 - Modify: `src/application/context-engine/mappers/carenzeMapper.ts:29-36` (`curriculumRecord` → `curriculumArray`)
 - Modify: `src/application/context-engine/providers/StudentiProvider.ts:78` (call site)
 - Modify: `src/application/context-engine/providers/AlunnoProvider.ts:9,61,88` (call site + constructor)
@@ -1473,8 +1593,10 @@ git commit -m "feat: destinatario emits PersonVM anagrafica and sostituisce"
 - Test: `test/unit/application/context-engine/providers/studenti-provider.test.ts`, `alunno-provider.test.ts` (extend)
 
 **Interfaces:**
+
 - Consumes: `Alunno.getCurriculum(): Map<MateriaId, string[]>` (`Alunno.ts:79-88`), `IMateriaRepository.findByIdCached` (`IMateriaRepository.ts:6`).
 - Produces (replaces `Record<string, {specifiche: string[]}>` everywhere it's used — Tasks 12/13 build on this):
+
   ```typescript
   export interface CurriculumVM {
     materiaId: string;
@@ -1501,11 +1623,21 @@ describe('curriculumArray', () => {
     });
     const materie = {
       findByIdCached: (id: { value: string }) =>
-        id.value === 'INTERPRET' ? Materia.fromData({ [COL_MATERIE.ID]: 'INTERPRET', [COL_MATERIE.NOME]: 'Esecuzione ed interpretazione' }) : null
+        id.value === 'INTERPRET'
+          ? Materia.fromData({
+              [COL_MATERIE.ID]: 'INTERPRET',
+              [COL_MATERIE.NOME]: 'Esecuzione ed interpretazione'
+            })
+          : null
     };
     const result = curriculumArray(alunno, materie as never);
     expect(result).toEqual([
-      { materiaId: 'INTERPRET', materiaSigla: 'INTERPRET', materiaNome: 'Esecuzione ed interpretazione', specifiche: [{ nome: 'chitarra' }, { nome: 'flauto' }] }
+      {
+        materiaId: 'INTERPRET',
+        materiaSigla: 'INTERPRET',
+        materiaNome: 'Esecuzione ed interpretazione',
+        specifiche: [{ nome: 'chitarra' }, { nome: 'flauto' }]
+      }
     ]);
   });
 
@@ -1560,6 +1692,7 @@ Add `import type { CurriculumVM } from './mappers/carenzeMapper';` at the top.
 ```typescript
 curriculum: curriculumArray(alunno, this.materie),
 ```
+
 (`this.materie: IMateriaRepository` is already a constructor dependency at `StudentiProvider.ts:22` — no wiring change needed.) Update the import at the top from `curriculumRecord` to `curriculumArray`.
 
 - [ ] **Step 6: Update `AlunnoProvider.ts`**
@@ -1592,6 +1725,7 @@ Line 85-89 (`prepareStudentCouncilAssignments` call): passes `focusAlunno.curric
   new AlunnoProvider(alunni, classi, oreAsl, materie, teachingAssignments)
 )
 ```
+
 (Argument order now matches the updated `AlunnoProvider` constructor from Step 6.)
 
 - [ ] **Step 8: Update `TeachingCouncilProjection.ts` curriculum consumers**
@@ -1618,6 +1752,7 @@ function specificityPattern(curriculum: CurriculumVM[], materiaId: string): stri
   return `^(?:${specifiche.map((value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})$`;
 }
 ```
+
 Add `import type { CurriculumVM } from './mappers/carenzeMapper';` at the top; remove the old `Record<string, {specifiche: string[]}>` parameter type at line 140.
 
 - [ ] **Step 9: Run tests to verify they pass**
@@ -1637,6 +1772,7 @@ git commit -m "feat: curriculum becomes an array of CurriculumVM, dynamic-key ma
 ### Task 11: `carenze.materiaNome` + `piani.items[].tipoLabel`
 
 **Files:**
+
 - Modify: `src/application/context-engine/mappers/carenzeMapper.ts:11-27` (`carenzeDettaglioSemplice`)
 - Modify: `src/application/context-engine/providers/StudentiProvider.ts:61-64` (call site)
 - Modify: `src/application/context-engine/providers/CarenzeProvider.ts:18-24` (call site)
@@ -1645,11 +1781,19 @@ git commit -m "feat: curriculum becomes an array of CurriculumVM, dynamic-key ma
 - Test: `test/unit/application/context-engine/mappers/carenze-mapper.test.ts`, `carenze-provider.test.ts`, `piani-provider.test.ts` (extend)
 
 **Interfaces:**
+
 - Consumes: `IMateriaRepository.findByIdCached` (already injected in `CarenzeProvider`/`StudentiProvider`), `tipoPianoLabel` (Task 3).
 - Produces:
+
   ```typescript
   dettaglio: Array<{ materia: string; materiaNome: string; voto: string }>;
-  items: Array<{ tipo: TipoPiano; tipoLabel: string; isBes: boolean; /* CduAlunno only: */ link?: string; parametriGenerazione?: Record<string, unknown> }>;
+  items: Array<{
+    tipo: TipoPiano;
+    tipoLabel: string;
+    isBes: boolean;
+    /* CduAlunno only: */ link?: string;
+    parametriGenerazione?: Record<string, unknown>;
+  }>;
   ```
 
 - [ ] **Step 1: Write the failing test for `carenzeDettaglioSemplice`**
@@ -1658,7 +1802,9 @@ git commit -m "feat: curriculum becomes an array of CurriculumVM, dynamic-key ma
 // extend test/unit/application/context-engine/mappers/carenze-mapper.test.ts
 it('resolves materiaNome alongside the sigla', () => {
   const carenza = { getCella: (sigla: string) => (sigla === 'ITA' ? '5' : '') } as never;
-  const materie = { findByIdCached: (id: { value: string }) => (id.value === 'ITA' ? { nome: 'Italiano' } : null) };
+  const materie = {
+    findByIdCached: (id: { value: string }) => (id.value === 'ITA' ? { nome: 'Italiano' } : null)
+  };
   const result = carenzeDettaglioSemplice([carenza], ['ITA'], materie as never);
   expect(result).toEqual([{ materia: 'ITA', materiaNome: 'Italiano', voto: '5' }]);
 });
@@ -1681,7 +1827,8 @@ export function carenzeDettaglioSemplice(
   for (const carenza of carenze) {
     for (const sigla of sigle) {
       const cella = carenza.getCella(sigla);
-      if (typeof cella !== 'string' && typeof cella !== 'number' && typeof cella !== 'boolean') continue;
+      if (typeof cella !== 'string' && typeof cella !== 'number' && typeof cella !== 'boolean')
+        continue;
       const voto = String(cella).trim();
       if (voto === '') continue;
       const materiaNome = materie.findByIdCached(MateriaId.of(sigla))?.nome ?? sigla;
@@ -1691,6 +1838,7 @@ export function carenzeDettaglioSemplice(
   return out;
 }
 ```
+
 Add `import { MateriaId } from '../../../domain/value-objects/MateriaId';` and `import type { IMateriaRepository } from '../../../domain/repositories/IMateriaRepository';`.
 
 - [ ] **Step 4: Update the two call sites**
@@ -1708,7 +1856,10 @@ Add `import { MateriaId } from '../../../domain/value-objects/MateriaId';` and `
 it('adds tipoLabel to every piani item', () => {
   // reuse the existing PIANI fixture (a PDP_DSA row)
   provider.provide(cdu);
-  expect(cdu.focus.alunno?.didattica.piani.items[0]).toMatchObject({ tipo: 'PDP_DSA', tipoLabel: 'PDP DSA' });
+  expect(cdu.focus.alunno?.didattica.piani.items[0]).toMatchObject({
+    tipo: 'PDP_DSA',
+    tipoLabel: 'PDP DSA'
+  });
 });
 ```
 
@@ -1727,6 +1878,7 @@ const items = this.alunni.getPiani(getAlunnoEntity(cdu)).map((p) => ({
   parametriGenerazione: p.getParametri()
 }));
 ```
+
 Add `import { tipoPianoLabel } from '../mappers/labels';`.
 
 - [ ] **Step 9: Update `Cdu.ts` `piani.items` types**
@@ -1750,13 +1902,16 @@ git commit -m "feat: precompute carenze.materiaNome and piani tipoLabel"
 ### Task 12: `StudentVM` self-containment (`classe`, `indirizzo`, `religioneLabel`) + remove `perIndirizzo`/`indirizziPresenti`
 
 **Files:**
+
 - Modify: `src/application/context-engine/providers/StudentiProvider.ts` (full file)
 - Modify: `src/application/context-engine/Cdu.ts:37-52,159-172` (`AlunnoContestoVM`, `CduClasse.studenti`)
 - Test: `test/unit/application/context-engine/providers/studenti-provider.test.ts:45,131-134` (rewrite the `perIndirizzo`/`indirizziPresenti` assertions found by investigation)
 
 **Interfaces:**
+
 - Consumes: `religioneLabel` (Task 3), `curriculumArray`/`carenzeDettaglioSemplice`/`tipoPianoLabel` (Tasks 10-11, already wired).
 - Produces:
+
   ```typescript
   export interface AlunnoContestoVM {
     anagrafica: { nomeCompleto: string; email: string };
@@ -1767,6 +1922,7 @@ git commit -m "feat: precompute carenze.materiaNome and piani tipoLabel"
     didattica: { carenze: {...}; piani: {...}; pcto: { oreCumulate: number } };
   }
   ```
+
   `CduClasse.studenti` drops `perIndirizzo`/`indirizziPresenti` entirely.
 
 - [ ] **Step 1: Write the failing test**
@@ -1777,7 +1933,10 @@ it('every student in listaCompleta carries self-contained classe/indirizzo/relig
   provider.provide(cdu);
   const alunno = cdu.focus.classe!.studenti!.listaCompleta[0]!;
   expect(alunno.classe).toEqual({ nome: cdu.focus.classe!.anagrafica.nome });
-  expect(alunno.indirizzo).toEqual({ nome: cdu.focus.classe!.anagrafica.indirizzo.nome, nomeSintetico: cdu.focus.classe!.anagrafica.indirizzo.nomeSintetico });
+  expect(alunno.indirizzo).toEqual({
+    nome: cdu.focus.classe!.anagrafica.indirizzo.nome,
+    nomeSintetico: cdu.focus.classe!.anagrafica.indirizzo.nomeSintetico
+  });
   expect(alunno.status.religioneLabel).toBe('Religione cattolica');
 });
 
@@ -1796,6 +1955,7 @@ Expected: FAIL — `classe`/`indirizzo` absent on the item, `perIndirizzo` still
 - [ ] **Step 3: Update `Cdu.ts` types**
 
 `AlunnoContestoVM` (`Cdu.ts:37-52`):
+
 ```typescript
 export interface AlunnoContestoVM {
   anagrafica: { nomeCompleto: string; email: string };
@@ -1810,12 +1970,21 @@ export interface AlunnoContestoVM {
   };
   curriculum: CurriculumVM[];
   didattica: {
-    carenze: { hasCarenze: boolean; numero: number; dettaglio: Array<{ materia: string; materiaNome: string; voto: string }> };
-    piani: { hasPiani: boolean; hasBes: boolean; items: Array<{ tipo: string; tipoLabel: string; isBes: boolean }> };
+    carenze: {
+      hasCarenze: boolean;
+      numero: number;
+      dettaglio: Array<{ materia: string; materiaNome: string; voto: string }>;
+    };
+    piani: {
+      hasPiani: boolean;
+      hasBes: boolean;
+      items: Array<{ tipo: string; tipoLabel: string; isBes: boolean }>;
+    };
     pcto: { oreCumulate: number };
   };
 }
 ```
+
 (This drops `genitori: Array<{email}>` — confirm with a repo-wide `grep -rn "\.genitori" src test` whether anything still reads `AlunnoContestoVM.genitori`; the target spec's `StudentVM` §8.7 has no `genitori` field. If a live caller is found, keep the field and only add the new ones rather than removing it — do not break an unrelated feature as a side effect of this task.)
 
 `CduClasse.studenti` (`Cdu.ts:159-172`): delete `perIndirizzo?: Record<string, AlunnoContestoVM[]>;` and `indirizziPresenti?: string[];` entirely; delete `perSpecificita?: Record<string, Record<string, AlunnoContestoVM[]>>;` too (Task 14 replaces it with the array form — deleting the dead map-typed field now avoids two competing shapes existing simultaneously mid-plan).
@@ -1854,7 +2023,8 @@ export class StudentiProvider implements ContextProvider {
     if (focusClasse === undefined) return;
 
     const config = this.classi.getArticolazione(classe);
-    const sourceClassi = config?.isParent() === true ? this.classi.getClassiPartner(classe) : [classe];
+    const sourceClassi =
+      config?.isParent() === true ? this.classi.getClassiPartner(classe) : [classe];
     const listaCompleta = sourceClassi.flatMap((source) =>
       this.classi
         .getStudenti(source)
@@ -1864,8 +2034,15 @@ export class StudentiProvider implements ContextProvider {
     focusClasse.studenti = { listaCompleta };
   }
 
-  private buildVM(alunno: Alunno, focusClasse: NonNullable<Cdu['focus']['classe']>): AlunnoContestoVM {
-    const dettaglio = carenzeDettaglioSemplice(this.alunni.getCarenze(alunno), this.materie.findAllSigle(), this.materie);
+  private buildVM(
+    alunno: Alunno,
+    focusClasse: NonNullable<Cdu['focus']['classe']>
+  ): AlunnoContestoVM {
+    const dettaglio = carenzeDettaglioSemplice(
+      this.alunni.getCarenze(alunno),
+      this.materie.findAllSigle(),
+      this.materie
+    );
     const pianiItems = this.alunni
       .getPiani(alunno)
       .map((p) => ({ tipo: p.tipo, tipoLabel: tipoPianoLabel(p.tipo), isBes: p.isBES() }));
@@ -1873,7 +2050,10 @@ export class StudentiProvider implements ContextProvider {
     return {
       anagrafica: { nomeCompleto: alunno.cognomeNome, email: alunno.email.value },
       classe: { nome: focusClasse.anagrafica.nome },
-      indirizzo: { nome: focusClasse.anagrafica.indirizzo.nome, nomeSintetico: focusClasse.anagrafica.indirizzo.nomeSintetico },
+      indirizzo: {
+        nome: focusClasse.anagrafica.indirizzo.nome,
+        nomeSintetico: focusClasse.anagrafica.indirizzo.nomeSintetico
+      },
       status: {
         isBes: hasBes,
         isRipetente: alunno.isRipetente(),
@@ -1892,7 +2072,7 @@ export class StudentiProvider implements ContextProvider {
 }
 ```
 
-Note: this changes each student's `classe`/`indirizzo` to always reflect the *focused* class (`focusClasse.anagrafica`), not each partner's own class — matching the target spec's example (`3.2`, `classe.nome: "5AB-LC-LS"` — the parent's composite name — for a student physically enrolled in one of the two partner classes). This is a deliberate self-containment choice (Principle 2: the template loop context is the focused class), not a bug.
+Note: this changes each student's `classe`/`indirizzo` to always reflect the _focused_ class (`focusClasse.anagrafica`), not each partner's own class — matching the target spec's example (`3.2`, `classe.nome: "5AB-LC-LS"` — the parent's composite name — for a student physically enrolled in one of the two partner classes). This is a deliberate self-containment choice (Principle 2: the template loop context is the focused class), not a bug.
 
 - [ ] **Step 5: Run test to verify it passes**
 
@@ -1911,11 +2091,13 @@ git commit -m "feat: StudentVM self-containment, remove perIndirizzo/indirizziPr
 ### Task 13: `focus.alunno` — `religioneLabel`
 
 **Files:**
+
 - Modify: `src/application/context-engine/providers/AlunnoProvider.ts:55-56`
 - Modify: `src/application/context-engine/Cdu.ts:197` (`CduAlunno.status`)
 - Test: `test/unit/application/context-engine/providers/alunno-provider.test.ts`
 
 **Interfaces:**
+
 - Consumes: `religioneLabel` (Task 3).
 - Produces: `CduAlunno.status.religioneLabel: string`.
 
@@ -1935,7 +2117,13 @@ Expected: FAIL — no `religioneLabel` field.
 - [ ] **Step 3: Update `CduAlunno.status`** (`Cdu.ts:197`)
 
 ```typescript
-status: { religione: string; religioneLabel: string; isBes: boolean; isRipetente: boolean; isRappresentante: boolean };
+status: {
+  religione: string;
+  religioneLabel: string;
+  isBes: boolean;
+  isRipetente: boolean;
+  isRappresentante: boolean;
+}
 ```
 
 - [ ] **Step 4: Update `AlunnoProvider.ts:55-56`**
@@ -1949,6 +2137,7 @@ status: {
   isRappresentante: alunno.isRappresentante()
 },
 ```
+
 Add `import { religioneLabel } from '../mappers/labels';`.
 
 - [ ] **Step 5: Run test to verify it passes**
@@ -1967,6 +2156,7 @@ git commit -m "feat: focus.alunno.status exposes religioneLabel"
 ### Task 14: `SpecificitaAlunniVM` — `perSpecificita` (new, array-shaped)
 
 **Files:**
+
 - Create: `src/application/context-engine/mappers/specificitaAlunniMapper.ts`
 - Modify: `src/application/context-engine/providers/StudentiProvider.ts` (call the new builder when `options.includiSpecificita`)
 - Modify: `src/application/context-engine/Cdu.ts` (`CduClasse.studenti.perSpecificita`)
@@ -1974,10 +2164,17 @@ git commit -m "feat: focus.alunno.status exposes religioneLabel"
 - Test: `test/unit/application/context-engine/providers/studenti-provider.test.ts` (extend)
 
 **Interfaces:**
+
 - Consumes: `AlunnoContestoVM[]` (each item's `anagrafica`/`curriculum`, produced by Task 12), `IMateriaRepository.findByIdCached`.
 - Produces:
+
   ```typescript
-  export interface PersonMinVM { nome: string | null; cognome: string | null; nomeCompleto: string; email: string }
+  export interface PersonMinVM {
+    nome: string | null;
+    cognome: string | null;
+    nomeCompleto: string;
+    email: string;
+  }
   export interface SpecificitaAlunniVM {
     materiaId: string;
     materiaSigla: string;
@@ -1994,24 +2191,48 @@ git commit -m "feat: focus.alunno.status exposes religioneLabel"
 import { buildPerSpecificita } from '../../../../../src/application/context-engine/mappers/specificitaAlunniMapper';
 import type { AlunnoContestoVM } from '../../../../../src/application/context-engine/Cdu';
 
-function studente(nomeCompleto: string, email: string, curriculum: AlunnoContestoVM['curriculum']): AlunnoContestoVM {
+function studente(
+  nomeCompleto: string,
+  email: string,
+  curriculum: AlunnoContestoVM['curriculum']
+): AlunnoContestoVM {
   return {
     anagrafica: { nomeCompleto, email },
     classe: { nome: 'x' },
     indirizzo: { nome: 'x', nomeSintetico: 'x' },
-    status: { isBes: false, isRipetente: false, isRappresentante: false, religione: 'IRC', religioneLabel: 'x' },
+    status: {
+      isBes: false,
+      isRipetente: false,
+      isRappresentante: false,
+      religione: 'IRC',
+      religioneLabel: 'x'
+    },
     curriculum,
-    didattica: { carenze: { hasCarenze: false, numero: 0, dettaglio: [] }, piani: { hasPiani: false, hasBes: false, items: [] }, pcto: { oreCumulate: 0 } }
+    didattica: {
+      carenze: { hasCarenze: false, numero: 0, dettaglio: [] },
+      piani: { hasPiani: false, hasBes: false, items: [] },
+      pcto: { oreCumulate: 0 }
+    }
   };
 }
 
 describe('buildPerSpecificita', () => {
   it('groups students by materia then specifica, in a 3-level array', () => {
     const marco = studente('Marco Neri', 'marco.neri@x.it', [
-      { materiaId: 'INTERPRET', materiaSigla: 'INTERPRET', materiaNome: 'Esecuzione ed interpretazione', specifiche: [{ nome: 'chitarra' }] }
+      {
+        materiaId: 'INTERPRET',
+        materiaSigla: 'INTERPRET',
+        materiaNome: 'Esecuzione ed interpretazione',
+        specifiche: [{ nome: 'chitarra' }]
+      }
     ]);
     const anna = studente('Anna Leone', 'anna.leone@x.it', [
-      { materiaId: 'INTERPRET', materiaSigla: 'INTERPRET', materiaNome: 'Esecuzione ed interpretazione', specifiche: [{ nome: 'chitarra' }] }
+      {
+        materiaId: 'INTERPRET',
+        materiaSigla: 'INTERPRET',
+        materiaNome: 'Esecuzione ed interpretazione',
+        specifiche: [{ nome: 'chitarra' }]
+      }
     ]);
     const result = buildPerSpecificita([marco, anna]);
     expect(result).toEqual([
@@ -2071,18 +2292,30 @@ export interface SpecificitaAlunniVM {
  * so `nome`/`cognome` on PersonMinVM are always null here.
  */
 export function buildPerSpecificita(studenti: AlunnoContestoVM[]): SpecificitaAlunniVM[] {
-  const byMateria = new Map<string, { materiaSigla: string; materiaNome: string; bySpecifica: Map<string, PersonMinVM[]> }>();
+  const byMateria = new Map<
+    string,
+    { materiaSigla: string; materiaNome: string; bySpecifica: Map<string, PersonMinVM[]> }
+  >();
 
   for (const studente of studenti) {
     for (const curriculum of studente.curriculum) {
       let materiaEntry = byMateria.get(curriculum.materiaId);
       if (materiaEntry === undefined) {
-        materiaEntry = { materiaSigla: curriculum.materiaSigla, materiaNome: curriculum.materiaNome, bySpecifica: new Map() };
+        materiaEntry = {
+          materiaSigla: curriculum.materiaSigla,
+          materiaNome: curriculum.materiaNome,
+          bySpecifica: new Map()
+        };
         byMateria.set(curriculum.materiaId, materiaEntry);
       }
       for (const { nome } of curriculum.specifiche) {
         const alunni = materiaEntry.bySpecifica.get(nome) ?? [];
-        alunni.push({ nome: null, cognome: null, nomeCompleto: studente.anagrafica.nomeCompleto, email: studente.anagrafica.email });
+        alunni.push({
+          nome: null,
+          cognome: null,
+          nomeCompleto: studente.anagrafica.nomeCompleto,
+          email: studente.anagrafica.email
+        });
         materiaEntry.bySpecifica.set(nome, alunni);
       }
     }
@@ -2115,6 +2348,7 @@ provide(cdu: Cdu, _params: BuildParams, options: RecipeOptions): void {
   };
 }
 ```
+
 Add `import type { BuildParams, RecipeOptions } from '../Recipe';` and `import { buildPerSpecificita } from '../mappers/specificitaAlunniMapper';`.
 
 - [ ] **Step 6: Update `CduClasse.studenti` in `Cdu.ts`**
@@ -2126,6 +2360,7 @@ studenti?: {
   perSpecificita?: SpecificitaAlunniVM[];
 };
 ```
+
 Add `import type { SpecificitaAlunniVM } from './mappers/specificitaAlunniMapper';`.
 
 - [ ] **Step 7: Write the failing provider-level test**
@@ -2158,6 +2393,7 @@ git commit -m "feat: add SpecificitaAlunniVM array replacing the perSpecificita 
 ### Task 15: `MaterieClasseProvider` — `focus.classe.materie[]` + `materiePerPrincipale`
 
 **Files:**
+
 - Create: `src/application/context-engine/providers/MaterieClasseProvider.ts`
 - Create: `src/application/context-engine/mappers/materiePerPrincipaleMapper.ts`
 - Modify: `src/application/context-engine/Cdu.ts` (`CduClasse.materie`, `CduClasse.materiePerPrincipale`)
@@ -2168,8 +2404,10 @@ git commit -m "feat: add SpecificitaAlunniVM array replacing the perSpecificita 
 - Test: `test/unit/application/context-engine/mappers/materie-per-principale-mapper.test.ts`
 
 **Interfaces:**
+
 - Consumes: `focus.classe.consiglioDiClasse: DocenteCdcVM[]` (Task 8 — MUST run after `'consiglio'`), `SubjectVM`/`docentiDescrizione` (Task 2), `IMateriaRepository.findByIdCached`.
 - Produces:
+
   ```typescript
   materie?: SubjectVM[]; // each with docenti/docentiDescrizione/hasItp
   materiePerPrincipale?: Array<{ idFittizio: string; nome: string; materie: SubjectVM[] }>;
@@ -2182,13 +2420,49 @@ git commit -m "feat: add SpecificitaAlunniVM array replacing the perSpecificita 
 import { MaterieClasseProvider } from '../../../../../src/application/context-engine/providers/MaterieClasseProvider';
 import type { Cdu, DocenteCdcVM } from '../../../../../src/application/context-engine/Cdu';
 
-function docenteCdc(nomeCompleto: string, email: string, sigla: string, isITP = false): DocenteCdcVM {
+function docenteCdc(
+  nomeCompleto: string,
+  email: string,
+  sigla: string,
+  isITP = false
+): DocenteCdcVM {
   return {
-    anagrafica: { nome: '', cognome: '', email, genere: 'M', appellativo: 'Prof.', articolo: 'il', coordinatore: 'coordinatore', nomeCompleto, materia: null, appellativoCompleto: `Prof. ${nomeCompleto}`, appellativoCognome: `Prof. ${nomeCompleto}` },
-    materie: [{ sigla, nome: sigla, nomeSintetico: sigla, colore1: '', colore2: '', isMateriaPrimaProva: false, isMateriaSecondaProva: false, principale: null, specificita: null, isITP, evoluzione: null }],
+    anagrafica: {
+      nome: '',
+      cognome: '',
+      email,
+      genere: 'M',
+      appellativo: 'Prof.',
+      articolo: 'il',
+      coordinatore: 'coordinatore',
+      nomeCompleto,
+      materia: null,
+      appellativoCompleto: `Prof. ${nomeCompleto}`,
+      appellativoCognome: `Prof. ${nomeCompleto}`
+    },
+    materie: [
+      {
+        sigla,
+        nome: sigla,
+        nomeSintetico: sigla,
+        colore1: '',
+        colore2: '',
+        isMateriaPrimaProva: false,
+        isMateriaSecondaProva: false,
+        principale: null,
+        specificita: null,
+        isITP,
+        evoluzione: null
+      }
+    ],
     materieDescrizione: sigla,
     materieSigle: sigla,
-    ruoli: { isCoordinatore: false, isTutorAsl: false, isTutorOrientamento: false, descrizione: [] },
+    ruoli: {
+      isCoordinatore: false,
+      isTutorAsl: false,
+      isTutorOrientamento: false,
+      descrizione: []
+    },
     stato: { isSupplente: false, sostituisce: null },
     tipoArticolazione: null,
     gruppoNome: null,
@@ -2199,7 +2473,16 @@ function docenteCdc(nomeCompleto: string, email: string, sigla: string, isITP = 
 
 describe('MaterieClasseProvider', () => {
   it('groups the class council into a flat, deduped subject catalog with docentiDescrizione/hasItp', () => {
-    const cdu = { focus: { classe: { consiglioDiClasse: [docenteCdc('Mario Rossi', 'm@x.it', 'ITA'), docenteCdc('Laura Gialli', 'l@x.it', 'ITA', true)] } } } as unknown as Cdu;
+    const cdu = {
+      focus: {
+        classe: {
+          consiglioDiClasse: [
+            docenteCdc('Mario Rossi', 'm@x.it', 'ITA'),
+            docenteCdc('Laura Gialli', 'l@x.it', 'ITA', true)
+          ]
+        }
+      }
+    } as unknown as Cdu;
     new MaterieClasseProvider().provide(cdu);
     expect(cdu.focus.classe!.materie).toHaveLength(1);
     const ita = cdu.focus.classe!.materie![0]!;
@@ -2278,22 +2561,48 @@ import { buildMateriePerPrincipale } from '../../../../../src/application/contex
 import type { SubjectVM } from '../../../../../src/application/context-engine/mappers/subjectVmMapper';
 
 function subject(sigla: string, nome: string): SubjectVM {
-  return { sigla, nome, nomeSintetico: nome, colore1: '', colore2: '', isMateriaPrimaProva: false, isMateriaSecondaProva: false, principale: null, specificita: null, isITP: false, evoluzione: null };
+  return {
+    sigla,
+    nome,
+    nomeSintetico: nome,
+    colore1: '',
+    colore2: '',
+    isMateriaPrimaProva: false,
+    isMateriaSecondaProva: false,
+    principale: null,
+    specificita: null,
+    isITP: false,
+    evoluzione: null
+  };
 }
 
 describe('buildMateriePerPrincipale', () => {
   it('keeps a non-composite subject as its own single-item group', () => {
     const materie = { findByIdCached: () => null };
     const result = buildMateriePerPrincipale([subject('ITA', 'Italiano')], materie as never);
-    expect(result).toEqual([{ idFittizio: 'ITA', nome: 'Italiano', materie: [subject('ITA', 'Italiano')] }]);
+    expect(result).toEqual([
+      { idFittizio: 'ITA', nome: 'Italiano', materie: [subject('ITA', 'Italiano')] }
+    ]);
   });
 
   it('groups composite specificità subjects under their base materia name', () => {
-    const chitarra = subject('INTERPRETAZIONE.CHITARRA', 'Esecuzione ed interpretazione (chitarra)');
+    const chitarra = subject(
+      'INTERPRETAZIONE.CHITARRA',
+      'Esecuzione ed interpretazione (chitarra)'
+    );
     const flauto = subject('INTERPRETAZIONE.FLAUTO', 'Esecuzione ed interpretazione (flauto)');
-    const materie = { findByIdCached: (id: { value: string }) => (id.value === 'INTERPRETAZIONE' ? { nome: 'Esecuzione ed interpretazione' } : null) };
+    const materie = {
+      findByIdCached: (id: { value: string }) =>
+        id.value === 'INTERPRETAZIONE' ? { nome: 'Esecuzione ed interpretazione' } : null
+    };
     const result = buildMateriePerPrincipale([chitarra, flauto], materie as never);
-    expect(result).toEqual([{ idFittizio: 'INTERPRETAZIONE', nome: 'Esecuzione ed interpretazione', materie: [chitarra, flauto] }]);
+    expect(result).toEqual([
+      {
+        idFittizio: 'INTERPRETAZIONE',
+        nome: 'Esecuzione ed interpretazione',
+        materie: [chitarra, flauto]
+      }
+    ]);
   });
 });
 ```
@@ -2326,7 +2635,10 @@ function baseSigla(sigla: string): string {
  * `IMateriaRepository.findSpecifiche`) collapses to its base group; a plain
  * subject stays a single-item group under its own id.
  */
-export function buildMateriePerPrincipale(materie: SubjectVM[], materiaRepo: IMateriaRepository): MateriaPerPrincipaleVM[] {
+export function buildMateriePerPrincipale(
+  materie: SubjectVM[],
+  materiaRepo: IMateriaRepository
+): MateriaPerPrincipaleVM[] {
   const byBase = new Map<string, SubjectVM[]>();
   for (const materia of materie) {
     const idFittizio = baseSigla(materia.sigla);
@@ -2336,7 +2648,9 @@ export function buildMateriePerPrincipale(materie: SubjectVM[], materiaRepo: IMa
   }
   return Array.from(byBase.entries()).map(([idFittizio, group]) => {
     const isComposite = group.length > 1 || group[0]!.sigla !== idFittizio;
-    const nome = isComposite ? (materiaRepo.findByIdCached(MateriaId.of(idFittizio))?.nome ?? idFittizio) : group[0]!.nome;
+    const nome = isComposite
+      ? (materiaRepo.findByIdCached(MateriaId.of(idFittizio))?.nome ?? idFittizio)
+      : group[0]!.nome;
     return { idFittizio, nome, materie: group };
   });
 }
@@ -2354,20 +2668,26 @@ Add to `test/fixtures/tables.ts` and `FAKEDB/MATERIE.csv` two rows with `ID = IN
 - [ ] **Step 10: Update `Cdu.ts`, `Recipe.ts`, `ContextEngineFactory.ts`**
 
 `Cdu.ts` — add to `CduClasse`:
+
 ```typescript
 materie?: SubjectVM[];
 materiePerPrincipale?: MateriaPerPrincipaleVM[];
 ```
+
 (`import type { MateriaPerPrincipaleVM } from './mappers/materiePerPrincipaleMapper';`)
 
 `Recipe.ts:108-117` (`CLASSE_COMPLETA`) — insert `'materie'` right after `'consiglio'`:
+
 ```typescript
 CLASSE_COMPLETA: ['school', 'class', 'students', 'tutor', 'consiglio', 'materie', 'rappresentanti', 'statistiche', 'pianiPersClasse'],
 ```
+
 `Recipe.ts:128-135` (`DOCENTE_COMPLETO`) — same insertion after `'consiglio'`:
+
 ```typescript
 DOCENTE_COMPLETO: ['school', 'class', 'consiglio', 'materie', 'pianiPersClasse', 'pianiPersClasseStorico', 'documentiClasse'],
 ```
+
 (The provider dependency table comment block at `Recipe.ts:76-105` is refreshed once, covering `materie`/`esame`/`progetti`/`storicoClasse`/`partner` together, in Task 21 Step 6 — no edit to it here.)
 
 `ContextEngineFactory.ts` — add `.registerProvider('materie', new MaterieClasseProvider(materie))` after the `'consiglio'` registration (line 76).
@@ -2391,6 +2711,7 @@ git commit -m "feat: add focus.classe.materie flat catalog and materiePerPrincip
 ### Task 16: `EsameProvider` — `focus.classe.esame` partitions
 
 **Files:**
+
 - Create: `src/application/context-engine/providers/EsameProvider.ts`
 - Modify: `src/application/context-engine/Cdu.ts` (`CduClasse.esame`)
 - Modify: `src/application/context-engine/Recipe.ts:108-117` (`CLASSE_COMPLETA` — insert `'esame'` after `'materie'`)
@@ -2398,8 +2719,10 @@ git commit -m "feat: add focus.classe.materie flat catalog and materiePerPrincip
 - Test: `test/unit/application/context-engine/providers/esame-provider.test.ts`
 
 **Interfaces:**
+
 - Consumes: `focus.classe.materie: SubjectVM[]` (Task 15 — MUST run after `'materie'`; each item already carries `isMateriaPrimaProva`/`isMateriaSecondaProva`/`docenti`/`docentiDescrizione` resolved with the class's indirizzo).
 - Produces:
+
   ```typescript
   esame?: {
     hasEsame: boolean;
@@ -2420,27 +2743,66 @@ import { EsameProvider } from '../../../../../src/application/context-engine/pro
 import type { Cdu, DocenteCdcVM } from '../../../../../src/application/context-engine/Cdu';
 import { buildPersonVm } from '../../../../../src/application/context-engine/mappers/personVmMapper';
 
-function subject(sigla: string, prima: boolean, seconda: boolean, docenti: ReturnType<typeof buildPersonVm>[]) {
-  return { sigla, nome: sigla, nomeSintetico: sigla, colore1: '', colore2: '', isMateriaPrimaProva: prima, isMateriaSecondaProva: seconda, principale: null, specificita: null, isITP: false, evoluzione: null, docenti, docentiDescrizione: docenti.map((d) => d.nomeCompleto).join(', ') };
+function subject(
+  sigla: string,
+  prima: boolean,
+  seconda: boolean,
+  docenti: ReturnType<typeof buildPersonVm>[]
+) {
+  return {
+    sigla,
+    nome: sigla,
+    nomeSintetico: sigla,
+    colore1: '',
+    colore2: '',
+    isMateriaPrimaProva: prima,
+    isMateriaSecondaProva: seconda,
+    principale: null,
+    specificita: null,
+    isITP: false,
+    evoluzione: null,
+    docenti,
+    docentiDescrizione: docenti.map((d) => d.nomeCompleto).join(', ')
+  };
 }
 
 describe('EsameProvider', () => {
   it('partitions the class catalog into prima/seconda prova materie and docenti', () => {
     const mario = buildPersonVm({ nome: 'Mario', cognome: 'Rossi', email: 'm@x.it', genere: 'M' });
-    const cdu = { focus: { classe: { materie: [subject('ITA', true, false, [mario]), subject('STO', false, false, [])] } } } as unknown as Cdu;
+    const cdu = {
+      focus: {
+        classe: {
+          materie: [subject('ITA', true, false, [mario]), subject('STO', false, false, [])]
+        }
+      }
+    } as unknown as Cdu;
     new EsameProvider().provide(cdu);
     const esame = cdu.focus.classe!.esame!;
     expect(esame.hasEsame).toBe(true);
     expect(esame.materiePrimaProva.map((m) => m.sigla)).toEqual(['ITA']);
     expect(esame.materieSecondaProva).toEqual([]);
     expect(esame.docentiPrimaProva.map((d) => d.email)).toEqual(['m@x.it']);
-    expect(esame.docenti[0]).toMatchObject({ email: 'm@x.it', prova: 'PRIMA_PROVA', materie: [expect.objectContaining({ sigla: 'ITA' })] });
+    expect(esame.docenti[0]).toMatchObject({
+      email: 'm@x.it',
+      prova: 'PRIMA_PROVA',
+      materie: [expect.objectContaining({ sigla: 'ITA' })]
+    });
   });
 
   it('hasEsame is false and every array is empty when no subject is a prova', () => {
-    const cdu = { focus: { classe: { materie: [subject('STO', false, false, [])] } } } as unknown as Cdu;
+    const cdu = {
+      focus: { classe: { materie: [subject('STO', false, false, [])] } }
+    } as unknown as Cdu;
     new EsameProvider().provide(cdu);
-    expect(cdu.focus.classe!.esame).toEqual({ hasEsame: false, materie: [], docenti: [], materiePrimaProva: [], materieSecondaProva: [], docentiPrimaProva: [], docentiSecondaProva: [] });
+    expect(cdu.focus.classe!.esame).toEqual({
+      hasEsame: false,
+      materie: [],
+      docenti: [],
+      materiePrimaProva: [],
+      materieSecondaProva: [],
+      docentiPrimaProva: [],
+      docentiSecondaProva: []
+    });
   });
 });
 ```
@@ -2485,7 +2847,9 @@ export class EsameProvider implements ContextProvider {
     focusClasse.esame = {
       hasEsame: materie.length > 0,
       materie,
-      docenti: this.buildDocenti(materiePrimaProva, 'PRIMA_PROVA').concat(this.buildDocenti(materieSecondaProva, 'SECONDA_PROVA')),
+      docenti: this.buildDocenti(materiePrimaProva, 'PRIMA_PROVA').concat(
+        this.buildDocenti(materieSecondaProva, 'SECONDA_PROVA')
+      ),
       materiePrimaProva,
       materieSecondaProva,
       docentiPrimaProva: this.dedupeDocenti(materiePrimaProva),
@@ -2525,6 +2889,7 @@ Expected: PASS
 - [ ] **Step 5: Update `Cdu.ts`, `Recipe.ts`, `ContextEngineFactory.ts`**
 
 `Cdu.ts` — add to `CduClasse`:
+
 ```typescript
 esame?: {
   hasEsame: boolean;
@@ -2538,9 +2903,11 @@ esame?: {
 ```
 
 `Recipe.ts:108-117` (`CLASSE_COMPLETA`) — insert `'esame'` after `'materie'`:
+
 ```typescript
 CLASSE_COMPLETA: ['school', 'class', 'students', 'tutor', 'consiglio', 'materie', 'esame', 'progetti', 'rappresentanti', 'statistiche', 'pianiPersClasse'],
 ```
+
 (`'progetti'` inserted here too, ahead of Task 17 — both are independent of each other, order between them doesn't matter, only that both come after `'materie'`.)
 
 `ContextEngineFactory.ts` — add `.registerProvider('esame', new EsameProvider())` after `'materie'`.
@@ -2557,6 +2924,7 @@ git commit -m "feat: add EsameProvider with precomputed prima/seconda prova part
 ### Task 17: `ProgettiProvider` — `focus.classe.progetti[]`
 
 **Files:**
+
 - Modify: `src/domain/entities/Progetto.ts:19` (add a public `getOre(): number` getter — `ore` is currently private with no accessor)
 - Create: `src/application/context-engine/providers/ProgettiProvider.ts`
 - Modify: `src/application/context-engine/Cdu.ts` (`CduClasse.progetti`, `CduClasse.hasProgetti`)
@@ -2567,8 +2935,10 @@ git commit -m "feat: add EsameProvider with precomputed prima/seconda prova part
 - Test: `test/unit/application/context-engine/providers/progetti-provider.test.ts`
 
 **Interfaces:**
+
 - Consumes: `ProgettoRepository.findByClasse(classe): Progetto[]` (`ProgettoRepository.ts:23-26`, unchanged), `Progetto.tipo`/`.nome`/`.referente`/`.getOre()`(new)/`.getOreASLEffettive()`/`.isASL()` (`Progetto.ts`), `IDocenteRepository.findById`, `buildPersonVm`/`buildPersonVmFromDocente` (Task 1), `tipoProgettoLabel` (Task 3).
 - Produces:
+
   ```typescript
   export interface ProgettoVM {
     tipo: TipoProgetto;
@@ -2588,7 +2958,13 @@ git commit -m "feat: add EsameProvider with precomputed prima/seconda prova part
 ```typescript
 // extend test/unit/domain/entities/progetto.test.ts
 it('exposes ORE via getOre()', () => {
-  const progetto = Progetto.fromData({ [COL_PROGETTI.CLASSE]: '5A', [COL_PROGETTI.TIPO]: 'ASL', [COL_PROGETTI.NOME]: 'x', [COL_PROGETTI.ORE]: 30, [COL_PROGETTI.ORE_ASL]: 30 });
+  const progetto = Progetto.fromData({
+    [COL_PROGETTI.CLASSE]: '5A',
+    [COL_PROGETTI.TIPO]: 'ASL',
+    [COL_PROGETTI.NOME]: 'x',
+    [COL_PROGETTI.ORE]: 30,
+    [COL_PROGETTI.ORE_ASL]: 30
+  });
   expect(progetto.getOre()).toBe(30);
 });
 ```
@@ -2606,6 +2982,7 @@ getOre(): number {
   return this.ore;
 }
 ```
+
 (Insert alongside `isASL()`/`getOreASLEffettive()`, after line 42.)
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -2623,27 +3000,59 @@ import type { Cdu } from '../../../../../src/application/context-engine/Cdu';
 
 describe('ProgettiProvider', () => {
   it('builds progetti with resolved docente referente and tipoLabel', () => {
-    const progetto = Progetto.fromData({ [COL_PROGETTI.CLASSE]: '5A', [COL_PROGETTI.TIPO]: 'ASL', [COL_PROGETTI.NOME]: 'PCTO Biblioteca', [COL_PROGETTI.REFERENTE]: 'anna.ferrari@scuola.edu.it', [COL_PROGETTI.ORE]: 30, [COL_PROGETTI.ORE_ASL]: 30 });
+    const progetto = Progetto.fromData({
+      [COL_PROGETTI.CLASSE]: '5A',
+      [COL_PROGETTI.TIPO]: 'ASL',
+      [COL_PROGETTI.NOME]: 'PCTO Biblioteca',
+      [COL_PROGETTI.REFERENTE]: 'anna.ferrari@scuola.edu.it',
+      [COL_PROGETTI.ORE]: 30,
+      [COL_PROGETTI.ORE_ASL]: 30
+    });
     const progetti = { findByClasse: () => [progetto] };
-    const docenti = { findById: () => ({ nome: 'Anna', cognome: 'Ferrari', genere: 'F', id: 'anna.ferrari@scuola.edu.it' }) };
+    const docenti = {
+      findById: () => ({
+        nome: 'Anna',
+        cognome: 'Ferrari',
+        genere: 'F',
+        id: 'anna.ferrari@scuola.edu.it'
+      })
+    };
     const provider = new ProgettiProvider(progetti as never, docenti as never);
     const cdu = { focus: { classe: {} } } as unknown as Cdu;
     // getClasseEntity(cdu) reads tech.entita.classe — set via setClasseEntity in the real flow;
     // for this unit test, stub getClasseEntity or wire tech.entita.classe directly per the existing pattern in classe-provider.test.ts.
     provider.provide(cdu);
     expect(cdu.focus.classe!.hasProgetti).toBe(true);
-    expect(cdu.focus.classe!.progetti![0]).toMatchObject({ tipo: 'ASL', tipoLabel: 'PCTO/ASL', nome: 'PCTO Biblioteca', ore: 30, oreAsl: 30, isAsl: true });
-    expect(cdu.focus.classe!.progetti![0]!.referente.appellativoCompleto).toBe('Prof.ssa Anna Ferrari');
+    expect(cdu.focus.classe!.progetti![0]).toMatchObject({
+      tipo: 'ASL',
+      tipoLabel: 'PCTO/ASL',
+      nome: 'PCTO Biblioteca',
+      ore: 30,
+      oreAsl: 30,
+      isAsl: true
+    });
+    expect(cdu.focus.classe!.progetti![0]!.referente.appellativoCompleto).toBe(
+      'Prof.ssa Anna Ferrari'
+    );
   });
 
   it('treats an unresolved referente as an external expert (raw name, no email/genere)', () => {
-    const progetto = Progetto.fromData({ [COL_PROGETTI.CLASSE]: '5A', [COL_PROGETTI.TIPO]: 'ALTRO', [COL_PROGETTI.NOME]: 'Corso', [COL_PROGETTI.REFERENTE]: 'Studio Esterno XYZ', [COL_PROGETTI.ORE]: 10, [COL_PROGETTI.ORE_ASL]: 0 });
+    const progetto = Progetto.fromData({
+      [COL_PROGETTI.CLASSE]: '5A',
+      [COL_PROGETTI.TIPO]: 'ALTRO',
+      [COL_PROGETTI.NOME]: 'Corso',
+      [COL_PROGETTI.REFERENTE]: 'Studio Esterno XYZ',
+      [COL_PROGETTI.ORE]: 10,
+      [COL_PROGETTI.ORE_ASL]: 0
+    });
     const progetti = { findByClasse: () => [progetto] };
     const docenti = { findById: () => null };
     const provider = new ProgettiProvider(progetti as never, docenti as never);
     const cdu = { focus: { classe: {} } } as unknown as Cdu;
     provider.provide(cdu);
-    expect(cdu.focus.classe!.progetti![0]!.referente).toEqual(expect.objectContaining({ nomeCompleto: 'Studio Esterno XYZ', genere: null, email: null }));
+    expect(cdu.focus.classe!.progetti![0]!.referente).toEqual(
+      expect.objectContaining({ nomeCompleto: 'Studio Esterno XYZ', genere: null, email: null })
+    );
   });
 });
 ```
@@ -2748,6 +3157,7 @@ git commit -m "feat: add ProgettiProvider building focus.classe.progetti with re
 ### Task 18: `StudentStoricoVM` — `focus.alunno.storico` (moved out of `didattica`)
 
 **Files:**
+
 - Create: `src/application/context-engine/mappers/storicoMapper.ts`
 - Modify: `src/application/context-engine/providers/StoricoProvider.ts` (full file, 28 lines)
 - Modify: `src/application/context-engine/Cdu.ts:195-243` (`CduAlunno` — remove `didattica.storico`, add sibling `storico`)
@@ -2755,8 +3165,10 @@ git commit -m "feat: add ProgettiProvider building focus.classe.progetti with re
 - Test: `test/unit/application/context-engine/providers/storico-provider.test.ts` (extend or create)
 
 **Interfaces:**
+
 - Consumes: `StoricoAlunniService.perAlunno(email, profondita): AnnoAlunnoStorico[]` (`StoricoAlunniService.ts:50-92`, unchanged — `AnnoAlunnoStorico = { anno, classe, esito, carenze, piani: string[] }`, index 0 = most recent prior year), `tipoPianoLabel` (Task 3).
 - Produces (breaking path move — `focus.alunno.didattica.storico` no longer exists, becomes `focus.alunno.storico`):
+
   ```typescript
   export interface StudentStoricoVM {
     anni: Array<{ annoScolastico: string; classe: string; esito: Esito }>;
@@ -2778,7 +3190,13 @@ import type { AnnoAlunnoStorico } from '../../../../../src/application/storico/S
 describe('buildStudentStoricoVm', () => {
   it('maps anni, splits piani into primo/secondo anno precedente with tipoLabel, and flags bocciature', () => {
     const anni: AnnoAlunnoStorico[] = [
-      { anno: '2024-2025', classe: '4A-LC', esito: 'NON_PROMOSSO', carenze: [], piani: ['PDP_DSA'] },
+      {
+        anno: '2024-2025',
+        classe: '4A-LC',
+        esito: 'NON_PROMOSSO',
+        carenze: [],
+        piani: ['PDP_DSA']
+      },
       { anno: '2023-2024', classe: '4A-LC', esito: 'PROMOSSO', carenze: [], piani: [] }
     ];
     const vm = buildStudentStoricoVm(anni);
@@ -2794,7 +3212,13 @@ describe('buildStudentStoricoVm', () => {
 
   it('returns hasBocciature false and empty piani arrays for an empty history', () => {
     const vm = buildStudentStoricoVm([]);
-    expect(vm).toEqual({ anni: [], pianiPrimoAnnoPrecedente: [], pianiSecondoAnnoPrecedente: [], bocciature: [], hasBocciature: false });
+    expect(vm).toEqual({
+      anni: [],
+      pianiPrimoAnnoPrecedente: [],
+      pianiSecondoAnnoPrecedente: [],
+      bocciature: [],
+      hasBocciature: false
+    });
   });
 });
 ```
@@ -2825,12 +3249,19 @@ export interface StudentStoricoVM {
  * back (matches `pianiPrimoAnnoPrecedente`/`pianiSecondoAnnoPrecedente`).
  */
 export function buildStudentStoricoVm(anni: AnnoAlunnoStorico[]): StudentStoricoVM {
-  const mapped = anni.map((a) => ({ annoScolastico: a.anno, classe: a.classe ?? '', esito: a.esito }));
+  const mapped = anni.map((a) => ({
+    annoScolastico: a.anno,
+    classe: a.classe ?? '',
+    esito: a.esito
+  }));
   const bocciature = mapped
     .filter((a) => a.esito === 'NON_PROMOSSO')
     .map(({ annoScolastico, classe }) => ({ annoScolastico, classe }));
   const pianiFor = (index: number): Array<{ tipo: string; tipoLabel: string }> =>
-    (anni[index]?.piani ?? []).map((tipo) => ({ tipo, tipoLabel: tipoPianoLabel(tipo as TipoPiano) }));
+    (anni[index]?.piani ?? []).map((tipo) => ({
+      tipo,
+      tipoLabel: tipoPianoLabel(tipo as TipoPiano)
+    }));
   return {
     anni: mapped,
     pianiPrimoAnnoPrecedente: pianiFor(0),
@@ -2849,10 +3280,17 @@ Expected: PASS
 - [ ] **Step 5: Update `CduAlunno` in `Cdu.ts:195-243`**
 
 Remove `storico?: LazyRef<AnnoAlunnoStorico[]>;` from inside `didattica` (was at the end of the `didattica` block). Add a sibling field on `CduAlunno` itself:
+
 ```typescript
 export interface CduAlunno {
   anagrafica: { nomeCompleto: string; email: string };
-  status: { religione: string; religioneLabel: string; isBes: boolean; isRipetente: boolean; isRappresentante: boolean };
+  status: {
+    religione: string;
+    religioneLabel: string;
+    isBes: boolean;
+    isRipetente: boolean;
+    isRappresentante: boolean;
+  };
   curriculum: CurriculumVM[];
   classe: { nome: string; indirizzoSigla: string; indirizzoNome: string };
   consiglioDiClasseFiltrato?: DocenteCdcVM[];
@@ -2862,6 +3300,7 @@ export interface CduAlunno {
   };
 }
 ```
+
 Add `import type { StudentStoricoVM } from './mappers/storicoMapper';`. Keep `AnnoAlunnoStorico` imported only if still referenced elsewhere in the file (check before removing the import).
 
 - [ ] **Step 6: Update `StoricoProvider.ts`**
@@ -2918,6 +3357,7 @@ git commit -m "feat: focus.alunno.storico moves out of didattica and exposes Stu
 ### Task 19: `ClasseStoricoVM` — `focus.classe.storico`
 
 **Files:**
+
 - Modify: `src/domain/repositories/IClasseRepository.ts:75` (promote `getStorico(classe: Classe): ClasseId[]` from the concrete `ClasseRepository.ts:216` onto the interface)
 - Create: `src/application/context-engine/mappers/statisticheAlunniMapper.ts` (extracted from `StatisticheProvider.ts:33-58`)
 - Modify: `src/application/context-engine/providers/StatisticheProvider.ts` (reuse the extracted function — pure refactor, no behavior change)
@@ -2929,11 +3369,17 @@ git commit -m "feat: focus.alunno.storico moves out of didattica and exposes Stu
 - Test: `test/unit/application/context-engine/providers/storico-classe-provider.test.ts`
 
 **Interfaces:**
+
 - Consumes: `StoricoDatabaseProvider.anniStorici(profondita): Array<{anno: string; db: RepositoryDatabase}>` (already used by `StoricoAlunniService.ts:52`/`StoricoClassiService.ts:30`), `IClasseRepository.getStorico` (promoted in Step 1), `ProgettoRepository` (Task 17), `computeStatisticheAlunni` (extracted in Step 3).
 - Produces:
+
   ```typescript
   export interface ClasseStoricoVM {
-    statistiche: Array<{ annoScolastico: string; classe: string; statistiche: StatisticheAlunniVM }>;
+    statistiche: Array<{
+      annoScolastico: string;
+      classe: string;
+      statistiche: StatisticheAlunniVM;
+    }>;
     progetti: Array<{ annoScolastico: string; classe: string; progetti: ProgettoVM[] }>;
   }
   ```
@@ -2941,10 +3387,12 @@ git commit -m "feat: focus.alunno.storico moves out of didattica and exposes Stu
 - [ ] **Step 1: Promote `getStorico` onto `IClasseRepository`**
 
 In `IClasseRepository.ts`, add to the "Articolazione" section (after line 51 `getClasseParent`):
+
 ```typescript
 /** Ordered CSV of the class's own historical names, index 0 = immediately-prior year (ref 01, `CLASSI.STORICO`). */
 getStorico(classe: Classe): ClasseId[];
 ```
+
 `ClasseRepository.ts:216` already implements this method with a matching signature — no infrastructure change needed, only the interface addition. Run `npm run typecheck` after this step to confirm no other `IClasseRepository` implementer (test fakes) is missing the method; if a fake repository under `test/fakes/` fails to satisfy the interface, add a matching `getStorico` implementation there too (mirroring `ClasseRepository.ts:216`'s logic against the fake's in-memory data, or returning `[]` if the fake never modeled `CLASSI.STORICO`).
 
 - [ ] **Step 2: Write the failing test for the extracted statistics function**
@@ -2958,14 +3406,27 @@ import { TipoPiano } from '../../../../../src/domain/value-objects/enums';
 
 describe('computeStatisticheAlunni', () => {
   it('counts totale/conPianiDidattici/conBes/conDsa/ripetenti/rappresentanti over the given students', () => {
-    const marco = Alunno.fromData({ [COL_ALUNNI.EMAIL]: 'marco@x.it', [COL_ALUNNI.RIPETENTE]: true });
-    const anna = Alunno.fromData({ [COL_ALUNNI.EMAIL]: 'anna@x.it', [COL_ALUNNI.RAPPR_STUD]: true });
+    const marco = Alunno.fromData({
+      [COL_ALUNNI.EMAIL]: 'marco@x.it',
+      [COL_ALUNNI.RIPETENTE]: true
+    });
+    const anna = Alunno.fromData({
+      [COL_ALUNNI.EMAIL]: 'anna@x.it',
+      [COL_ALUNNI.RAPPR_STUD]: true
+    });
     const alunni = {
       getPiani: (a: typeof marco) =>
         a.id === 'marco@x.it' ? [{ isBES: () => true, tipo: TipoPiano.PDP_DSA }] : []
     };
     const stats = computeStatisticheAlunni([marco, anna], alunni as never);
-    expect(stats).toEqual({ totale: 2, conPianiDidattici: 1, conBes: 1, conDsa: 1, ripetenti: 1, rappresentanti: 1 });
+    expect(stats).toEqual({
+      totale: 2,
+      conPianiDidattici: 1,
+      conBes: 1,
+      conDsa: 1,
+      ripetenti: 1,
+      rappresentanti: 1
+    });
   });
 });
 ```
@@ -2993,7 +3454,10 @@ export interface StatisticheAlunniVM {
 }
 
 /** Shared aggregate-count formula (02 §4.1/§8.6) — used for both the current year (StatisticheProvider) and each historical year (StoricoClasseProvider). */
-export function computeStatisticheAlunni(attivi: Alunno[], alunni: IAlunnoRepository): StatisticheAlunniVM {
+export function computeStatisticheAlunni(
+  attivi: Alunno[],
+  alunni: IAlunnoRepository
+): StatisticheAlunniVM {
   let conPianiDidattici = 0,
     conBes = 0,
     conDsa = 0,
@@ -3012,6 +3476,7 @@ export function computeStatisticheAlunni(attivi: Alunno[], alunni: IAlunnoReposi
 ```
 
 In `StatisticheProvider.ts:33-58`, replace the manual loop body of `classStats` with:
+
 ```typescript
 private classStats(cdu: Cdu): void {
   const studenti = cdu.focus.classe?.studenti;
@@ -3020,6 +3485,7 @@ private classStats(cdu: Cdu): void {
   studenti.statistiche = computeStatisticheAlunni(attivi, this.alunni);
 }
 ```
+
 Add `import { computeStatisticheAlunni } from '../mappers/statisticheAlunniMapper';`; remove the now-unused `TipoPiano` import if nothing else in the file uses it.
 
 - [ ] **Step 5: Run test to verify it passes; run `StatisticheProvider`'s existing tests to confirm the refactor is behavior-preserving**
@@ -3031,7 +3497,7 @@ Expected: PASS, identical assertions to before the refactor (this step is pure e
 
 ```typescript
 // test/unit/application/context-engine/providers/storico-classe-provider.test.ts
-it('builds ClasseStoricoVM.statistiche/progetti per historical year, using CLASSI.STORICO to resolve each year\'s class name', () => {
+it("builds ClasseStoricoVM.statistiche/progetti per historical year, using CLASSI.STORICO to resolve each year's class name", () => {
   // wire a StoricoDatabaseProvider fake exposing anniStorici(profondita) -> [{anno: '2024-2025', db: fakeHistoricalDb}]
   // where fakeHistoricalDb seeds a class named '4AB-LC-LS' with 2 active students, 1 project
   const classi = { getStorico: () => [ClasseId.of('4AB-LC-LS')] };
@@ -3039,8 +3505,16 @@ it('builds ClasseStoricoVM.statistiche/progetti per historical year, using CLASS
   const cdu = makeCdu(); // wire tech.entita.classe + focus.classe
   provider.provide(cdu, params, makeOptions({ includiStorico: true, profonditaAnniStorico: 1 }));
   const storico = cdu.focus.classe!.storico as never; // LazyRef — force read per the existing LazyRef test helper pattern
-  expect(storico().statistiche).toEqual([{ annoScolastico: '2024-2025', classe: '4AB-LC-LS', statistiche: expect.objectContaining({ totale: 2 }) }]);
-  expect(storico().progetti).toEqual([{ annoScolastico: '2024-2025', classe: '4AB-LC-LS', progetti: expect.any(Array) }]);
+  expect(storico().statistiche).toEqual([
+    {
+      annoScolastico: '2024-2025',
+      classe: '4AB-LC-LS',
+      statistiche: expect.objectContaining({ totale: 2 })
+    }
+  ]);
+  expect(storico().progetti).toEqual([
+    { annoScolastico: '2024-2025', classe: '4AB-LC-LS', progetti: expect.any(Array) }
+  ]);
 });
 ```
 
@@ -3112,7 +3586,11 @@ export class StoricoClasseProvider implements ContextProvider {
         if (classeStorica === null) continue;
         const alunniStorici = new AlunnoRepository(db);
         const attivi = classiStoriche.getStudenti(classeStorica, true);
-        statistiche.push({ annoScolastico: anno, classe: nomeStorico.value, statistiche: computeStatisticheAlunni(attivi, alunniStorici) });
+        statistiche.push({
+          annoScolastico: anno,
+          classe: nomeStorico.value,
+          statistiche: computeStatisticheAlunni(attivi, alunniStorici)
+        });
 
         const docentiStorici = new DocenteRepository(db);
         const progettiStorici = new ProgettoRepository(db);
@@ -3133,7 +3611,9 @@ export class StoricoClasseProvider implements ContextProvider {
 
   private resolveReferente(raw: string, docenti: DocenteRepository): PersonVM {
     const docente = docenti.findById(raw);
-    return docente === null ? buildPersonVm({ nome: raw, cognome: null, email: null, genere: null }) : buildPersonVmFromDocente(docente);
+    return docente === null
+      ? buildPersonVm({ nome: raw, cognome: null, email: null, genere: null })
+      : buildPersonVmFromDocente(docente);
   }
 }
 ```
@@ -3148,6 +3628,7 @@ Expected: PASS
 `Cdu.ts` — add to `CduClasse`: `storico?: LazyRef<ClasseStoricoVM>;` (`import type { ClasseStoricoVM } from './providers/StoricoClasseProvider';`).
 
 `Recipe.ts:108-117` (`CLASSE_COMPLETA`) — insert `'storicoClasse'` after `'statistiche'`:
+
 ```typescript
 CLASSE_COMPLETA: ['school', 'class', 'students', 'tutor', 'consiglio', 'materie', 'esame', 'progetti', 'rappresentanti', 'statistiche', 'storicoClasse', 'pianiPersClasse'],
 ```
@@ -3171,6 +3652,7 @@ git commit -m "feat: add StoricoClasseProvider building focus.classe.storico wit
 ### Task 20: `ContinuitaVM` — teaching continuity on `focus.classe.materie[].continuita`
 
 **Files:**
+
 - Modify: `src/application/storico/StoricoClassiService.ts:6-9,40-46` (`DocenteMateriaStorico` — add `isItp: boolean`, currently discarded from `classi.getMaterieDelDocente`'s `{sigla, isItp}` result)
 - Create: `src/application/context-engine/mappers/continuitaMapper.ts`
 - Modify: `src/application/context-engine/mappers/subjectVmMapper.ts` (add the `continuita?: ContinuitaVM` field to `SubjectVM`, declared in Task 2 without it since `ContinuitaVM` didn't exist yet)
@@ -3179,11 +3661,18 @@ git commit -m "feat: add StoricoClasseProvider building focus.classe.storico wit
 - Test: `test/unit/application/context-engine/mappers/continuita-mapper.test.ts`
 
 **Interfaces:**
+
 - Consumes: `StoricoClassiService.perClasse(storico: ClasseId[], profondita): AnnoClasseStorico[]` (`StoricoClassiService.ts:24-52`, extended in Step 1), `reconcileSigla(siglaStorica, annoCorso, materie): string` (`reconcileSigla.ts:14-26`, unchanged — reconciles a historical sigla to its current canonical id for a given course year), `IClasseRepository.getStorico` (Task 19), `IDocenteRepository.findById`.
 - Produces:
+
   ```typescript
   export interface ContinuitaVM {
-    docentiAnniPrecedenti: Array<{ annoIndietro: number; annoScolastico: string; titolare: PersonVM | null; itp: PersonVM | null }>;
+    docentiAnniPrecedenti: Array<{
+      annoIndietro: number;
+      annoScolastico: string;
+      titolare: PersonVM | null;
+      itp: PersonVM | null;
+    }>;
     continuitaUltimiTreAnni: boolean;
     continuitaUltimiDueAnni: boolean;
     continuitaUltimiTreAnniItp?: boolean;
@@ -3195,6 +3684,7 @@ git commit -m "feat: add StoricoClasseProvider building focus.classe.storico wit
 - [ ] **Step 0: Add the `continuita` field to `SubjectVM`**
 
 Task 2's `SubjectVM` interface (`subjectVmMapper.ts`) was declared before `ContinuitaVM` existed. Add it now:
+
 ```typescript
 import type { ContinuitaVM } from './continuitaMapper';
 
@@ -3204,11 +3694,13 @@ export interface SubjectVM {
   continuita?: ContinuitaVM;
 }
 ```
+
 (`continuitaMapper.ts` imports only from `personVmMapper.ts` and `../../storico/*` — no import cycle with `subjectVmMapper.ts`.)
 
 - [ ] **Step 1: Extend `DocenteMateriaStorico` with `isItp`**
 
 In `StoricoClassiService.ts:6-9`:
+
 ```typescript
 export interface DocenteMateriaStorico {
   docenteEmail: string;
@@ -3216,12 +3708,15 @@ export interface DocenteMateriaStorico {
   isItp: boolean;
 }
 ```
+
 In the `perClasse` loop (`StoricoClassiService.ts:42-45`), keep the field that was being discarded:
+
 ```typescript
 for (const m of classi.getMaterieDelDocente(classe, d.id ?? '')) {
   docenti.push({ docenteEmail: d.id ?? '', materia: m.sigla, isItp: m.isItp });
 }
 ```
+
 Run: `npx jest --config jest.config.cjs --testPathPattern storico-classi-service` — fix the existing test's expected object literals to include `isItp` (this is a pure additive field, existing assertions using `toMatchObject` are unaffected; ones using `toEqual` need the new field added).
 
 - [ ] **Step 2: Write the failing test for `buildContinuita`**
@@ -3235,11 +3730,24 @@ import { COL_MATERIE } from '../../../../../src/config/schema';
 
 describe('buildContinuita', () => {
   it('flags continuitaUltimiDueAnni true when the same titolare taught the (reconciled) subject the prior year', () => {
-    const materiaCorrente = Materia.fromData({ [COL_MATERIE.ID]: 'STO', [COL_MATERIE.NOME]: 'Storia', [COL_MATERIE.EVOLUZIONE]: JSON.stringify({ GST: [1, 2] }) });
+    const materiaCorrente = Materia.fromData({
+      [COL_MATERIE.ID]: 'STO',
+      [COL_MATERIE.NOME]: 'Storia',
+      [COL_MATERIE.EVOLUZIONE]: JSON.stringify({ GST: [1, 2] })
+    });
     const anniStorici: AnnoClasseStorico[] = [
-      { anno: '2024-2025', nomeStorico: '4A-LC', docenti: [{ docenteEmail: 'mario.rossi@scuola.edu.it', materia: 'GST', isItp: false }] }
+      {
+        anno: '2024-2025',
+        nomeStorico: '4A-LC',
+        docenti: [{ docenteEmail: 'mario.rossi@scuola.edu.it', materia: 'GST', isItp: false }]
+      }
     ];
-    const docenti = { findById: (email: string) => (email === 'mario.rossi@scuola.edu.it' ? { nome: 'Mario', cognome: 'Rossi', genere: 'M', id: email } : null) };
+    const docenti = {
+      findById: (email: string) =>
+        email === 'mario.rossi@scuola.edu.it'
+          ? { nome: 'Mario', cognome: 'Rossi', genere: 'M', id: email }
+          : null
+    };
     const vm = buildContinuita({
       siglaCorrente: 'STO',
       hasItp: false,
@@ -3250,7 +3758,14 @@ describe('buildContinuita', () => {
       materiaCorrente,
       docenti: docenti as never
     });
-    expect(vm.docentiAnniPrecedenti).toEqual([{ annoIndietro: 1, annoScolastico: '2024-2025', titolare: expect.objectContaining({ nomeCompleto: 'Mario Rossi' }), itp: null }]);
+    expect(vm.docentiAnniPrecedenti).toEqual([
+      {
+        annoIndietro: 1,
+        annoScolastico: '2024-2025',
+        titolare: expect.objectContaining({ nomeCompleto: 'Mario Rossi' }),
+        itp: null
+      }
+    ]);
     expect(vm.continuitaUltimiDueAnni).toBe(true);
     expect(vm.continuitaUltimiTreAnni).toBe(false);
     expect(vm).not.toHaveProperty('continuitaUltimiTreAnniItp');
@@ -3274,7 +3789,12 @@ import { buildPersonVmFromDocente } from './personVmMapper';
 import { reconcileSigla } from '../../storico/reconcileSigla';
 
 export interface ContinuitaVM {
-  docentiAnniPrecedenti: Array<{ annoIndietro: number; annoScolastico: string; titolare: PersonVM | null; itp: PersonVM | null }>;
+  docentiAnniPrecedenti: Array<{
+    annoIndietro: number;
+    annoScolastico: string;
+    titolare: PersonVM | null;
+    itp: PersonVM | null;
+  }>;
   continuitaUltimiTreAnni: boolean;
   continuitaUltimiDueAnni: boolean;
   continuitaUltimiTreAnniItp?: boolean;
@@ -3306,7 +3826,8 @@ export function buildContinuita(input: BuildContinuitaInput): ContinuitaVM {
     const annoIndietro = index + 1;
     const annoCorsoStorico = input.annoCorsoCorrente - annoIndietro;
     const matches = anno.docenti.filter(
-      (d) => reconcileSigla(d.materia, annoCorsoStorico, [input.materiaCorrente]) === input.siglaCorrente
+      (d) =>
+        reconcileSigla(d.materia, annoCorsoStorico, [input.materiaCorrente]) === input.siglaCorrente
     );
     const titolareMatch = matches.find((m) => !m.isItp);
     const itpMatch = input.hasItp ? matches.find((m) => m.isItp) : undefined;
@@ -3320,17 +3841,24 @@ export function buildContinuita(input: BuildContinuitaInput): ContinuitaVM {
 
   const sameTitolare = (annoIndietro: number): boolean => {
     const entry = docentiAnniPrecedenti.find((d) => d.annoIndietro === annoIndietro);
-    return entry?.titolare !== null && entry?.titolare !== undefined && entry.titolare.email === input.titolareCorrenteEmail;
+    return (
+      entry?.titolare !== null &&
+      entry?.titolare !== undefined &&
+      entry.titolare.email === input.titolareCorrenteEmail
+    );
   };
   const sameItp = (annoIndietro: number): boolean => {
     const entry = docentiAnniPrecedenti.find((d) => d.annoIndietro === annoIndietro);
-    return entry?.itp !== null && entry?.itp !== undefined && entry.itp.email === input.itpCorrenteEmail;
+    return (
+      entry?.itp !== null && entry?.itp !== undefined && entry.itp.email === input.itpCorrenteEmail
+    );
   };
 
   const result: ContinuitaVM = {
     docentiAnniPrecedenti,
     continuitaUltimiDueAnni: input.titolareCorrenteEmail !== null && sameTitolare(1),
-    continuitaUltimiTreAnni: input.titolareCorrenteEmail !== null && sameTitolare(1) && sameTitolare(2)
+    continuitaUltimiTreAnni:
+      input.titolareCorrenteEmail !== null && sameTitolare(1) && sameTitolare(2)
   };
   if (input.hasItp) {
     result.continuitaUltimiDueAnniItp = input.itpCorrenteEmail !== null && sameItp(1);
@@ -3389,6 +3917,7 @@ git commit -m "feat: add ContinuitaVM teaching-continuity computation to focus.c
 ### Task 21: `PartnerProjectionProvider` — `focus.classe.partner.{primo,secondo}`
 
 **Files:**
+
 - Create: `src/application/context-engine/providers/PartnerProjectionProvider.ts`
 - Modify: `src/application/context-engine/Recipe.ts` (`RecipeOptions`/`RecipeOptionsView`/`DEFAULT_OPTIONS` — add `includiPartnerDettaglio`; `CLASSE_COMPLETA` — insert `'partner'` after `'consiglio'`)
 - Modify: `src/application/context-engine/Cdu.ts` (`CduClasse.partner`)
@@ -3396,8 +3925,10 @@ git commit -m "feat: add ContinuitaVM teaching-continuity computation to focus.c
 - Test: `test/unit/application/context-engine/providers/partner-projection-provider.test.ts`
 
 **Interfaces:**
+
 - Consumes: `ClasseProvider.provide`, `StudentiProvider.provide`, `TutorProvider.provide`, `ConsiglioClasseProvider.provide` (Tasks 5-8, 12 — reused AS-IS by constructing a throwaway scratch `Cdu` per partner class and running the same four providers against it; zero business-logic duplication, per this plan's Global Constraints reuse directive).
 - Produces:
+
   ```typescript
   export interface SingleClassProjection {
     anagrafica: CduClasse['anagrafica'];
@@ -3436,11 +3967,24 @@ describe('PartnerProjectionProvider', () => {
     const studentiProvider = new StudentiProvider(classi, alunni, materie);
     const tutorProvider = new TutorProvider(classi);
     const consiglioProvider = new ConsiglioClasseProvider(classi, materie, teachingAssignments);
-    const provider = new PartnerProjectionProvider(classeProvider, studentiProvider, tutorProvider, consiglioProvider);
+    const provider = new PartnerProjectionProvider(
+      classeProvider,
+      studentiProvider,
+      tutorProvider,
+      consiglioProvider
+    );
 
     const cdu = makeCdu(); // existing helper — meta.date.oggi.iso populated
-    classeProvider.provide(cdu, { target: '5AB-LC-LS', tipoTarget: 'classe', now: new Date('2026-03-30') });
-    provider.provide(cdu, { target: '5AB-LC-LS', tipoTarget: 'classe', now: new Date('2026-03-30') }, makeOptions({ includiPartnerDettaglio: true }));
+    classeProvider.provide(cdu, {
+      target: '5AB-LC-LS',
+      tipoTarget: 'classe',
+      now: new Date('2026-03-30')
+    });
+    provider.provide(
+      cdu,
+      { target: '5AB-LC-LS', tipoTarget: 'classe', now: new Date('2026-03-30') },
+      makeOptions({ includiPartnerDettaglio: true })
+    );
 
     expect(cdu.focus.classe!.partner!.primo.anagrafica.nome).toBe('5A-LC');
     expect(cdu.focus.classe!.partner!.secondo.anagrafica.nome).toBe('5B-LS');
@@ -3453,7 +3997,11 @@ describe('PartnerProjectionProvider', () => {
   });
 
   it('is omitted for a non-articulated class', () => {
-    provider.provide(standardClassCdu, standardParams, makeOptions({ includiPartnerDettaglio: true }));
+    provider.provide(
+      standardClassCdu,
+      standardParams,
+      makeOptions({ includiPartnerDettaglio: true })
+    );
     expect(standardClassCdu.focus.classe!.partner).toBeUndefined();
   });
 });
@@ -3522,7 +4070,11 @@ export class PartnerProjectionProvider implements ContextProvider {
     const scratch: Cdu = {
       meta: outerCdu.meta,
       focus: {},
-      tech: { entita: {}, servizi: [], pipeline: { statoCorrente: 'IN_CORSO', stepEseguiti: [], errori: [], logEsecuzione: [] } }
+      tech: {
+        entita: {},
+        servizi: [],
+        pipeline: { statoCorrente: 'IN_CORSO', stepEseguiti: [], errori: [], logEsecuzione: [] }
+      }
     };
     const scratchParams: BuildParams = { ...params, target: classeId, tipoTarget: 'classe' };
     this.classeProvider.provide(scratch, scratchParams);
@@ -3551,29 +4103,41 @@ Expected: PASS
 `Cdu.ts` — add to `CduClasse`: `partner?: { primo: SingleClassProjection; secondo: SingleClassProjection };` (`import type { SingleClassProjection } from './providers/PartnerProjectionProvider';`).
 
 `Recipe.ts:108-117` (`CLASSE_COMPLETA`) — insert `'partner'` after `'consiglio'`:
+
 ```typescript
 CLASSE_COMPLETA: ['school', 'class', 'students', 'tutor', 'consiglio', 'materie', 'esame', 'progetti', 'partner', 'rappresentanti', 'statistiche', 'storicoClasse', 'pianiPersClasse'],
 ```
 
 `ContextEngineFactory.ts` — reuse the SAME provider instances already constructed for `'class'`/`'students'`/`'tutor'`/`'consiglio'` rather than constructing new ones (keep them in local `const` bindings before the `.registerProvider` chain, then reference them twice):
+
 ```typescript
 const classeProvider = new ClasseProvider(classi, alunni, materie);
 const studentiProvider = new StudentiProvider(classi, alunni, materie);
 const tutorProvider = new TutorProvider(classi);
 const consiglioProvider = new ConsiglioClasseProvider(classi, materie, teachingAssignments);
 
-return new ContextBuilder()
-  .registerProvider('school', new SchoolProvider(master, ruoli, docenti))
-  .registerProvider('class', classeProvider)
-  .registerProvider('students', studentiProvider)
-  // ...
-  .registerProvider('tutor', tutorProvider)
-  .registerProvider('consiglio', consiglioProvider)
-  .registerProvider('materie', new MaterieClasseProvider(materie, docenti, storicoDb, classi))
-  .registerProvider('esame', new EsameProvider())
-  .registerProvider('progetti', new ProgettiProvider(progetti, docenti))
-  .registerProvider('partner', new PartnerProjectionProvider(classeProvider, studentiProvider, tutorProvider, consiglioProvider))
-  // ...
+return (
+  new ContextBuilder()
+    .registerProvider('school', new SchoolProvider(master, ruoli, docenti))
+    .registerProvider('class', classeProvider)
+    .registerProvider('students', studentiProvider)
+    // ...
+    .registerProvider('tutor', tutorProvider)
+    .registerProvider('consiglio', consiglioProvider)
+    .registerProvider('materie', new MaterieClasseProvider(materie, docenti, storicoDb, classi))
+    .registerProvider('esame', new EsameProvider())
+    .registerProvider('progetti', new ProgettiProvider(progetti, docenti))
+    .registerProvider(
+      'partner',
+      new PartnerProjectionProvider(
+        classeProvider,
+        studentiProvider,
+        tutorProvider,
+        consiglioProvider
+      )
+    )
+);
+// ...
 ```
 
 Also refresh `Recipe.ts:76-105`'s provider dependency table comment in this same commit: add rows for `materie` (Task 15), `esame`/`progetti` (Tasks 16-17), `storicoClasse` (Task 19), and `partner` (this task), each stating what it writes and what CDU-level state it reads — consolidating the piecemeal notes left in each earlier task's Step rather than editing the comment block five separate times.
@@ -3597,13 +4161,16 @@ git commit -m "feat: add PartnerProjectionProvider building focus.classe.partner
 ### Task 22: `focus.classe.sheet.materieColonne` — expose the already-built `group1/2/3`
 
 **Files:**
+
 - Modify: `src/application/strategies/SheetMaterieConPermessiGeneratorStrategy.ts:50-76` (`buildGroups`)
 - Modify: `src/application/context-engine/Cdu.ts` (`CduClasse.sheet`)
 - Test: `test/unit/application/strategies/sheet-materie-con-permessi-generator-strategy.test.ts` (extend)
 
 **Interfaces:**
+
 - Consumes: `SheetMaterieGeneratorStrategy.buildGroups()`'s already-confirmed `MaterieGroups` shape (`SheetMaterieGeneratorStrategy.ts:53-58`: `{ group1: MateriaColumn[]; group2: MateriaColumn[]; group3: MateriaColumn[]; group2Label?: string; group3Label?: string }` — do not rebuild grouping, only attach the existing return value to the CDU).
 - Produces:
+
   ```typescript
   sheet?: {
     materieColonne: {
@@ -3615,6 +4182,7 @@ git commit -m "feat: add PartnerProjectionProvider building focus.classe.partner
     };
   };
   ```
+
   (This CDU-facing type is intentionally narrower than the strategy's internal `MaterieGroups`/`MateriaColumn` — the ACL-only technical fields `classeId`/`specificita`/`kind` on the internal `MateriaColumn` are not part of the printable contract but remain present at runtime since the assignment is structural, not a literal — harmless, not scrubbed by this task.)
 
 - [ ] **Step 1: Write the failing test**
@@ -3700,6 +4268,7 @@ git commit -m "feat: expose sheet column groups at focus.classe.sheet.materieCol
 ### Task 23: Rewrite `SPECS_ALDO/02_CDU_STRUTTURA.md` as the canonical spec
 
 **Files:**
+
 - Modify: `SPECS_ALDO/02_CDU_STRUTTURA.md` (full rewrite, currently 378 lines)
 - Delete: `02_CDU_STRUTTURA_NEW_OTTIMIZZATA.md` (repo root, untracked — its content becomes the new `02_CDU_STRUTTURA.md`)
 
@@ -3712,6 +4281,7 @@ Read `02_CDU_STRUTTURA_NEW_OTTIMIZZATA.md` (root) fully and cross-check every se
 - [ ] **Step 2: Copy and adapt**
 
 Copy `02_CDU_STRUTTURA_NEW_OTTIMIZZATA.md`'s content into `SPECS_ALDO/02_CDU_STRUTTURA.md`, with these adaptations:
+
 - Strip every `✎ OPTIMIZED`/`✎ RISTRUTTURATO`/`✎ NUOVO` migration-diff annotation and "current → target" framing (`§0`'s "current" callouts, `§11`'s validation-rule migration language) — this is now the base spec, not a delta document; state each shape directly as the current truth.
 - Strip the `> DIRETTIVA CRITICA DI ARCHITETTURA (NO BACKWARD COMPATIBILITY)` callout at the top — that was a migration-phase directive, not a permanent spec statement.
 - Apply every divergence found in Step 1.
@@ -3726,6 +4296,7 @@ Run: `grep -oE '\{\{[a-zA-Z0-9_.]+' SPECS_ALDO/02_CDU_STRUTTURA.md | sort -u` an
 ```bash
 rm "02_CDU_STRUTTURA_NEW_OTTIMIZZATA.md"
 ```
+
 (This file is untracked in git — its content now lives in `SPECS_ALDO/02_CDU_STRUTTURA.md`, the tracked canonical spec.)
 
 - [ ] **Step 5: Commit**
@@ -3740,6 +4311,7 @@ git commit -m "docs: rewrite 02_CDU_STRUTTURA.md as the canonical WorkspaceTempl
 ### Task 24: Remove the intermediate-form spec `02_STRUTTURA_CDU_NEW.md`
 
 **Files:**
+
 - Delete: `02_STRUTTURA_CDU_NEW.md` (repo root, untracked, 1097 lines)
 
 - [ ] **Step 1: Confirm it is fully superseded**
@@ -3759,6 +4331,7 @@ rm "02_STRUTTURA_CDU_NEW.md"
 ### Task 25: Update `SPECS_ALDO/MAT_NON_STANDARD.md` for `sheet.materieColonne`
 
 **Files:**
+
 - Modify: `SPECS_ALDO/MAT_NON_STANDARD.md` (88 lines)
 
 - [ ] **Step 1: Read the current document**
@@ -3781,6 +4354,7 @@ git commit -m "docs: document sheet.materieColonne derivation in MAT_NON_STANDAR
 ### Task 26: Update `SPECS_ALDO/01_SCHEMA_DATABASE.md` for the `ALUNNI.RELIGIONE` enum
 
 **Files:**
+
 - Modify: `SPECS_ALDO/01_SCHEMA_DATABASE.md` (470 lines)
 
 - [ ] **Step 1: Locate the current enum documentation**
@@ -3805,6 +4379,7 @@ git commit -m "docs: update ALUNNI.RELIGIONE enum documentation to IRC/ALT/NO"
 ### Task 27: Update `E2eTemplateProvisioner.ts` and `src/onlinetests/checks/*` for the new CDU paths
 
 **Files:**
+
 - Modify: `src/onlinetests/E2eTemplateProvisioner.ts` (paths at lines 231, 236, 288-303 confirmed by investigation; add new template snippets for the new sections)
 - Modify: `src/onlinetests/checks/contextEngineChecks.ts` (paths at lines 166, 172, 317, 510, 689, 763 confirmed by investigation)
 - Modify: `src/onlinetests/checks/articolazioneChecks.ts` (paths at lines 100, 101, 140 confirmed by investigation)
@@ -3812,6 +4387,7 @@ git commit -m "docs: update ALUNNI.RELIGIONE enum documentation to IRC/ALT/NO"
 - Test: this task's "test" is the online suite itself (`npm run build:online`, which runs the offline suite as a gate, then the online checks execute against a live GAS deployment when triggered by the project's own online-test workflow — not runnable from this offline plan; see Step 6)
 
 **Interfaces:**
+
 - Consumes: every provider from Tasks 1-22 (this is the final integration point — no new production code, only test/check code).
 
 - [ ] **Step 1: Fix the `sheet.materieColonne` path discrepancy**
@@ -3826,6 +4402,7 @@ Read `E2eTemplateProvisioner.ts:225-240` and `contextEngineChecks.ts:160-180` �
 - [ ] **Step 3: Add new template snippets exercising the genuinely new sections**
 
 In `E2eTemplateProvisioner.ts`, add at least one template fragment per PROMPT_MODIFY_CDU.md action item 5's explicit list:
+
 - Looped `curriculum`: `{{#focus.alunno.curriculum}}{{materiaNome}}: {{#specifiche}}{{nome}}{{/specifiche}}{{/focus.alunno.curriculum}}`
 - 3-level `perSpecificita`: `{{#focus.classe.studenti.perSpecificita}}{{materiaNome}}: {{#specifiche}}{{nome}} ({{#alunni}}{{nomeCompleto}};{{/alunni}}){{/specifiche}}{{/focus.classe.studenti.perSpecificita}}`
 - `esame.materiePrimaProva`: `{{#bullet_list:focus.classe.esame.materiePrimaProva}}{{nome}}: {{docentiDescrizione}}{{/bullet_list}}`
@@ -3908,6 +4485,7 @@ Summarize pass/fail for each of Steps 1-7. If any step fails, do not proceed to 
 **Placeholder scan** — no `TODO`/`implement later`/unshown-code steps remain; the one flagged internal naming placeholder in Task 20 Step 4 was fixed to `resolveDocente`. Task 9's "locate the exact file first" step is an investigative grep-then-edit instruction (concrete command, concrete acceptance criterion), not a vague placeholder — the fork investigation gave an approximate path (`emailSteps.ts:156-186`) that wasn't independently verified by direct file read during this planning session, so the task is honest about that gap rather than fabricating unverified line numbers.
 
 **Type consistency fixes applied during self-review:**
+
 - `SubjectVM.continuita?: ContinuitaVM` was missing from Task 2's original interface (written before `ContinuitaVM` existed in Task 20) — added via Task 20 Step 0.
 - Task 19's `ClasseStoricoVM.progetti` originally declared a duplicate `HistoricalProgettoVM` interface instead of reusing Task 17's `ProgettoVM` — fixed to import and reuse `ProgettoVM`.
 - `IndirizzoId` threading was missing from Task 5's `buildMaterieVm` and Task 8's `materiaVm` (both call `buildSubjectVm` without the `indirizzo` option needed to resolve `isMateriaPrimaProva`/`isMateriaSecondaProva`, which Task 16's `EsameProvider` depends on) — both fixed in place to resolve `IndirizzoId.of(classe.indirizzo)` and pass it through.

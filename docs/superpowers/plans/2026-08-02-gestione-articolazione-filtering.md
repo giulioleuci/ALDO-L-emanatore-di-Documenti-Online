@@ -24,10 +24,12 @@ Design doc: `docs/superpowers/specs/2026-08-02-gestione-articolazione-filtering-
 ### Task 1: `ConfigurazioneDocumento.gestioneArticolazione`
 
 **Files:**
+
 - Modify: `src/domain/entities/ConfigurazioneDocumento.ts`
 - Test: `test/unit/domain/configurazione-documento.test.ts` (new file)
 
 **Interfaces:**
+
 - Consumes: `GestioneArticolazione` enum (`src/domain/value-objects/enums.ts:20-23`, values `ARTICOLATA`/`COMPLETA`, already exists — no change needed there). `COL_CONF_DOC.GESTIONE_ARTICOLAZIONE` (`src/config/schema.ts:198`, already exists).
 - Produces: `ConfigurazioneDocumento.gestioneArticolazione: GestioneArticolazione` (readonly field, defaults to `COMPLETA`), included in `toData()`. Used by Task 4.
 
@@ -84,24 +86,28 @@ Expected: FAIL — `gestioneArticolazione` does not exist on `ConfigurazioneDocu
 In `src/domain/entities/ConfigurazioneDocumento.ts`:
 
 Change the import on line 1:
+
 ```ts
 import { FormatoOutput, GestioneArticolazione } from '../value-objects/enums';
 ```
 
 Add a field next to `formato` (after line 19, `public readonly formato: FormatoOutput;`):
+
 ```ts
   public readonly gestioneArticolazione: GestioneArticolazione;
 ```
 
 In the constructor, after the `this.formato = ...` assignment (after line 33):
+
 ```ts
-    this.gestioneArticolazione =
-      data[COL_CONF_DOC.GESTIONE_ARTICOLAZIONE] === GestioneArticolazione.ARTICOLATA
-        ? GestioneArticolazione.ARTICOLATA
-        : GestioneArticolazione.COMPLETA;
+this.gestioneArticolazione =
+  data[COL_CONF_DOC.GESTIONE_ARTICOLAZIONE] === GestioneArticolazione.ARTICOLATA
+    ? GestioneArticolazione.ARTICOLATA
+    : GestioneArticolazione.COMPLETA;
 ```
 
 In `toData()`, after the `[COL_CONF_DOC.FORMATO]: this.formato,` line (line 93):
+
 ```ts
       [COL_CONF_DOC.GESTIONE_ARTICOLAZIONE]: this.gestioneArticolazione,
 ```
@@ -128,24 +134,27 @@ git commit -m "feat: parse CONF_DOC.GESTIONE_ARTICOLAZIONE into ConfigurazioneDo
 ### Task 2: `CONF_MAIL.GESTIONE_ARTICOLAZIONE` schema + `ConfigurazioneEmail.gestioneArticolazione`
 
 **Files:**
+
 - Modify: `src/config/schema.ts:34-46` (`COL_CONF_MAIL`)
 - Modify: `src/domain/entities/ConfigurazioneEmail.ts`
 - Test: `test/unit/domain/configurazione-email.test.ts:1-42` (extend existing file)
 
 **Interfaces:**
+
 - Consumes: `GestioneArticolazione` enum (same as Task 1).
 - Produces: `COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE: 'GESTIONE_ARTICOLAZIONE'`. `ConfigurazioneEmail.gestioneArticolazione: GestioneArticolazione` (readonly field, defaults to `COMPLETA`), included in `toData()`. Used by Task 5.
 
 - [ ] **Step 1: Write the failing tests**
 
 In `test/unit/domain/configurazione-email.test.ts`, add this import at the top (after the existing `ConfigurationError` import on line 3):
+
 ```ts
 import { GestioneArticolazione } from '../../../src/domain/value-objects/enums';
 ```
 
 Append this `describe` block at the end of the file (after the closing `});` on line 42):
-```ts
 
+```ts
 describe('ConfigurazioneEmail.gestioneArticolazione', () => {
   test.each([
     ['missing column', undefined],
@@ -173,32 +182,38 @@ Expected: FAIL — `COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE` is `undefined` / `gest
 - [ ] **Step 3: Implement**
 
 In `src/config/schema.ts`, add to `COL_CONF_MAIL` (after `ALLEGATI: 'ALLEGATI'` on line 45, before the closing `} as const;`):
+
 ```ts
   ALLEGATI: 'ALLEGATI',
   GESTIONE_ARTICOLAZIONE: 'GESTIONE_ARTICOLAZIONE'
 } as const;
 ```
+
 (i.e. add a trailing comma to the existing `ALLEGATI` line and add the new key.)
 
 In `src/domain/entities/ConfigurazioneEmail.ts`, change the import on line 1:
+
 ```ts
 import { ProcessoInvio, GestioneSupplenti, GestioneArticolazione } from '../value-objects/enums';
 ```
 
 Add a field next to `supplenti` (after line 19, `public readonly supplenti: GestioneSupplenti;`):
+
 ```ts
   public readonly gestioneArticolazione: GestioneArticolazione;
 ```
 
 In the constructor, after the `this.supplenti = ...` assignment (after line 37):
+
 ```ts
-    this.gestioneArticolazione =
-      data[COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE] === GestioneArticolazione.ARTICOLATA
-        ? GestioneArticolazione.ARTICOLATA
-        : GestioneArticolazione.COMPLETA;
+this.gestioneArticolazione =
+  data[COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE] === GestioneArticolazione.ARTICOLATA
+    ? GestioneArticolazione.ARTICOLATA
+    : GestioneArticolazione.COMPLETA;
 ```
 
 In `toData()`, after the `[COL_CONF_MAIL.SUPPLENTI]: this.supplenti,` line (line 114):
+
 ```ts
       [COL_CONF_MAIL.GESTIONE_ARTICOLAZIONE]: this.gestioneArticolazione,
 ```
@@ -225,24 +240,27 @@ git commit -m "feat: add CONF_MAIL.GESTIONE_ARTICOLAZIONE and parse it into Conf
 ### Task 3: `ClasseRepository.filterPerGestioneArticolazione`
 
 **Files:**
+
 - Modify: `src/domain/repositories/IClasseRepository.ts`
 - Modify: `src/infrastructure/repositories/ClasseRepository.ts`
 - Test: `test/unit/infrastructure/classe-articolazione.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Classe` entities, `ArticolazioneConfig.isParent()`/`isPartner()` (`src/domain/value-objects/ArticolazioneConfig.ts:53-60`, already exist), `GestioneArticolazione` enum.
 - Produces: `filterPerGestioneArticolazione(classi: Classe[], gestione: GestioneArticolazione): Classe[]` on `IClasseRepository`/`ClasseRepository`. Used by Task 4 and Task 5.
 
 - [ ] **Step 1: Write the failing tests**
 
 In `test/unit/infrastructure/classe-articolazione.test.ts`, add this import after the existing `ValidationError` import (line 8):
+
 ```ts
 import { GestioneArticolazione } from '../../../src/domain/value-objects/enums';
 ```
 
 Append these two tests at the end of the file (after the last test, which ends at line 91):
-```ts
 
+```ts
 test('filterPerGestioneArticolazione: COMPLETA excludes partners, keeps parent + standalone (default)', () => {
   const r = repo();
   const result = r.filterPerGestioneArticolazione(
@@ -270,11 +288,13 @@ Expected: FAIL — `filterPerGestioneArticolazione` is not a function on `Classe
 - [ ] **Step 3: Implement**
 
 In `src/domain/repositories/IClasseRepository.ts`, add an import (after the existing `ArticolazioneConfig` import on line 8):
+
 ```ts
 import type { GestioneArticolazione } from '../value-objects/enums';
 ```
 
 Add the method to the interface, after `orderedPartners` (after line 59):
+
 ```ts
   /** The parent's two partners in canonical [primo, secondo] order, from any class in the group. */
   orderedPartners(classe: Classe): Classe[];
@@ -288,11 +308,13 @@ Add the method to the interface, after `orderedPartners` (after line 59):
 ```
 
 In `src/infrastructure/repositories/ClasseRepository.ts`, add an import (after the existing `ArticolazioneConfig` import on line 17):
+
 ```ts
 import { GestioneArticolazione } from '../../domain/value-objects/enums';
 ```
 
 Add the method implementation, after `orderedPartners` (after line 371, before the `// --- Per-docente subject lookups` comment on line 373):
+
 ```ts
 
   /**
@@ -332,10 +354,12 @@ git commit -m "feat: add ClasseRepository.filterPerGestioneArticolazione"
 ### Task 4: Wire `DocumentBatchService.generateClassi` to the filter
 
 **Files:**
+
 - Modify: `src/application/services/DocumentBatchService.ts`
 - Test: `test/unit/application/document-batch-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `IClasseRepository.filterPerGestioneArticolazione` (Task 3), `ConfigurazioneDocumento.gestioneArticolazione` (Task 1).
 - Produces: `DocumentBatchService.generateClassi` now only targets classes that survive the filter for the batch's `CONF_DOC` config. No change to the class's public method signatures (`batchGenerateHandler`, `start`, `registerJobHandlers`).
 
@@ -454,7 +478,7 @@ Expected: FAIL — the updated assertions expect 2 targeted classes; the current
 In `src/application/services/DocumentBatchService.ts`, change the call site in `batchGenerateHandler` (line 83):
 
 ```ts
-    return yield* this.generateClassi(config, confDocId, jobId, resume, processed, errori);
+return yield * this.generateClassi(config, confDocId, jobId, resume, processed, errori);
 ```
 
 Change the `generateClassi` signature and its first line (lines 157-164):
@@ -498,16 +522,19 @@ git commit -m "fix: DocumentBatchService.generateClassi honors CONF_DOC.GESTIONE
 ### Task 5: Wire `EmailNotificationService.classiEntryPoint` to the filter
 
 **Files:**
+
 - Modify: `src/application/services/EmailNotificationService.ts`
 - Test: `test/unit/application/email-notification-service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `IClasseRepository.filterPerGestioneArticolazione` (Task 3), `ConfigurazioneEmail.gestioneArticolazione` (Task 2).
 - Produces: `PER_COORDINATORE`/`PER_DOCENTE`/`PER_CDC` targeting now honors each `CONF_MAIL` row's `GESTIONE_ARTICOLAZIONE` instead of always excluding partners. No change to `EmailNotificationService`'s public methods (`sendPattern`, `sendToTarget`, `enumerateTargets`, `getConfigurazione`).
 
 - [ ] **Step 1: Write the failing tests and update existing stubs**
 
 In `test/unit/application/email-notification-service.test.ts`, add this import after the existing `ITeachingAssignmentResolver`/`TeachingAssignment` import block (after line 40):
+
 ```ts
 import { GestioneArticolazione } from '../../../src/domain/value-objects/enums';
 ```
@@ -515,6 +542,7 @@ import { GestioneArticolazione } from '../../../src/domain/value-objects/enums';
 Update the 4 existing hand-rolled `classiStub` objects so they satisfy the (about to change) `IClasseRepository` contract — add a passthrough `filterPerGestioneArticolazione` to each. These stubs are only exercised with the default `COMPLETA` config in their tests, so a passthrough (no filtering) preserves their existing behavior exactly, since none of their fixture classes are articulation partners.
 
 At lines 170-184 (the `'PER_COORDINATORE routes a parent without coordinatore to its partners'` test), add a line after `getClassiPartner`:
+
 ```ts
   const classiStub = {
     findAttive: () => [parent],
@@ -524,9 +552,11 @@ At lines 170-184 (the `'PER_COORDINATORE routes a parent without coordinatore to
     filterPerGestioneArticolazione: (classi: Classe[]) => classi,
     getCoordinatori: (classe: Classe) => {
 ```
+
 (only the new `filterPerGestioneArticolazione` line is added; the rest of the object is unchanged)
 
 At lines 918-926 (`'targetsPerCoordinatore skips a coordinatore with no id...'`), add a line after `isArticolata`:
+
 ```ts
     const classiStub = {
       findAttive: () => [classeNoId],
@@ -537,31 +567,32 @@ At lines 918-926 (`'targetsPerCoordinatore skips a coordinatore with no id...'`)
 ```
 
 At lines 937-942 (`'targetsPerDocente filters a blank-id CDC docente...'`), add a line after `getGruppoArticolazione`:
+
 ```ts
-    const classiStub = {
-      findAttive: () => [classeNoId],
-      getArticolazione: () => null,
-      isArticolata: () => false,
-      getGruppoArticolazione: () => [classeNoId],
-      filterPerGestioneArticolazione: (classi: Classe[]) => classi
-    } as unknown as ClasseRepository;
+const classiStub = {
+  findAttive: () => [classeNoId],
+  getArticolazione: () => null,
+  isArticolata: () => false,
+  getGruppoArticolazione: () => [classeNoId],
+  filterPerGestioneArticolazione: (classi: Classe[]) => classi
+} as unknown as ClasseRepository;
 ```
 
 At lines 959-964 (`'targetsPerCdc falls back to ""...'`), same change:
+
 ```ts
-    const classiStub = {
-      findAttive: () => [classeNoId],
-      getArticolazione: () => null,
-      isArticolata: () => false,
-      getGruppoArticolazione: () => [classeNoId],
-      filterPerGestioneArticolazione: (classi: Classe[]) => classi
-    } as unknown as ClasseRepository;
+const classiStub = {
+  findAttive: () => [classeNoId],
+  getArticolazione: () => null,
+  isArticolata: () => false,
+  getGruppoArticolazione: () => [classeNoId],
+  filterPerGestioneArticolazione: (classi: Classe[]) => classi
+} as unknown as ClasseRepository;
 ```
 
 Now add three new tests, one per process, proving `conf.gestioneArticolazione` reaches `classiEntryPoint`. Insert them after the test `'PER_CDC: cdcEmails is deterministically sorted by cognome...'` (which ends at line 339, right before the `'PER_ALUNNO: one target per active student'` test at line 341):
 
 ```ts
-
 test('targetsPerCoordinatore honors CONF_MAIL.GESTIONE_ARTICOLAZIONE=ARTICOLATA: partners are entry points, parent is excluded', () => {
   const { db, gmail } = wire();
   const parent = Classe.fromData({ ID: '3C', ANNO: 3, INDIRIZZO: 'LICEO' });
@@ -642,7 +673,9 @@ test('targetsPerCdc honors CONF_MAIL.GESTIONE_ARTICOLAZIONE=ARTICOLATA: partners
     fullDeps(db, gmail, { classi: classiStub, teachingAssignments })
   );
 
-  const targets = service.enumerateTargets(conf('PER_CDC', { GESTIONE_ARTICOLAZIONE: 'ARTICOLATA' }));
+  const targets = service.enumerateTargets(
+    conf('PER_CDC', { GESTIONE_ARTICOLAZIONE: 'ARTICOLATA' })
+  );
 
   expect(targets).toEqual([
     {
@@ -664,11 +697,17 @@ Expected: FAIL — the three new tests fail because `classiEntryPoint`/`targetsP
 - [ ] **Step 3: Implement**
 
 In `src/application/services/EmailNotificationService.ts`, change the import on line 33:
+
 ```ts
-import { GestioneArticolazione, GestioneSupplenti, ProcessoInvio } from '../../domain/value-objects/enums';
+import {
+  GestioneArticolazione,
+  GestioneSupplenti,
+  ProcessoInvio
+} from '../../domain/value-objects/enums';
 ```
 
 Replace `classiEntryPoint` (lines 282-291):
+
 ```ts
   /**
    * Entry-point classes: `COMPLETA` (default) excludes articolazione
@@ -684,6 +723,7 @@ Replace `classiEntryPoint` (lines 282-291):
 ```
 
 Update `enumerateTargets`'s switch (lines 231-237), passing `conf.gestioneArticolazione` through:
+
 ```ts
     switch (conf.processo) {
       case ProcessoInvio.PER_COORDINATORE:
@@ -695,6 +735,7 @@ Update `enumerateTargets`'s switch (lines 231-237), passing `conf.gestioneArtico
 ```
 
 Update `targetsPerCoordinatore`'s signature and its `classiEntryPoint()` call (lines 342-344):
+
 ```ts
   private targetsPerCoordinatore(gestione: GestioneArticolazione): EmailTarget[] {
     const perCoordinatore = new Map<string, string[]>();
@@ -702,6 +743,7 @@ Update `targetsPerCoordinatore`'s signature and its `classiEntryPoint()` call (l
 ```
 
 Update `targetsPerDocente`'s signature and its `classiEntryPoint()` call (lines 377-379):
+
 ```ts
   private targetsPerDocente(gestione: GestioneArticolazione): EmailTarget[] {
     const perDocente = new Map<string, string[]>();
@@ -709,6 +751,7 @@ Update `targetsPerDocente`'s signature and its `classiEntryPoint()` call (lines 
 ```
 
 Update `targetsPerCdc`'s signature and its `classiEntryPoint()` call (lines 397-398):
+
 ```ts
   private targetsPerCdc(
     gestioneSupplenti: GestioneSupplenti,
@@ -739,34 +782,42 @@ git commit -m "fix: EmailNotificationService honors CONF_MAIL.GESTIONE_ARTICOLAZ
 ### Task 6: Documentation
 
 **Files:**
+
 - Modify: `SPECS_ALDO/01_SCHEMA_DATABASE.md`
 - Modify: `ARTICOLAZIONE.md`
 
 **Interfaces:**
+
 - Consumes: nothing (documentation only, reflects Tasks 1-5).
 - Produces: nothing consumed by later tasks.
 
 - [ ] **Step 1: Tighten the CONF_DOC row and add the CONF_MAIL row**
 
 In `SPECS_ALDO/01_SCHEMA_DATABASE.md`, replace line 317:
+
 ```
 | `GESTIONE_ARTICOLAZIONE` | Enum   | —   | Specifica come gestire la generazione per classi articolate                                                  |
 ```
+
 with:
+
 ```
 | `GESTIONE_ARTICOLAZIONE` | Enum   | —   | `COMPLETA` (default) esclude le classi partner dal batch di generazione (solo genitore/classe standard); `ARTICOLATA` esclude la classe genitore (solo partner/classe standard)                                                  |
 ```
 
 In the CONF_MAIL table, after the `POST_PROCESSO` row (line 367), add a new row before the closing `---` (line 369):
+
 ```
 | `POST_PROCESSO` | JSON    | —   | Azioni post-invio (stesso meccanismo di CONF_DOC)                                                                                                                                                 |
 | `GESTIONE_ARTICOLAZIONE` | Enum | —   | Stesso significato di `CONF_DOC.GESTIONE_ARTICOLAZIONE`: `COMPLETA` (default) esclude le classi partner dai punti di ingresso della notifica; `ARTICOLATA` esclude la classe genitore |
 ```
+
 (only the `GESTIONE_ARTICOLAZIONE` line is new; `POST_PROCESSO` is shown for anchoring the insertion point.)
 
 - [ ] **Step 2: Flip ARTICOLAZIONE.md item 1 to Fixed**
 
 In `ARTICOLAZIONE.md`, replace lines 7-12:
+
 ```
 ## 1. Unused Database Column: `COL_CONF_DOC.GESTIONE_ARTICOLAZIONE`
 
@@ -774,7 +825,9 @@ In `ARTICOLAZIONE.md`, replace lines 7-12:
 - **Description**: The column `GESTIONE_ARTICOLAZIONE` exists in the `CONF_DOC` schema and is seeded in test fixtures (typically set to `''` or occasionally `'COMPLETA'`), but it is never read anywhere within `src/application`.
 - **Impact**: It is currently a dead schema column with no effect on document generation logic. Resolving it requires a product design decision on whether to implement specific behaviors or deprecate the field.
 ```
+
 with:
+
 ```
 ## 1. `GESTIONE_ARTICOLAZIONE` Now Filters Which Classes Are Targeted
 

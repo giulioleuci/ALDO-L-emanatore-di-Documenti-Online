@@ -6,7 +6,10 @@ import { getAlunnoEntity } from '../techEntities';
 import { buildElencoCarenzeVm } from '../mappers/carenzeMapper';
 
 export class CarenzeProvider implements ContextProvider {
-  constructor(private readonly alunni: IAlunnoRepository, private readonly materie: IMateriaRepository) {}
+  constructor(
+    private readonly alunni: IAlunnoRepository,
+    private readonly materie: IMateriaRepository
+  ) {}
 
   provide(cdu: Cdu): void {
     if (cdu.focus.alunno === undefined) return;

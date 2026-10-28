@@ -6,7 +6,7 @@ import {
   MATERIE_PER_INDIRIZZO,
   STUDENT_TOTALE,
   SUPPLENZA_FINE,
-  SUPPLENZA_INIZIO,
+  SUPPLENZA_INIZIO
 } from '../../../src/onlinetests/data/fixtures';
 
 describe('online-test shared fixture dataset', () => {
@@ -31,9 +31,7 @@ describe('online-test shared fixture dataset', () => {
 
   it('contains at least 200 students and eight subjects for every address', () => {
     expect(STUDENT_TOTALE).toBeGreaterThanOrEqual(200);
-    expect(CLASS_LAYOUTS.reduce((total, layout) => total + layout.count, 0)).toBe(
-      STUDENT_TOTALE
-    );
+    expect(CLASS_LAYOUTS.reduce((total, layout) => total + layout.count, 0)).toBe(STUDENT_TOTALE);
     expect(Object.values(MATERIE_PER_INDIRIZZO).every((materie) => materie.length >= 8)).toBe(true);
   });
 

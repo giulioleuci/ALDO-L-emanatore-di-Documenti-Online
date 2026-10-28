@@ -143,7 +143,10 @@ export class DriveServiceFacade implements IDriveFacade {
     // Keyed by targetId+permesso (not permesso alone) — shareWithUsers does a
     // fileIds x permissions cross-product, so grouping across targetIds would
     // leak a file's grantees onto its folder and vice versa.
-    const byTargetAndPermesso = new Map<string, { targetId: string; permesso: string; emails: Set<string> }>();
+    const byTargetAndPermesso = new Map<
+      string,
+      { targetId: string; permesso: string; emails: Set<string> }
+    >();
     for (const { targetId, email, permesso } of grants) {
       const key = `${targetId}:${permesso}`;
       const group = byTargetAndPermesso.get(key) ?? { targetId, permesso, emails: new Set() };

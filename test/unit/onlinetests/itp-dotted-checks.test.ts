@@ -1,7 +1,10 @@
 import { registerItpDottedChecks } from '../../../src/onlinetests/checks/itpDottedChecks';
 import type { ServiceContainer } from '../../../src/config/ServiceContainer';
 import type { SharedTestDatabase } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
-import { CONF_DOC_DOCENTE_CLASSE_MATERIA, e2eDocenteEmail } from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
+import {
+  CONF_DOC_DOCENTE_CLASSE_MATERIA,
+  e2eDocenteEmail
+} from '../../../src/onlinetests/data/SharedTestDatabaseBuilder';
 import { COL_LOG_DOCS } from '../../../src/config/schema';
 
 /**
@@ -206,7 +209,10 @@ test('subtype assertion expects the GRECO teacher of the batch-scoped class', ()
       '4A': { GRECO: e2eDocenteEmail(7), 'INTERPRET.CHITARRA': e2eDocenteEmail(5) }
     },
     [
-      { [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_CLASSE_MATERIA, [COL_LOG_DOCS.SOTTOTIPO]: `GRECO::${e2eDocenteEmail(3)}` },
+      {
+        [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_CLASSE_MATERIA,
+        [COL_LOG_DOCS.SOTTOTIPO]: `GRECO::${e2eDocenteEmail(3)}`
+      },
       {
         [COL_LOG_DOCS.ID_GEN]: CONF_DOC_DOCENTE_CLASSE_MATERIA,
         [COL_LOG_DOCS.SOTTOTIPO]: `INTERPRET.CHITARRA::${e2eDocenteEmail(5)}`

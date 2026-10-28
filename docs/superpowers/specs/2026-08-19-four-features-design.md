@@ -33,98 +33,98 @@ A function launched from the master sheet's custom menu that validates the curre
 
 #### 1. Foreign Key Integrity
 
-| Source Table | Source Column | Target Table | Target Column |
-|---|---|---|---|
-| ALUNNI | CLASSE | CLASSI | ID |
-| CLASSI | INDIRIZZO | INDIRIZZI | ID |
-| CLASSI | COORD (CSV) | DOCENTI | EMAIL |
-| CLASSI | IRC | DOCENTI | EMAIL |
-| CLASSI | ALT | DOCENTI | EMAIL |
-| CLASSI | *[MATERIA]* (CSV) | DOCENTI | EMAIL |
-| CLASSI | *[MATERIA.itp]* (CSV) | DOCENTI | EMAIL |
-| DOCENTI | DIPART | DIPART | ID |
-| DIPART | CAPO | DOCENTI | EMAIL |
-| DIPART | MATERIE (CSV) | MATERIE | ID |
-| RUOLI | DOCENTE (CSV) | DOCENTI | EMAIL |
-| SUPPLENZE | TITOLARE | DOCENTI | EMAIL |
-| SUPPLENZE | SUPPLENTE | DOCENTI | EMAIL |
-| SUPPLENZE | CLASSI (CSV/*) | CLASSI | ID |
-| SUPPLENZE | MATERIE (CSV/*) | MATERIE | ID |
-| VARIAZIONI_CATTEDRA | TITOLARE | DOCENTI | EMAIL |
-| VARIAZIONI_CATTEDRA | NUOVO_TITOLARE | DOCENTI | EMAIL |
-| VARIAZIONI_CATTEDRA | CLASSI (CSV/*) | CLASSI | ID |
-| VARIAZIONI_CATTEDRA | MATERIE (CSV/*) | MATERIE | ID |
-| CARENZE | STUDENTE | ALUNNI | EMAIL |
-| CARENZE | CLASSE | CLASSI | ID |
-| PIANI | STUDENTE | ALUNNI | EMAIL |
-| PROGETTI | CLASSE | CLASSI | ID |
-| MOV_ALUNNI | STUDENTE | ALUNNI | EMAIL |
-| ASL | STUDENTE | ALUNNI | EMAIL |
-| LOG_DOCS | ID_GEN | CONF_DOC | ID |
-| LOG_DOCS | CLASSI (CSV) | CLASSI | ID |
-| LOG_DOCS | MATERIE (CSV) | MATERIE | ID |
-| LOG_FOLD | TIPO | CONF_DOC | ID |
-| LOG_MAIL | PATTERN | CONF_MAIL | ID |
-| CONF_DOC | GENERATORE | *(strategy registry)* | — |
+| Source Table        | Source Column         | Target Table          | Target Column |
+| ------------------- | --------------------- | --------------------- | ------------- |
+| ALUNNI              | CLASSE                | CLASSI                | ID            |
+| CLASSI              | INDIRIZZO             | INDIRIZZI             | ID            |
+| CLASSI              | COORD (CSV)           | DOCENTI               | EMAIL         |
+| CLASSI              | IRC                   | DOCENTI               | EMAIL         |
+| CLASSI              | ALT                   | DOCENTI               | EMAIL         |
+| CLASSI              | _[MATERIA]_ (CSV)     | DOCENTI               | EMAIL         |
+| CLASSI              | _[MATERIA.itp]_ (CSV) | DOCENTI               | EMAIL         |
+| DOCENTI             | DIPART                | DIPART                | ID            |
+| DIPART              | CAPO                  | DOCENTI               | EMAIL         |
+| DIPART              | MATERIE (CSV)         | MATERIE               | ID            |
+| RUOLI               | DOCENTE (CSV)         | DOCENTI               | EMAIL         |
+| SUPPLENZE           | TITOLARE              | DOCENTI               | EMAIL         |
+| SUPPLENZE           | SUPPLENTE             | DOCENTI               | EMAIL         |
+| SUPPLENZE           | CLASSI (CSV/*)        | CLASSI                | ID            |
+| SUPPLENZE           | MATERIE (CSV/*)       | MATERIE               | ID            |
+| VARIAZIONI_CATTEDRA | TITOLARE              | DOCENTI               | EMAIL         |
+| VARIAZIONI_CATTEDRA | NUOVO_TITOLARE        | DOCENTI               | EMAIL         |
+| VARIAZIONI_CATTEDRA | CLASSI (CSV/*)        | CLASSI                | ID            |
+| VARIAZIONI_CATTEDRA | MATERIE (CSV/*)       | MATERIE               | ID            |
+| CARENZE             | STUDENTE              | ALUNNI                | EMAIL         |
+| CARENZE             | CLASSE                | CLASSI                | ID            |
+| PIANI               | STUDENTE              | ALUNNI                | EMAIL         |
+| PROGETTI            | CLASSE                | CLASSI                | ID            |
+| MOV_ALUNNI          | STUDENTE              | ALUNNI                | EMAIL         |
+| ASL                 | STUDENTE              | ALUNNI                | EMAIL         |
+| LOG_DOCS            | ID_GEN                | CONF_DOC              | ID            |
+| LOG_DOCS            | CLASSI (CSV)          | CLASSI                | ID            |
+| LOG_DOCS            | MATERIE (CSV)         | MATERIE               | ID            |
+| LOG_FOLD            | TIPO                  | CONF_DOC              | ID            |
+| LOG_MAIL            | PATTERN               | CONF_MAIL             | ID            |
+| CONF_DOC            | GENERATORE            | _(strategy registry)_ | —             |
 
 #### 2. JSON Field Validity
 
 Parse each of these fields as JSON; report parse failures:
 
-| Table | Column |
-|---|---|
-| ALUNNI | CURRICULUM |
-| CLASSI | RUOLI |
-| CLASSI | ARTICOLAZIONE |
-| MATERIE | ESAME_CFG |
-| MATERIE | EVOLUZIONE |
-| CONF_DOC | MODELLI |
-| CONF_DOC | PERMESSI |
-| CONF_DOC | PARAMETRI |
-| CONF_DOC | POST_PROCESSO |
-| CONF_DOC | REGISTRA_DOC |
-| CONF_DOC | REGISTRA_FOLD |
-| CONF_MAIL | BOX_CFG |
+| Table     | Column        |
+| --------- | ------------- |
+| ALUNNI    | CURRICULUM    |
+| CLASSI    | RUOLI         |
+| CLASSI    | ARTICOLAZIONE |
+| MATERIE   | ESAME_CFG     |
+| MATERIE   | EVOLUZIONE    |
+| CONF_DOC  | MODELLI       |
+| CONF_DOC  | PERMESSI      |
+| CONF_DOC  | PARAMETRI     |
+| CONF_DOC  | POST_PROCESSO |
+| CONF_DOC  | REGISTRA_DOC  |
+| CONF_DOC  | REGISTRA_FOLD |
+| CONF_MAIL | BOX_CFG       |
 | CONF_MAIL | POST_PROCESSO |
-| CONF_MAIL | ALLEGATI |
-| CONF_IMP | CONFIG |
-| LOG_MAIL | ALLEGATI |
+| CONF_MAIL | ALLEGATI      |
+| CONF_IMP  | CONFIG        |
+| LOG_MAIL  | ALLEGATI      |
 
 #### 3. Required Fields Non-Empty
 
-| Table | Columns |
-|---|---|
-| ALUNNI | EMAIL |
-| DOCENTI | EMAIL, COGNOME, NOME |
-| CLASSI | ID |
-| MATERIE | ID, NOME |
-| INDIRIZZI | ID, NOME |
-| DIPART | ID, NOME |
-| RUOLI | ID, NOME |
-| CONF_DOC | ID, GENERATORE |
-| CONF_MAIL | ID, PROCESSO |
-| CONF_IMP | ID, TARGET |
-| LOG_DOCS | ID |
+| Table     | Columns              |
+| --------- | -------------------- |
+| ALUNNI    | EMAIL                |
+| DOCENTI   | EMAIL, COGNOME, NOME |
+| CLASSI    | ID                   |
+| MATERIE   | ID, NOME             |
+| INDIRIZZI | ID, NOME             |
+| DIPART    | ID, NOME             |
+| RUOLI     | ID, NOME             |
+| CONF_DOC  | ID, GENERATORE       |
+| CONF_MAIL | ID, PROCESSO         |
+| CONF_IMP  | ID, TARGET           |
+| LOG_DOCS  | ID                   |
 
 #### 4. ENUM Values
 
-| Table | Column | Valid Values |
-|---|---|---|
-| ALUNNI | RELIGIONE | `IRC`, `ALT`, `NO` |
-| DOCENTI | GENERE | `M`, `F` |
-| LOG_DOCS | STATO | `GENERATO`, `VERBALIZZATO`, `NOTIFICATO`, `ARCHIVIATO` |
-| CONF_DOC | DUPLICAZIONE | `NEGATA`, `PERMESSA` |
-| CONF_DOC | FORMATO | *(valid document format enum)* |
-| CONF_DOC | GESTIONE_ARTICOLAZIONE | `COMPLETA`, `ARTICOLATA` |
-| CONF_MAIL | GESTIONE_ARTICOLAZIONE | `COMPLETA`, `ARTICOLATA` |
-| CONF_MAIL | DUPLICAZIONE | `NEGATA`, `PERMESSA` |
-| CONF_MAIL | SUPPLENTI | `SOLO_TITOLARI`, `SOLO_SUPPLENTI`, `ENTRAMBI` |
-| CONF_MAIL | PROCESSO | `PER_COORDINATORE`, `PER_DOCENTE`, `PER_CDC`, `PER_ALUNNO`, `PER_GENITORI_ALUNNO`, `PER_CARENZA_GENITORI`, `PER_CARENZA_GENITORI_E_ALUNNO`, `PER_CARENZA_GENITORI_E_COORD`, `PER_CAPO_DIPARTIMENTO`, `PER_DIPARTIMENTO` |
-| LOG_MAIL | STATO | `SUCCESS`, `ERROR`, `PENDING` |
-| INDIRIZZI | TIPO | `LICEO`, `ITS`, `IEFP`, `PROFESSIONALE`, `TECNICO` |
-| PIANI | TIPO | `PEI`, `PDP_BES`, `PDP_DSA`, `PDP_STRANIERI`, `PFP` |
-| PROGETTI | TIPO | `ASL`, `ORIENTAMENTO`, `ALTRO` |
-| MOV_ALUNNI | TIPO | `IN`, `OUT`, `RITIRATO`, `CAMBIO` |
+| Table      | Column                 | Valid Values                                                                                                                                                                                                            |
+| ---------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ALUNNI     | RELIGIONE              | `IRC`, `ALT`, `NO`                                                                                                                                                                                                      |
+| DOCENTI    | GENERE                 | `M`, `F`                                                                                                                                                                                                                |
+| LOG_DOCS   | STATO                  | `GENERATO`, `VERBALIZZATO`, `NOTIFICATO`, `ARCHIVIATO`                                                                                                                                                                  |
+| CONF_DOC   | DUPLICAZIONE           | `NEGATA`, `PERMESSA`                                                                                                                                                                                                    |
+| CONF_DOC   | FORMATO                | _(valid document format enum)_                                                                                                                                                                                          |
+| CONF_DOC   | GESTIONE_ARTICOLAZIONE | `COMPLETA`, `ARTICOLATA`                                                                                                                                                                                                |
+| CONF_MAIL  | GESTIONE_ARTICOLAZIONE | `COMPLETA`, `ARTICOLATA`                                                                                                                                                                                                |
+| CONF_MAIL  | DUPLICAZIONE           | `NEGATA`, `PERMESSA`                                                                                                                                                                                                    |
+| CONF_MAIL  | SUPPLENTI              | `SOLO_TITOLARI`, `SOLO_SUPPLENTI`, `ENTRAMBI`                                                                                                                                                                           |
+| CONF_MAIL  | PROCESSO               | `PER_COORDINATORE`, `PER_DOCENTE`, `PER_CDC`, `PER_ALUNNO`, `PER_GENITORI_ALUNNO`, `PER_CARENZA_GENITORI`, `PER_CARENZA_GENITORI_E_ALUNNO`, `PER_CARENZA_GENITORI_E_COORD`, `PER_CAPO_DIPARTIMENTO`, `PER_DIPARTIMENTO` |
+| LOG_MAIL   | STATO                  | `SUCCESS`, `ERROR`, `PENDING`                                                                                                                                                                                           |
+| INDIRIZZI  | TIPO                   | `LICEO`, `ITS`, `IEFP`, `PROFESSIONALE`, `TECNICO`                                                                                                                                                                      |
+| PIANI      | TIPO                   | `PEI`, `PDP_BES`, `PDP_DSA`, `PDP_STRANIERI`, `PFP`                                                                                                                                                                     |
+| PROGETTI   | TIPO                   | `ASL`, `ORIENTAMENTO`, `ALTRO`                                                                                                                                                                                          |
+| MOV_ALUNNI | TIPO                   | `IN`, `OUT`, `RITIRATO`, `CAMBIO`                                                                                                                                                                                       |
 
 #### 5. Dynamic Column Integrity
 
@@ -146,11 +146,11 @@ A Google Sheet created in the current school year's root folder (from `MASTER.ID
 
 **Sheet structure**:
 
-| TABELLA | RIGA | CAMPO | VALORE | ERRORE |
-|---|---|---|---|---|
-| ALUNNI | 5 | CLASSE | `99X` | FK violata: CLASSE non esiste in CLASSI |
-| CLASSI | 12 | INDIRIZZO | `XX` | FK violata: INDIRIZZO non esiste in INDIRIZZI |
-| ... | ... | ... | ... | ... |
+| TABELLA | RIGA | CAMPO     | VALORE | ERRORE                                        |
+| ------- | ---- | --------- | ------ | --------------------------------------------- |
+| ALUNNI  | 5    | CLASSE    | `99X`  | FK violata: CLASSE non esiste in CLASSI       |
+| CLASSI  | 12   | INDIRIZZO | `XX`   | FK violata: INDIRIZZO non esiste in INDIRIZZI |
+| ...     | ...  | ...       | ...    | ...                                           |
 
 If no errors are found, the sheet contains a single row: `TUTTO OK - Nessun errore rilevato`.
 
@@ -166,14 +166,14 @@ The menu wrapper `menu_validazioneDatabase` (in `src/presentation/Menu.ts`) foll
 
 ### Files to Modify
 
-| File | Change |
-|---|---|
-| `src/presentation/Menu.ts` | Add `menu_validazioneDatabase` wrapper + entry in `vociMenu()` |
-| `src/application/services/DatabaseValidationService.ts` | **New file**: validation logic |
-| `src/infrastructure/facades/DriveServiceFacade.ts` | Ensure `createSpreadsheet()` method exists (or use existing) |
-| `src/config/Bootstrap.ts` | Wire `DatabaseValidationService` |
-| `src/index.ts` | Expose `menu_validazioneDatabase` on `globalThis` |
-| `src/entrypoints/EntryPoints.ts` | No change (data-driven menu handles it) |
+| File                                                    | Change                                                         |
+| ------------------------------------------------------- | -------------------------------------------------------------- |
+| `src/presentation/Menu.ts`                              | Add `menu_validazioneDatabase` wrapper + entry in `vociMenu()` |
+| `src/application/services/DatabaseValidationService.ts` | **New file**: validation logic                                 |
+| `src/infrastructure/facades/DriveServiceFacade.ts`      | Ensure `createSpreadsheet()` method exists (or use existing)   |
+| `src/config/Bootstrap.ts`                               | Wire `DatabaseValidationService`                               |
+| `src/index.ts`                                          | Expose `menu_validazioneDatabase` on `globalThis`              |
+| `src/entrypoints/EntryPoints.ts`                        | No change (data-driven menu handles it)                        |
 
 ---
 
@@ -196,6 +196,7 @@ A function launched from the custom menu that iterates all documents in LOG_DOCS
 ### Drive API Calls
 
 Per file:
+
 - `Drive.Permissions.list(fileId)` — list all permissions
 - `Drive.Permissions.update(fileId, permissionId, { role: 'reader' })` — downgrade writer → reader
 
@@ -218,13 +219,13 @@ The wrapper prompts for confirmation ("Are you sure you want to lock all documen
 
 ### Files to Modify
 
-| File | Change |
-|---|---|
-| `src/presentation/Menu.ts` | Add `menu_bloccaDocumenti` wrapper + entry in `vociMenu()` |
-| `src/application/services/LockDocumentsService.ts` | **New file**: lock logic |
+| File                                               | Change                                                            |
+| -------------------------------------------------- | ----------------------------------------------------------------- |
+| `src/presentation/Menu.ts`                         | Add `menu_bloccaDocumenti` wrapper + entry in `vociMenu()`        |
+| `src/application/services/LockDocumentsService.ts` | **New file**: lock logic                                          |
 | `src/infrastructure/facades/DriveServiceFacade.ts` | Ensure `listPermissions()` and `updatePermission()` methods exist |
-| `src/config/Bootstrap.ts` | Wire `LockDocumentsService` |
-| `src/index.ts` | Expose `menu_bloccaDocumenti` on `globalThis` |
+| `src/config/Bootstrap.ts`                          | Wire `LockDocumentsService`                                       |
+| `src/index.ts`                                     | Expose `menu_bloccaDocumenti` on `globalThis`                     |
 
 ---
 
@@ -240,13 +241,13 @@ For each row in INDIRIZZI, add a column named after `INDIRIZZI.ID` to MATERIE.
 
 **Example**:
 
-| ID | NOME | ... | LC | LS | LSSA |
-|---|---|---|---|---|---|
-| MAT | Matematica | ... | 1,2,3,4,5 | 1,2,3,4,5 | 1,2,3,4,5 |
-| ITA | Lingua e letteratura italiana | ... | 1,2,3,4,5 | 1,2,3,4,5 | 1,2,3,4,5 |
-| GRECO | Greco | ... | 3,4,5 | | |
-| SCIENZE | Scienze | ... | | 1,2,3,4,5 | |
-| PSICOLOGIA | Psicologia | ... | | | 1,2,3,4,5 |
+| ID         | NOME                          | ... | LC        | LS        | LSSA      |
+| ---------- | ----------------------------- | --- | --------- | --------- | --------- |
+| MAT        | Matematica                    | ... | 1,2,3,4,5 | 1,2,3,4,5 | 1,2,3,4,5 |
+| ITA        | Lingua e letteratura italiana | ... | 1,2,3,4,5 | 1,2,3,4,5 | 1,2,3,4,5 |
+| GRECO      | Greco                         | ... | 3,4,5     |           |           |
+| SCIENZE    | Scienze                       | ... |           | 1,2,3,4,5 |           |
+| PSICOLOGIA | Psicologia                    | ... |           |           | 1,2,3,4,5 |
 
 ### Column Naming Convention
 
@@ -254,17 +255,18 @@ Columns are named exactly as `INDIRIZZI.ID` (e.g., `LC`, `LS`, `LSSA`). This mat
 
 ### Impact on Existing Code
 
-| Area | Impact |
-|---|---|
-| `COL_MATERIE` in `schema.ts` | No change — dynamic columns are resolved at runtime by `SheetDbAdapter` |
-| `buildMaterieRows()` in test builders | Update to populate new columns with test data |
-| `SheetMaterieGeneratorStrategy` | May need to render new columns in the Materie sheet |
-| Domain entity `Materia` | No change — the new columns are lookup data, not domain properties |
-| `IMateriaRepository` | No change — the repository already returns full rows |
+| Area                                  | Impact                                                                  |
+| ------------------------------------- | ----------------------------------------------------------------------- |
+| `COL_MATERIE` in `schema.ts`          | No change — dynamic columns are resolved at runtime by `SheetDbAdapter` |
+| `buildMaterieRows()` in test builders | Update to populate new columns with test data                           |
+| `SheetMaterieGeneratorStrategy`       | May need to render new columns in the Materie sheet                     |
+| Domain entity `Materia`               | No change — the new columns are lookup data, not domain properties      |
+| `IMateriaRepository`                  | No change — the repository already returns full rows                    |
 
 ### Migration
 
 For existing databases:
+
 1. For each INDIRIZZI row, add a column to the MATERIE sheet with the INDIRIZZI.ID as header.
 2. Leave all values empty (user fills manually or via import).
 3. The system does not enforce that every MATERIE row has a value for every address column — empty means "not applicable for that address."
@@ -276,13 +278,13 @@ runtime; no schema.ts change is needed.
 
 ### Files to Modify
 
-| File | Change |
-|---|---|
-| `src/config/schema.ts` | No change (dynamic columns are resolved at runtime) |
-| `src/onlinetests/data/SharedTestDatabaseBuilder.ts` | Update `buildMaterieRows()` to populate per-address columns |
-| `src/onlinetests/data/fixtures.ts` | Add `MATERIE_ANNO_PER_INDIRIZZO` fixture mapping |
-| `src/application/strategies/SheetMaterieGeneratorStrategy.ts` | Optionally render new columns |
-| `test/` | Update test fixtures and assertions |
+| File                                                          | Change                                                      |
+| ------------------------------------------------------------- | ----------------------------------------------------------- |
+| `src/config/schema.ts`                                        | No change (dynamic columns are resolved at runtime)         |
+| `src/onlinetests/data/SharedTestDatabaseBuilder.ts`           | Update `buildMaterieRows()` to populate per-address columns |
+| `src/onlinetests/data/fixtures.ts`                            | Add `MATERIE_ANNO_PER_INDIRIZZO` fixture mapping            |
+| `src/application/strategies/SheetMaterieGeneratorStrategy.ts` | Optionally render new columns                               |
+| `test/`                                                       | Update test fixtures and assertions                         |
 
 ---
 
@@ -301,6 +303,7 @@ The updated `vociMenu()` will have 5 entries:
 ### Service Wiring
 
 New services (`DatabaseValidationService`, `LockDocumentsService`) follow the existing pattern:
+
 - Defined in `src/application/services/`
 - Wired in `src/config/Bootstrap.ts`
 - Resolved through `ServiceContainer`

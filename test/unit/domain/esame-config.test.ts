@@ -18,9 +18,7 @@ describe('EsameConfig.fromJson', () => {
 
 describe('EsameConfig.isPrimaProvaPerIndirizzo / isSecondaProvaPerIndirizzo', () => {
   test('true when the indirizzo is listed in primaProva', () => {
-    const cfg = EsameConfig.fromJson(
-      JSON.stringify({ primaProva: ['SCIENTIFICO', 'CLASSICO'] })
-    )!;
+    const cfg = EsameConfig.fromJson(JSON.stringify({ primaProva: ['SCIENTIFICO', 'CLASSICO'] }))!;
     expect(cfg.isPrimaProvaPerIndirizzo(IndirizzoId.of('SCIENTIFICO'))).toBe(true);
     expect(cfg.isPrimaProvaPerIndirizzo(IndirizzoId.of('LINGUISTICO'))).toBe(false);
   });

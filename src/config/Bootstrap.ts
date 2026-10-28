@@ -407,7 +407,9 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         classi: container.get<ClasseRepository>('classi'),
         alunni: container.get<AlunnoRepository>('alunni'),
         dipartimenti: container.get<DipartimentoRepository>('dipartimenti'),
-        teachingAssignments: container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver'),
+        teachingAssignments: container.get<ITeachingAssignmentResolver>(
+          'teachingAssignmentResolver'
+        ),
         now: deps.now,
         storico: container.get<StoricoDocumentiService>('storicoDocumenti'),
         bounces: container.get<BounceReconciliationService>('bounceReconciliationService'),

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Fix two independent CDU-correctness bugs found in the online E2E suite: (1) `RIEPILOGHI_FIRME_CDC`/`CONF_DOC_ARTICOLATA` documents built for one partner of an articulated class currently leak the *other* partner's teachers into the roster; (2) `TeachingCouncilProjection.materiaVm()` resolves a specifica cattedra (e.g. `INTERPRET.CHITARRA`) down to its generic base subject instead of the composite catalog row, because `MATERIE` still requires a base row to exist for every family — this plan adds `MATERIE.PRINCIPALE`/`SPECIFICITA` columns and drops that requirement.
+**Goal:** Fix two independent CDU-correctness bugs found in the online E2E suite: (1) `RIEPILOGHI_FIRME_CDC`/`CONF_DOC_ARTICOLATA` documents built for one partner of an articulated class currently leak the _other_ partner's teachers into the roster; (2) `TeachingCouncilProjection.materiaVm()` resolves a specifica cattedra (e.g. `INTERPRET.CHITARRA`) down to its generic base subject instead of the composite catalog row, because `MATERIE` still requires a base row to exist for every family — this plan adds `MATERIE.PRINCIPALE`/`SPECIFICITA` columns and drops that requirement.
 
 **Architecture:** Both fixes are surgical, localized changes in the existing Clean Architecture layering (domain entity → infrastructure repository → application context-engine provider/projection → E2E mock fixtures/checks). No new files, no new abstractions, no `GasLibraryFactory` involvement — both are confirmed SGSA-domain-specific (CDU shape, MATERIE catalog semantics) per the design docs' own "out of scope" sections.
 
@@ -21,12 +21,14 @@
 ## File Structure
 
 **Spec 1 — partner scoping** (`docs/superpowers/specs/2026-08-08-articolata-cdc-partner-scoping-design.md`):
+
 - Modify: `src/application/context-engine/providers/ConsiglioClasseProvider.ts` — scope `consiglioDiClasse`/`consiglioDiClasseSeparato` to the target partner's own branch on partner-target builds.
 - Modify: `test/unit/application/context-engine/consiglio-provider.test.ts` — new cases for direct partner-target builds.
 - Modify: `src/onlinetests/E2eSampleDatabaseBuilder.ts` — second INDIRIZZI row for `3C-C`, coordinator fix.
 - Modify: `src/onlinetests/checks/articolazioneChecks.ts` — new E2E check for parent-level comune/separato roster + partner cross-check.
 
 **Spec 2 — MATERIE.PRINCIPALE/SPECIFICITA** (`docs/superpowers/specs/2026-08-08-materie-principale-specificita-schema-design.md`):
+
 - Modify: `SPECS_ALDO/01_SCHEMA_DATABASE.md` (§MATERIE) — new columns + invariant rewrite.
 - Modify: `SPECS_ALDO/MAT_NON_STANDARD.md` (§3) — mirror invariant rewrite.
 - Modify: `src/config/schema.ts` (`COL_MATERIE`) — new `PRINCIPALE`/`SPECIFICITA` column constants.
@@ -44,12 +46,14 @@
 ### Task 1: `ConsiglioClasseProvider` partner-scoping fix
 
 **Files:**
+
 - Modify: `src/application/context-engine/providers/ConsiglioClasseProvider.ts:47-57`
 - Test: `test/unit/application/context-engine/consiglio-provider.test.ts`
 
 **Interfaces:**
+
 - Consumes: `IClasseRepository.isArticolata(classe)`, `.getArticolazione(classe): ArticolazioneConfig | null`, `.orderedPartners(classe): Classe[]` (all already injected as `this.classi` in the constructor); `ArticolazioneConfig.isParent(): boolean`.
-- Produces: no change to public shape — `focusClasse.consiglioDiClasse`/`consiglioDiClasseComune`/`consiglioDiClasseSeparato` keep their existing `DocenteCdcVM[]` type; only *which* docenti end up in them changes for partner-target builds.
+- Produces: no change to public shape — `focusClasse.consiglioDiClasse`/`consiglioDiClasseComune`/`consiglioDiClasseSeparato` keep their existing `DocenteCdcVM[]` type; only _which_ docenti end up in them changes for partner-target builds.
 
 - [ ] **Step 1: Write the failing unit tests**
 
@@ -148,9 +152,10 @@ test('ConsiglioClasseProvider: parent-target build keeps the full comune/separat
     'rossi@school.it',
     'verdi@school.it'
   ]);
-  expect(
-    focusClasse.consiglioDiClasseSeparato!.map((d) => d.anagrafica.email).sort()
-  ).toEqual(['bianchi@school.it', 'verdi@school.it']);
+  expect(focusClasse.consiglioDiClasseSeparato!.map((d) => d.anagrafica.email).sort()).toEqual([
+    'bianchi@school.it',
+    'verdi@school.it'
+  ]);
 });
 ```
 
@@ -164,27 +169,27 @@ Expected: FAIL — both `1F-LSO`/`1F-LSS` cases currently return all 3 docenti i
 Replace `src/application/context-engine/providers/ConsiglioClasseProvider.ts:47-57` (the `if (this.classi.isArticolata(classe))` block) with:
 
 ```ts
-    if (this.classi.isArticolata(classe)) {
-      const consiglio: DocenteCdcVM[] = focusClasse.consiglioDiClasse ?? [];
-      const comune = consiglio.filter((docente) => docente.tipoArticolazione === 'COMUNE');
-      const separato = consiglio.filter(
-        (docente) =>
-          docente.tipoArticolazione === 'SEPARATO_PRIMO' ||
-          docente.tipoArticolazione === 'SEPARATO_SECONDO'
-      );
+if (this.classi.isArticolata(classe)) {
+  const consiglio: DocenteCdcVM[] = focusClasse.consiglioDiClasse ?? [];
+  const comune = consiglio.filter((docente) => docente.tipoArticolazione === 'COMUNE');
+  const separato = consiglio.filter(
+    (docente) =>
+      docente.tipoArticolazione === 'SEPARATO_PRIMO' ||
+      docente.tipoArticolazione === 'SEPARATO_SECONDO'
+  );
 
-      const config = this.classi.getArticolazione(classe);
-      if (config !== null && !config.isParent()) {
-        const partners = this.classi.orderedPartners(classe);
-        const ownBranch = partners[0]?.id === classe.id ? 'SEPARATO_PRIMO' : 'SEPARATO_SECONDO';
-        const ownSeparato = separato.filter((docente) => docente.tipoArticolazione === ownBranch);
-        focusClasse.consiglioDiClasseSeparato = ownSeparato;
-        focusClasse.consiglioDiClasse = [...comune, ...ownSeparato] as never;
-      } else {
-        focusClasse.consiglioDiClasseSeparato = separato;
-      }
-      focusClasse.consiglioDiClasseComune = comune;
-    }
+  const config = this.classi.getArticolazione(classe);
+  if (config !== null && !config.isParent()) {
+    const partners = this.classi.orderedPartners(classe);
+    const ownBranch = partners[0]?.id === classe.id ? 'SEPARATO_PRIMO' : 'SEPARATO_SECONDO';
+    const ownSeparato = separato.filter((docente) => docente.tipoArticolazione === ownBranch);
+    focusClasse.consiglioDiClasseSeparato = ownSeparato;
+    focusClasse.consiglioDiClasse = [...comune, ...ownSeparato] as never;
+  } else {
+    focusClasse.consiglioDiClasseSeparato = separato;
+  }
+  focusClasse.consiglioDiClasseComune = comune;
+}
 ```
 
 - [ ] **Step 4: Run all consiglio-provider tests to verify they pass**
@@ -209,9 +214,11 @@ git commit -m "fix: scope articulated CdC council to target partner's own branch
 ### Task 2: E2E mock DB — second address + valid coordinators for the two `3C` partners
 
 **Files:**
+
 - Modify: `src/onlinetests/E2eSampleDatabaseBuilder.ts:340-393` (`classLayouts()`), `:395-402` (`seedIndirizzi()`)
 
 **Interfaces:**
+
 - Consumes: `COL_INDIRIZZI`, `COL_CLASSI` (already imported), `e2eDocenteEmail` (already defined in the same file).
 - Produces: a new exported constant `INDIRIZZO_E2E_CLASSICO` (partner `3C-C`'s new indirizzo id), consumed by Task 3's E2E check.
 
@@ -301,9 +308,11 @@ git commit -m "test: give 3C's articulated partners distinct addresses and valid
 ### Task 3: New E2E check — parent-level shared vs. address-specific roster
 
 **Files:**
+
 - Modify: `src/onlinetests/checks/articolazioneChecks.ts` (append to `registerArticolazioneChecks`)
 
 **Interfaces:**
+
 - Consumes: `CLASSE_C_PARENT`, `CLASSE_C`, `CLASSE_C_PARTNER`, `INDIRIZZO_E2E`, `INDIRIZZO_E2E_CLASSICO` (new, from Task 2), `e2eDocenteEmail` — all from `E2eSampleDatabaseBuilder`; `classCdu()`, `ContextBuilder` — already local to this file.
 - Produces: nothing consumed elsewhere — this is a leaf E2E check.
 
@@ -337,80 +346,78 @@ import {
 Add this `runner.add(...)` block right before the closing `}` of `registerArticolazioneChecks` (after the `'Articolazione CDU: piano duale renderizzato'` check, i.e. after line 339):
 
 ```ts
-  runner.add(
-    'Articolazione CDU: roster comune/separato per indirizzo, scoping parent vs partner',
-    sample.sampleSpreadsheetUrl,
-    () => {
-      const contextBuilder = container.get<ContextBuilder>('contextBuilder');
-      const parentCdu = classCdu(contextBuilder, CLASSE_C_PARENT);
-      const parentClasse = parentCdu.focus.classe;
-      const comune = parentClasse?.consiglioDiClasseComune ?? [];
-      const separato = parentClasse?.consiglioDiClasseSeparato ?? [];
-      const primo = separato.filter((docente) => docente.tipoArticolazione === 'SEPARATO_PRIMO');
-      const secondo = separato.filter(
-        (docente) => docente.tipoArticolazione === 'SEPARATO_SECONDO'
+runner.add(
+  'Articolazione CDU: roster comune/separato per indirizzo, scoping parent vs partner',
+  sample.sampleSpreadsheetUrl,
+  () => {
+    const contextBuilder = container.get<ContextBuilder>('contextBuilder');
+    const parentCdu = classCdu(contextBuilder, CLASSE_C_PARENT);
+    const parentClasse = parentCdu.focus.classe;
+    const comune = parentClasse?.consiglioDiClasseComune ?? [];
+    const separato = parentClasse?.consiglioDiClasseSeparato ?? [];
+    const primo = separato.filter((docente) => docente.tipoArticolazione === 'SEPARATO_PRIMO');
+    const secondo = separato.filter((docente) => docente.tipoArticolazione === 'SEPARATO_SECONDO');
+
+    const comuneEmails = comune.map((docente) => docente.anagrafica.email).sort();
+    const primoEmails = primo.map((docente) => docente.anagrafica.email).sort();
+    const secondoEmails = secondo.map((docente) => docente.anagrafica.email).sort();
+
+    if (
+      JSON.stringify(comuneEmails) !== JSON.stringify([e2eDocenteEmail(1)]) ||
+      JSON.stringify(primoEmails) !==
+        JSON.stringify([e2eDocenteEmail(2), e2eDocenteEmail(3), e2eDocenteEmail(4)].sort()) ||
+      JSON.stringify(secondoEmails) !==
+        JSON.stringify([e2eDocenteEmail(6), e2eDocenteEmail(7), e2eDocenteEmail(8)].sort())
+    ) {
+      throw new ValidationError(
+        `Roster comune/separato del parent ${CLASSE_C_PARENT} non coerente: comune=${comuneEmails.join(',')} primo=${primoEmails.join(',')} secondo=${secondoEmails.join(',')}`
       );
-
-      const comuneEmails = comune.map((docente) => docente.anagrafica.email).sort();
-      const primoEmails = primo.map((docente) => docente.anagrafica.email).sort();
-      const secondoEmails = secondo.map((docente) => docente.anagrafica.email).sort();
-
-      if (
-        JSON.stringify(comuneEmails) !== JSON.stringify([e2eDocenteEmail(1)]) ||
-        JSON.stringify(primoEmails) !==
-          JSON.stringify([e2eDocenteEmail(2), e2eDocenteEmail(3), e2eDocenteEmail(4)].sort()) ||
-        JSON.stringify(secondoEmails) !==
-          JSON.stringify([e2eDocenteEmail(6), e2eDocenteEmail(7), e2eDocenteEmail(8)].sort())
-      ) {
-        throw new ValidationError(
-          `Roster comune/separato del parent ${CLASSE_C_PARENT} non coerente: comune=${comuneEmails.join(',')} primo=${primoEmails.join(',')} secondo=${secondoEmails.join(',')}`
-        );
-      }
-
-      if (primo.some((docente) => docente.gruppoNome !== 'Liceo Scientifico (E2E)')) {
-        throw new ValidationError(
-          `Gruppo SEPARATO_PRIMO del parent ${CLASSE_C_PARENT} non risolve a ${INDIRIZZO_E2E} (Liceo Scientifico E2E).`
-        );
-      }
-      if (secondo.some((docente) => docente.gruppoNome !== 'Liceo Classico (E2E)')) {
-        throw new ValidationError(
-          `Gruppo SEPARATO_SECONDO del parent ${CLASSE_C_PARENT} non risolve a ${INDIRIZZO_E2E_CLASSICO} (Liceo Classico E2E).`
-        );
-      }
-
-      const primaryCdu = classCdu(contextBuilder, CLASSE_C);
-      const primaryEmails = (primaryCdu.focus.classe?.consiglioDiClasse ?? [])
-        .map((docente) => docente.anagrafica.email)
-        .sort();
-      const expectedPrimary = [
-        e2eDocenteEmail(1),
-        e2eDocenteEmail(2),
-        e2eDocenteEmail(3),
-        e2eDocenteEmail(4)
-      ].sort();
-      if (JSON.stringify(primaryEmails) !== JSON.stringify(expectedPrimary)) {
-        throw new ValidationError(
-          `${CLASSE_C} (partner target diretto) espone ${primaryEmails.length} docenti invece dei 4 attesi (comune + gruppo proprio): ${primaryEmails.join(',')}`
-        );
-      }
-
-      const partnerCdu = classCdu(contextBuilder, CLASSE_C_PARTNER);
-      const partnerEmails = (partnerCdu.focus.classe?.consiglioDiClasse ?? [])
-        .map((docente) => docente.anagrafica.email)
-        .sort();
-      const expectedPartner = [
-        e2eDocenteEmail(1),
-        e2eDocenteEmail(6),
-        e2eDocenteEmail(7),
-        e2eDocenteEmail(8)
-      ].sort();
-      if (JSON.stringify(partnerEmails) !== JSON.stringify(expectedPartner)) {
-        throw new ValidationError(
-          `${CLASSE_C_PARTNER} (partner target diretto) espone ${partnerEmails.length} docenti invece dei 4 attesi (comune + gruppo proprio): ${partnerEmails.join(',')}`
-        );
-      }
     }
-  );
+
+    if (primo.some((docente) => docente.gruppoNome !== 'Liceo Scientifico (E2E)')) {
+      throw new ValidationError(
+        `Gruppo SEPARATO_PRIMO del parent ${CLASSE_C_PARENT} non risolve a ${INDIRIZZO_E2E} (Liceo Scientifico E2E).`
+      );
+    }
+    if (secondo.some((docente) => docente.gruppoNome !== 'Liceo Classico (E2E)')) {
+      throw new ValidationError(
+        `Gruppo SEPARATO_SECONDO del parent ${CLASSE_C_PARENT} non risolve a ${INDIRIZZO_E2E_CLASSICO} (Liceo Classico E2E).`
+      );
+    }
+
+    const primaryCdu = classCdu(contextBuilder, CLASSE_C);
+    const primaryEmails = (primaryCdu.focus.classe?.consiglioDiClasse ?? [])
+      .map((docente) => docente.anagrafica.email)
+      .sort();
+    const expectedPrimary = [
+      e2eDocenteEmail(1),
+      e2eDocenteEmail(2),
+      e2eDocenteEmail(3),
+      e2eDocenteEmail(4)
+    ].sort();
+    if (JSON.stringify(primaryEmails) !== JSON.stringify(expectedPrimary)) {
+      throw new ValidationError(
+        `${CLASSE_C} (partner target diretto) espone ${primaryEmails.length} docenti invece dei 4 attesi (comune + gruppo proprio): ${primaryEmails.join(',')}`
+      );
+    }
+
+    const partnerCdu = classCdu(contextBuilder, CLASSE_C_PARTNER);
+    const partnerEmails = (partnerCdu.focus.classe?.consiglioDiClasse ?? [])
+      .map((docente) => docente.anagrafica.email)
+      .sort();
+    const expectedPartner = [
+      e2eDocenteEmail(1),
+      e2eDocenteEmail(6),
+      e2eDocenteEmail(7),
+      e2eDocenteEmail(8)
+    ].sort();
+    if (JSON.stringify(partnerEmails) !== JSON.stringify(expectedPartner)) {
+      throw new ValidationError(
+        `${CLASSE_C_PARTNER} (partner target diretto) espone ${partnerEmails.length} docenti invece dei 4 attesi (comune + gruppo proprio): ${partnerEmails.join(',')}`
+      );
+    }
+  }
+);
 ```
 
 - [ ] **Step 3: Typecheck and lint (this suite only runs live against GAS, so no local execution here)**
@@ -430,6 +437,7 @@ git commit -m "test: E2E check for parent-level comune/separato roster scoping b
 ### Task 4: `MATERIE.PRINCIPALE`/`SPECIFICITA` schema + `Materia` entity
 
 **Files:**
+
 - Modify: `SPECS_ALDO/01_SCHEMA_DATABASE.md` (§MATERIE column table + invariant)
 - Modify: `SPECS_ALDO/MAT_NON_STANDARD.md` (§3)
 - Modify: `SPECS_ALDO/02_CDU_STRUTTURA.md` (lines 603-604, doc comment only)
@@ -438,6 +446,7 @@ git commit -m "test: E2E check for parent-level comune/separato roster scoping b
 - Test: `test/unit/domain/entities/materia.test.ts` (create if it doesn't exist; check first)
 
 **Interfaces:**
+
 - Consumes: nothing new.
 - Produces: `Materia.principale: string | null`, `Materia.specificita: string | null`, `Materia.nome: string` (now a fallback-aware getter instead of a plain field) — consumed directly by Task 6 (`TeachingCouncilProjection.materiaVm`) and Task 7 (`materiePerPrincipaleMapper`).
 
@@ -446,7 +455,7 @@ git commit -m "test: E2E check for parent-level comune/separato roster scoping b
 In `SPECS_ALDO/01_SCHEMA_DATABASE.md`, find the MATERIE column table and add two rows (matching the existing table's column style — check the exact header names used by the existing table before inserting, e.g. `Colonna | Tipo | PK | Vincoli | Descrizione`):
 
 ```markdown
-| `PRINCIPALE`  | String | — | — | Nome della materia principale/famiglia (es. `Interpretazione ed esecuzione`); vuoto per righe non specifiche |
+| `PRINCIPALE` | String | — | — | Nome della materia principale/famiglia (es. `Interpretazione ed esecuzione`); vuoto per righe non specifiche |
 | `SPECIFICITA` | String | — | — | Nome descrittivo della specificità (es. `Chitarra`); vuoto per righe non specifiche |
 ```
 
@@ -709,12 +718,14 @@ git commit -m "feat: add MATERIE.PRINCIPALE/SPECIFICITA columns, drop base-row i
 ### Task 5: distinct-base-id derivation in `AldoTeachingResolutionConfig.getMaterie()` and `ClasseRepository`
 
 **Files:**
+
 - Modify: `src/infrastructure/role-resolution/AldoTeachingResolutionConfig.ts:261-276` (`getMaterie()`)
 - Modify: `src/infrastructure/repositories/ClasseRepository.ts:55-73` (constructor)
 - Test: `test/unit/infrastructure/aldo-teaching-assignment-resolver.test.ts`
 - Test: find and extend the existing `ClasseRepository` unit test file (`test/unit/infrastructure/*classe-repository*` or similar — locate with `find test/unit -iname "*classe-repository*"`).
 
 **Interfaces:**
+
 - Consumes: `Materia`/`MateriaId` shape unchanged; reads `COL_MATERIE.ID` and (for `getMaterie()`) `COL_MATERIE.IS_RELIGIONE_ALT` directly off raw rows (both files iterate raw sheet rows, not `Materia` entities, so Task 4's entity change doesn't directly affect them).
 - Produces: `getMaterie(): Array<{ materia: MateriaId; isReligioneAlt: boolean }>` — same return shape, now includes base ids that have zero bare rows (e.g. `INTERPRET` once its bare row is removed in Task 8). `ClasseRepository`'s private `materieColumns: Map<string, MateriaColumns>` — same shape, same guarantee (an anchor entry per distinct base id).
 
@@ -811,16 +822,16 @@ Expected: FAIL — today's constructor only registers `materieColumns` for non-d
 Replace the `materieColumns`/`materieIds` construction loop in `src/infrastructure/repositories/ClasseRepository.ts:62-72`:
 
 ```ts
-    for (const row of database.tables[TABLE.MATERIE]!.getAllRows()) {
-      const id = row[COL_MATERIE.ID];
-      if (typeof id !== 'string' || id.length === 0) continue;
-      this.materieIds.add(id);
-      const dot = id.indexOf('.');
-      const baseId = dot === -1 ? id : id.slice(0, dot);
-      if (!this.materieColumns.has(baseId)) {
-        this.materieColumns.set(baseId, { main: baseId, itp: `${baseId}.itp` });
-      }
-    }
+for (const row of database.tables[TABLE.MATERIE]!.getAllRows()) {
+  const id = row[COL_MATERIE.ID];
+  if (typeof id !== 'string' || id.length === 0) continue;
+  this.materieIds.add(id);
+  const dot = id.indexOf('.');
+  const baseId = dot === -1 ? id : id.slice(0, dot);
+  if (!this.materieColumns.has(baseId)) {
+    this.materieColumns.set(baseId, { main: baseId, itp: `${baseId}.itp` });
+  }
+}
 ```
 
 This still adds every raw `id` (dotted or not) to `materieIds` unconditionally, so `getTeachingSlots()`'s existing `materieIds.has(column)` composite-row check needs no change (per the design doc).
@@ -849,10 +860,12 @@ git commit -m "fix: derive distinct base subject ids even when a family has no b
 ### Task 6: `TeachingCouncilProjection.materiaVm()` resolves the composite row
 
 **Files:**
+
 - Modify: `src/application/context-engine/TeachingCouncilProjection.ts:215-227`
 - Test: `test/unit/application/context-engine/consiglio-provider.test.ts` (or a dedicated `TeachingCouncilProjection` unit test file if one already exists — check `find test/unit -iname "*teaching-council*"` first)
 
 **Interfaces:**
+
 - Consumes: `IMateriaRepository.findByIdCached(id)`, `.findSpecifiche(baseId): Materia[]` (both already on the interface, per `src/domain/repositories/IMateriaRepository.ts`); `Materia.principale`/`specificita` (new, from Task 4).
 - Produces: `SubjectVM` with `sigla`/`nome`/`nomeSintetico` from the **composite** row for specifica assignments — consumed downstream by `focus.classe.consiglioDiClasse`, `materieDescrizione`, `materieSigle`, `focus.classe.materie` (`MaterieClasseProvider.buildCatalog`, unchanged).
 
@@ -944,10 +957,12 @@ git commit -m "fix: resolve specifica cattedre to their composite MATERIE row, n
 ### Task 7: `materiePerPrincipaleMapper` reads `nome` from `.principale`
 
 **Files:**
+
 - Modify: `src/application/context-engine/mappers/materiePerPrincipaleMapper.ts:33-38`
 - Test: locate with `find test/unit -iname "*materie-per-principale*"` (or wherever this mapper's existing tests live — check `test/unit/application/context-engine/mappers/`)
 
 **Interfaces:**
+
 - Consumes: `SubjectVM.principale` (already produced by Task 6's `buildSubjectVm` call), `SubjectVM.sigla`/`nome`.
 - Produces: `MateriaPerPrincipaleVM.nome` — same shape, now sourced correctly once base rows are optional.
 
@@ -996,11 +1011,11 @@ Expected: FAIL — today's code does `materiaRepo.findByIdCached(MateriaId.of(id
 Replace `src/application/context-engine/mappers/materiePerPrincipaleMapper.ts:33-38`:
 
 ```ts
-  return Array.from(byBase.entries()).map(([idFittizio, group]) => {
-    const isComposite = group.length > 1 || group[0]!.sigla !== idFittizio;
-    const nome = isComposite ? (group[0]!.principale ?? idFittizio) : group[0]!.nome;
-    return { idFittizio, nome, materie: group };
-  });
+return Array.from(byBase.entries()).map(([idFittizio, group]) => {
+  const isComposite = group.length > 1 || group[0]!.sigla !== idFittizio;
+  const nome = isComposite ? (group[0]!.principale ?? idFittizio) : group[0]!.nome;
+  return { idFittizio, nome, materie: group };
+});
 ```
 
 The `materiaRepo: IMateriaRepository` parameter of `buildMateriePerPrincipale` becomes unused by this function body — check its call site(s) with `grep -rn "buildMateriePerPrincipale(" src/` before deciding whether to drop the parameter entirely or keep it for signature stability; if no other logic in the function needs it, remove the parameter and update the one call site plus the function's own signature/JSDoc together in this same step (don't leave a dead parameter).
@@ -1029,10 +1044,12 @@ git commit -m "fix: materiePerPrincipaleMapper reads group name from SubjectVM.p
 ### Task 8: `DocumentBatchService.generateDocentiMateria` composite `materiaId`
 
 **Files:**
+
 - Modify: `src/application/services/DocumentBatchService.ts:255-265`
 - Test: locate with `find test/unit -iname "*document-batch-service*"`
 
 **Interfaces:**
+
 - Consumes: `assignment.slot.materia.value`, `assignment.slot.specifica` (both already available on `TeachingAssignment` per the existing loop).
 - Produces: `DocenteMateriaBatchTarget.materiaId` — for a specifica assignment, now `"<BASE>.<SPECIFICA>"` instead of `"<BASE>"`; matched downstream by `DocenteMateriaFocusProvider`'s `materie.find(sigla === ...)` (out of scope for this task per the design doc — no change needed there since `materie[].sigla` already reflects the composite id after Task 6).
 
@@ -1099,15 +1116,15 @@ The rest of the loop body (`seen`/`targets.push`) is unchanged — the `key` now
 Also update the existing inline comment above this loop (lines ~222-228, the one explaining "Slots differing only by kind/specifica collapse to a single target here by design") — this design intentionally changes for specifica (not kind); replace that comment to reflect the new behavior per the design doc's explicit callout, e.g.:
 
 ```ts
-      // DocenteMateriaBatchTarget is (classe, docenteEmail, materiaId), where
-      // materiaId is specifica-qualified (BASE.SPECIFICA) when the slot has a
-      // specifica — mirroring SheetMaterieGeneratorStrategy.catalogId(). A
-      // docente teaching two specifics of the same family (e.g. INTERPRET.CHITARRA
-      // and INTERPRET.FLAUTO) now gets two separate targets, one per composite id.
-      // Slots differing only by *kind* (STANDARD vs ITP on the same materiaId)
-      // still collapse to one target here by design — extending the batch axis
-      // to carry kind is out of scope; dedup keeps the first match, mirroring
-      // DocenteMateriaFocusProvider's own first-match `materie.find` semantics.
+// DocenteMateriaBatchTarget is (classe, docenteEmail, materiaId), where
+// materiaId is specifica-qualified (BASE.SPECIFICA) when the slot has a
+// specifica — mirroring SheetMaterieGeneratorStrategy.catalogId(). A
+// docente teaching two specifics of the same family (e.g. INTERPRET.CHITARRA
+// and INTERPRET.FLAUTO) now gets two separate targets, one per composite id.
+// Slots differing only by *kind* (STANDARD vs ITP on the same materiaId)
+// still collapse to one target here by design — extending the batch axis
+// to carry kind is out of scope; dedup keeps the first match, mirroring
+// DocenteMateriaFocusProvider's own first-match `materie.find` semantics.
 ```
 
 - [ ] **Step 4: Run the tests to verify they pass**
@@ -1132,10 +1149,12 @@ git commit -m "feat: qualify DOCUMENTO_DOCENTE_MATERIA batch targets by composit
 ### Task 9: E2E mock DB — `seedMaterie` real PRINCIPALE/SPECIFICITA + new E2E check + full verification
 
 **Files:**
+
 - Modify: `src/onlinetests/E2eSampleDatabaseBuilder.ts:413-451` (`seedMaterie()`)
 - Modify: `src/onlinetests/checks/articolazioneChecks.ts` (extend, or add alongside, Task 3's check)
 
 **Interfaces:**
+
 - Consumes: `COL_MATERIE.PRINCIPALE`/`SPECIFICITA` (Task 4), `MateriaId`.
 - Produces: nothing consumed elsewhere — leaf mock-data + E2E check.
 
@@ -1233,30 +1252,28 @@ Expected: PASS. If it asserts a bare `INTERPRET`/`LAB` MATERIE row exists, updat
 In `src/onlinetests/checks/articolazioneChecks.ts`, add (alongside Task 3's check, either as a new `runner.add(...)` or appended into the existing `'Articolazione CDU: supplenza, titolare finale e confini data'` check for `CLASSE_A` — prefer a new dedicated check for isolation):
 
 ```ts
-  runner.add(
-    'Articolazione CDU: cattedra INTERPRET.CHITARRA risolve alla riga composita, non alla materia base',
-    sample.sampleSpreadsheetUrl,
-    () => {
-      const contextBuilder = container.get<ContextBuilder>('contextBuilder');
-      const cdu = classCdu(contextBuilder, CLASSE_A);
-      const consiglio = cdu.focus.classe?.consiglioDiClasse ?? [];
-      const docente5 = consiglio.find(
-        (docente) => docente.anagrafica.email === e2eDocenteEmail(5)
+runner.add(
+  'Articolazione CDU: cattedra INTERPRET.CHITARRA risolve alla riga composita, non alla materia base',
+  sample.sampleSpreadsheetUrl,
+  () => {
+    const contextBuilder = container.get<ContextBuilder>('contextBuilder');
+    const cdu = classCdu(contextBuilder, CLASSE_A);
+    const consiglio = cdu.focus.classe?.consiglioDiClasse ?? [];
+    const docente5 = consiglio.find((docente) => docente.anagrafica.email === e2eDocenteEmail(5));
+    const chitarra = docente5?.materie.find((materia) => materia.sigla === 'INTERPRET.CHITARRA');
+    if (
+      docente5 === undefined ||
+      chitarra === undefined ||
+      chitarra.principale !== 'Interpretazione ed esecuzione' ||
+      chitarra.specificita !== 'Chitarra' ||
+      chitarra.nome !== 'Interpretazione ed esecuzione (Chitarra)'
+    ) {
+      throw new ValidationError(
+        `Cattedra INTERPRET.CHITARRA di ${e2eDocenteEmail(5)} non risolta alla riga composita: ${JSON.stringify(chitarra)}`
       );
-      const chitarra = docente5?.materie.find((materia) => materia.sigla === 'INTERPRET.CHITARRA');
-      if (
-        docente5 === undefined ||
-        chitarra === undefined ||
-        chitarra.principale !== 'Interpretazione ed esecuzione' ||
-        chitarra.specificita !== 'Chitarra' ||
-        chitarra.nome !== 'Interpretazione ed esecuzione (Chitarra)'
-      ) {
-        throw new ValidationError(
-          `Cattedra INTERPRET.CHITARRA di ${e2eDocenteEmail(5)} non risolta alla riga composita: ${JSON.stringify(chitarra)}`
-        );
-      }
     }
-  );
+  }
+);
 ```
 
 - [ ] **Step 4: Verify the `DOCUMENTO_DOCENTE_MATERIA` batch keys off the composite id in E2E**

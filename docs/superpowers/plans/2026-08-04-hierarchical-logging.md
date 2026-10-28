@@ -26,6 +26,7 @@
 ### Task 1: Core structured formatter and `LoggerService` API
 
 **Files:**
+
 - Create: `GasLibraryFactory/CoreUtilsLib/src/internal/StructuredLogFormatter.js`
 - Create: `GasLibraryFactory/CoreUtilsLib/src/__tests__/StructuredLogFormatter.test.js`
 - Modify: `GasLibraryFactory/CoreUtilsLib/src/LoggerService.js`
@@ -33,6 +34,7 @@
 - Modify: `GasLibraryFactory/CoreUtilsLib/src/testing/mocks.js`
 
 **Interfaces:**
+
 - Consumes: existing GAS `Logger.log(string)` transport and `LoggerService._safeStringify(value)`.
 - Produces: `TreePosition`, `LogDetails`, and fluent methods `logJobStart`, `logJobResume`, `logJobEnd`, `logJobSuspended`, `logBatchStart`, `logItemStart`, `logStep`, `logPipelineStart`, `logPipelineStep`, `logSummary`.
 
@@ -58,12 +60,11 @@ expect(formatter.batchStart(3)).toEqual([
   '📑 [PROCESSING BATCH] (3 Items in queue)'
 ]);
 expect(
-  formatter.pipelineStep(
-    'ComposeEmail',
-    'SKIPPED',
-    'condition not met',
-    { depth: 2, isLast: true, ancestorHasNext: [true] }
-  )
+  formatter.pipelineStep('ComposeEmail', 'SKIPPED', 'condition not met', {
+    depth: 2,
+    isLast: true,
+    ancestorHasNext: [true]
+  })
 ).toEqual(['  │    └─ ⚠️ [ComposeEmail]: SKIPPED (condition not met)']);
 ```
 
@@ -103,9 +104,7 @@ export class StructuredLogFormatter {
   treePrefix(position = {}) {
     const depth = Math.max(0, Number.isFinite(position.depth) ? position.depth : 0);
     if (depth === 0) return '';
-    const ancestors = Array.isArray(position.ancestorHasNext)
-      ? position.ancestorHasNext
-      : [];
+    const ancestors = Array.isArray(position.ancestorHasNext) ? position.ancestorHasNext : [];
     let prefix = '  ';
     for (let index = 0; index < depth - 1; index++) {
       prefix += ancestors[index] ? '│    ' : '     ';
@@ -189,10 +188,12 @@ git commit -m "feat(CoreUtilsLib): add hierarchical logging API"
 ### Task 2: Aggregate `ContextEngine` provider logs
 
 **Files:**
+
 - Modify: `GasLibraryFactory/ContextEngine/src/internal/ContextStepExecutor.js`
 - Modify: `GasLibraryFactory/ContextEngine/src/__tests__/internal/ContextStepExecutor.test.js`
 
 **Interfaces:**
+
 - Consumes: `LoggerService.logSummary(label, durationMs, details, position)` and optional `options.logPosition`.
 - Produces: one assembly summary per successful `assemble`/`assembleInto`; one contextual error line per failure.
 
@@ -271,12 +272,14 @@ git commit -m "refactor(ContextEngine): aggregate provider logs"
 ### Task 3: Trace pipeline steps without duplicate noise
 
 **Files:**
+
 - Modify: `GasLibraryFactory/PipelineFramework/src/Step.js`
 - Modify: `GasLibraryFactory/PipelineFramework/src/Pipeline.js`
 - Modify: `GasLibraryFactory/PipelineFramework/src/__tests__/Step.test.js`
 - Modify: `GasLibraryFactory/PipelineFramework/src/__tests__/Pipeline.test.js`
 
 **Interfaces:**
+
 - Consumes: `PipelineContext.recordStepExecution`, `getSummary`, `getTotalDuration`; logger pipeline APIs; constructor option `logPosition`.
 - Produces: `StepExecutionResult.skipReason`; ordered pipeline start, step, and summary events.
 
@@ -317,11 +320,11 @@ Run same command. Expected: PASS.
 Configure `logPosition: { depth: 1, isLast: false, ancestorHasNext: [] }`. Assert:
 
 ```js
-expect(logger.logPipelineStart).toHaveBeenCalledWith(
-  'NotificaPipeline',
-  3,
-  { depth: 1, isLast: false, ancestorHasNext: [] }
-);
+expect(logger.logPipelineStart).toHaveBeenCalledWith('NotificaPipeline', 3, {
+  depth: 1,
+  isLast: false,
+  ancestorHasNext: []
+});
 expect(logger.logPipelineStep).toHaveBeenNthCalledWith(
   2,
   'ComposeEmail',
@@ -388,6 +391,7 @@ git commit -m "refactor(PipelineFramework): render structured step traces"
 ### Task 4: Render JobRunner lifecycle and preserve captured logs
 
 **Files:**
+
 - Modify: `GasLibraryFactory/JobRunnerLib/src/internal/CapturingLogger.js`
 - Modify: `GasLibraryFactory/JobRunnerLib/src/internal/managers/JobRunnerExecutionController.js`
 - Modify: `GasLibraryFactory/JobRunnerLib/src/JobQueue.js`
@@ -397,6 +401,7 @@ git commit -m "refactor(PipelineFramework): render structured step traces"
 - Modify: `GasLibraryFactory/JobRunnerLib/src/__tests__/JobQueue.test.js`
 
 **Interfaces:**
+
 - Consumes: logger job APIs, `JobQueue.getStatus(jobName)`, persisted progress/resume state.
 - Produces: correct `INIT`, `RESUME`, `SUSPENDED`, `FAILED`, cancelled, and `COMPLETED` terminal blocks.
 
@@ -497,9 +502,11 @@ git commit -m "refactor(JobRunnerLib): structure job lifecycle logs"
 ### Task 5: Regenerate library docs and verify GasLibraryFactory
 
 **Files:**
+
 - Modify generated docs under: `GasLibraryFactory/DOCS_LIBS/`
 
 **Interfaces:**
+
 - Consumes: source JSDoc from Tasks 1–4.
 - Produces: authoritative documented semantic logger API and updated orchestrator docs.
 
@@ -541,11 +548,13 @@ Do not stage `.codebase-memory/artifact.json`, `.codebase-memory/graph.db.zst`, 
 ### Task 6: Refresh ALDO vendor and ambient API
 
 **Files:**
+
 - Modify: `test/build/gaslibs-api.test.ts`
 - Modify: `types/gaslibs/index.d.ts`
 - Modify generated vendor files: `vendor/gaslibs.Code.js`, `vendor/CHECKSUM`, `vendor/VERSION`
 
 **Interfaces:**
+
 - Consumes: built GasLibraryFactory API.
 - Produces: ALDO-visible `LoggerService` methods, `TreePosition`, status/item types, `ContextAssembler` log option, `Pipeline` log position option.
 
@@ -604,6 +613,7 @@ git commit -m "chore: vendor hierarchical logging framework"
 ### Task 7: Add hierarchical document and email batch logs
 
 **Files:**
+
 - Modify: `src/application/services/DocumentBatchService.ts`
 - Modify: `src/application/services/EmailBatchService.ts`
 - Modify: `src/application/services/DocumentGenerationService.ts`
@@ -617,6 +627,7 @@ git commit -m "chore: vendor hierarchical logging framework"
 - Modify: `test/unit/config/bootstrap.test.ts`
 
 **Interfaces:**
+
 - Consumes: injected singleton `LoggerService`; batch/item APIs; pipeline/context `logPosition`.
 - Produces: batch header, one item header per document/email, nested context/pipeline traces, redacted failures.
 
@@ -684,6 +695,7 @@ git commit -m "feat: structure document and email batch logs"
 ### Task 8: Cover imports, retries, UI, and online tests
 
 **Files:**
+
 - Modify: `src/application/services/ImportService.ts`
 - Modify: `src/application/services/EmailRetryService.ts`
 - Modify: `src/infrastructure/facades/UiFacade.ts`
@@ -696,6 +708,7 @@ git commit -m "feat: structure document and email batch logs"
 - Modify: `test/unit/config/bootstrap.test.ts`
 
 **Interfaces:**
+
 - Consumes: injected logger and existing import/retry/report results.
 - Produces: lifecycle blocks for synchronous flows, batch/item lines for long retry flows, structured online-test summaries, level-formatted UI diagnostics.
 
@@ -770,9 +783,11 @@ git commit -m "feat: structure remaining ALDO logs"
 ### Task 9: Full verification and knowledge-graph audit
 
 **Files:**
+
 - Modify only if a verification failure proves a defect in files already in scope.
 
 **Interfaces:**
+
 - Consumes: completed library and ALDO changes.
 - Produces: verified GAS bundles and graph evidence for bypass, dead code, linkage, and architecture.
 

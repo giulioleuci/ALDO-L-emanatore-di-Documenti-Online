@@ -1,5 +1,8 @@
 import type { Cdu } from '../context-engine/Cdu';
-import type { IDriveFacade, PermissionGrant } from '../../infrastructure/facades/DriveServiceFacade';
+import type {
+  IDriveFacade,
+  PermissionGrant
+} from '../../infrastructure/facades/DriveServiceFacade';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
 import type { IDatabase, Row } from '../../infrastructure/db/Database';
@@ -163,9 +166,7 @@ export class CheckDuplicatesStep extends Step {
     const idGen = String(cfg(ctx)[COL_CONF_DOC.ID]);
     const tipo = String(cfg(ctx)[COL_CONF_DOC.TIPO] ?? '');
     const tipi =
-      tipo === 'DOCUMENTO_DOCENTE_CLASSE_MATERIA'
-        ? [tipo, 'DOCUMENTO_DOCENTE_MATERIA']
-        : [tipo];
+      tipo === 'DOCUMENTO_DOCENTE_CLASSE_MATERIA' ? [tipo, 'DOCUMENTO_DOCENTE_MATERIA'] : [tipo];
     const pianoPersonalizzato = isPianoPersonalizzato(ctx);
     const sottotipoValue = sottotipo(ctx);
     const utenti = pianoPersonalizzato
@@ -186,7 +187,10 @@ export class CheckDuplicatesStep extends Step {
     if (fileNameTemplate.includes('{{meta.progressivo}}')) {
       const renderContext = {
         ...templateContext,
-        meta: { ...(templateContext['meta'] as Record<string, unknown>), progressivo: PROGRESSIVO_PROBE }
+        meta: {
+          ...(templateContext['meta'] as Record<string, unknown>),
+          progressivo: PROGRESSIVO_PROBE
+        }
       };
       const collisionSource = this.templates.processString(fileNameTemplate, renderContext);
       let progressivoMarker: string | null = null;
@@ -207,24 +211,24 @@ export class CheckDuplicatesStep extends Step {
         renderContext
       );
       namePattern = new RegExp(
-        `^${escapeRegExp(renderedName)
-          .split(escapeRegExp(progressivoMarker))
-          .join('\\d+')}$`
+        `^${escapeRegExp(renderedName).split(escapeRegExp(progressivoMarker)).join('\\d+')}$`
       );
     } else {
       namePattern = new RegExp(
         `^${escapeRegExp(this.templates.processString(fileNameTemplate, templateContext))}$`
       );
     }
-    const existing = this.db.table(TABLE.LOG_DOCS).find(
-      (r) =>
-        tipi.includes(String(r[COL_LOG_DOCS.TIPO] ?? '')) &&
-        String(r[COL_LOG_DOCS.SOTTOTIPO] ?? '') === sottotipoValue &&
-        String(r[COL_LOG_DOCS.ID_GEN] ?? '') === idGen &&
-        (!pianoPersonalizzato || String(r[COL_LOG_DOCS.UTENTI] ?? '') === utenti) &&
-        String(r[COL_LOG_DOCS.PATH] ?? '') === path &&
-        namePattern.test(String(r[COL_LOG_DOCS.NOME] ?? ''))
-    );
+    const existing = this.db
+      .table(TABLE.LOG_DOCS)
+      .find(
+        (r) =>
+          tipi.includes(String(r[COL_LOG_DOCS.TIPO] ?? '')) &&
+          String(r[COL_LOG_DOCS.SOTTOTIPO] ?? '') === sottotipoValue &&
+          String(r[COL_LOG_DOCS.ID_GEN] ?? '') === idGen &&
+          (!pianoPersonalizzato || String(r[COL_LOG_DOCS.UTENTI] ?? '') === utenti) &&
+          String(r[COL_LOG_DOCS.PATH] ?? '') === path &&
+          namePattern.test(String(r[COL_LOG_DOCS.NOME] ?? ''))
+      );
     if (existing) {
       this.setResult(ctx, 'shouldGenerate', false);
       this.setResult(
@@ -283,7 +287,11 @@ export class PrepareInfrastructureStep extends Step {
     cduObj.meta.progressivo = progressivo;
   }
 
-  protected override _getLogDetails(ctx: PipelineContext): { Folder: string; Path: string; Id: string } {
+  protected override _getLogDetails(ctx: PipelineContext): {
+    Folder: string;
+    Path: string;
+    Id: string;
+  } {
     const path = ctx.get<string>('destFolderPath') ?? '';
     return {
       Folder: nomeCartella(path),
@@ -447,7 +455,10 @@ export class ApplyPermissionsStep extends Step {
     }
   }
 
-  protected override _getLogDetails(ctx: PipelineContext): { Editors: string[]; Viewers: string[] } {
+  protected override _getLogDetails(ctx: PipelineContext): {
+    Editors: string[];
+    Viewers: string[];
+  } {
     return {
       Editors: ctx.get<string[]>('permissionEditors') ?? [],
       Viewers: ctx.get<string[]>('permissionViewers') ?? []
@@ -554,7 +565,9 @@ export class PostProcessStep extends Step {
       throw new ConfigurationError('POST_PROCESSO.AGGIORNA_PERMESSI_STORICI.permesso obbligatorio');
     }
     if (typeof profondita !== 'number' || !Number.isFinite(profondita) || profondita <= 0) {
-      throw new ConfigurationError('POST_PROCESSO.AGGIORNA_PERMESSI_STORICI.profondita deve essere positiva');
+      throw new ConfigurationError(
+        'POST_PROCESSO.AGGIORNA_PERMESSI_STORICI.profondita deve essere positiva'
+      );
     }
     const newFileId = ctx.get<string>('newFileId');
     // Defensive only: idsMatching() scans historical years via findAnniStorici(), which

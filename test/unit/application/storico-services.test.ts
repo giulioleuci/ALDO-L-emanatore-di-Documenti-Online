@@ -78,9 +78,7 @@ function sheetTable(rows: Row[]) {
 }
 
 function mockDatabaseServiceWith(tables: Record<string, ReturnType<typeof sheetTable>>) {
-  const databaseService = jest
-    .fn()
-    .mockImplementation(() => ({ tables }));
+  const databaseService = jest.fn().mockImplementation(() => ({ tables }));
   (global as unknown as { DatabaseService: unknown }).DatabaseService = databaseService;
   return databaseService;
 }
@@ -216,7 +214,9 @@ describe('StoricoAlunniService (13 §3, ANALYSIS_HISTORIC_ENRICH_EXTENSION §2-5
 
   test('esito TRASFERITO when the year has an OUT movement, regardless of next-year RIPETENTE', () => {
     const tables = annoPrecedente({
-      movAlunni: [{ STUDENTE: 'a1@school.it', TIPO: 'OUT', DATA: '2025-03-01', DA: '4A', A: 'ALTRO ISTITUTO' }]
+      movAlunni: [
+        { STUDENTE: 'a1@school.it', TIPO: 'OUT', DATA: '2025-03-01', DA: '4A', A: 'ALTRO ISTITUTO' }
+      ]
     });
     const service = new StoricoAlunniService(fakeProvider([annoStorico('2025-2026', tables)]));
     expect(service.perAlunno('a1@school.it', 1, alunnoAnnoCorrente(false))[0]!.esito).toBe(
@@ -226,7 +226,9 @@ describe('StoricoAlunniService (13 §3, ANALYSIS_HISTORIC_ENRICH_EXTENSION §2-5
 
   test('esito RITIRATO when the year has a RITIRATO movement', () => {
     const tables = annoPrecedente({
-      movAlunni: [{ STUDENTE: 'a1@school.it', TIPO: 'RITIRATO', DATA: '2025-03-01', DA: '4A', A: '' }]
+      movAlunni: [
+        { STUDENTE: 'a1@school.it', TIPO: 'RITIRATO', DATA: '2025-03-01', DA: '4A', A: '' }
+      ]
     });
     const service = new StoricoAlunniService(fakeProvider([annoStorico('2025-2026', tables)]));
     expect(service.perAlunno('a1@school.it', 1, alunnoAnnoCorrente(false))[0]!.esito).toBe(
@@ -236,7 +238,9 @@ describe('StoricoAlunniService (13 §3, ANALYSIS_HISTORIC_ENRICH_EXTENSION §2-5
 
   test('an OUT/RITIRATO movement takes priority over a RIPETENTE-derived esito', () => {
     const tables = annoPrecedente({
-      movAlunni: [{ STUDENTE: 'a1@school.it', TIPO: 'OUT', DATA: '2025-03-01', DA: '4A', A: 'ALTRO ISTITUTO' }]
+      movAlunni: [
+        { STUDENTE: 'a1@school.it', TIPO: 'OUT', DATA: '2025-03-01', DA: '4A', A: 'ALTRO ISTITUTO' }
+      ]
     });
     const service = new StoricoAlunniService(fakeProvider([annoStorico('2025-2026', tables)]));
     // Even though the student is RIPETENTE next year (contradictory data), OUT wins.
@@ -405,9 +409,9 @@ test('StoricoDocumentiService.idsMatching applies LOG_DOCS criteria with histori
     fakeProvider([annoStorico('2025-2026', firstYear), annoStorico('2024-2025', secondYear)])
   );
 
-  expect(service.idsMatching({ ID_GEN: 'PIANI_PERSONALIZZATI', UTENTI: 'a1@school.it' }, 1)).toEqual([
-    'pdp-bes-3d'
-  ]);
+  expect(
+    service.idsMatching({ ID_GEN: 'PIANI_PERSONALIZZATI', UTENTI: 'a1@school.it' }, 1)
+  ).toEqual(['pdp-bes-3d']);
   expect(service.idsMatching({ ID_GEN: 'PIANI_PERSONALIZZATI', SOTTOTIPO: 'PDP_BES' }, 1)).toEqual([
     'pdp-bes-3d'
   ]);
@@ -448,9 +452,7 @@ test('StoricoDocumentiService.idsMatching fails closed on an empty resolved CSV 
       MATERIE: ''
     }
   ];
-  const service = new StoricoDocumentiService(
-    fakeProvider([annoStorico('2025-2026', firstYear)])
-  );
+  const service = new StoricoDocumentiService(fakeProvider([annoStorico('2025-2026', firstYear)]));
 
   // An empty resolved UTENTI (e.g. a {{focus.alunno...}} placeholder that
   // resolved to '') must match no document, not silently evaporate.
@@ -769,9 +771,11 @@ describe('MasterStoricoDatabaseProvider.anniStorici — depth guard', () => {
       .spyOn(ServiceFactory, 'getExceptionService')
       .mockReturnValue(exceptionService);
     const master = {
-      findAnniStorici: jest.fn().mockReturnValue([
-        { idSpreadsheet: 'STORICO_APPENA_CREATO', annoScolasticoRaw: '2025-2026' }
-      ])
+      findAnniStorici: jest
+        .fn()
+        .mockReturnValue([
+          { idSpreadsheet: 'STORICO_APPENA_CREATO', annoScolasticoRaw: '2025-2026' }
+        ])
     } as unknown as MasterSheetRepository;
 
     try {
@@ -804,9 +808,7 @@ describe('MasterStoricoDatabaseProvider.anniStorici — depth guard', () => {
   test('riusa il database di un anno già aperto tra chiamate successive', () => {
     const restore = mockHistoricalDatabaseConstruction();
     const master = {
-      findAnniStorici: jest.fn(() => [
-        { idSpreadsheet: 'ss1', annoScolasticoRaw: '2025-2026' }
-      ])
+      findAnniStorici: jest.fn(() => [{ idSpreadsheet: 'ss1', annoScolasticoRaw: '2025-2026' }])
     };
     const provider = new MasterStoricoDatabaseProvider(master as never, new LoggerService());
 

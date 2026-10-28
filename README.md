@@ -22,11 +22,13 @@ ALDO **non reimplementa** funzionalità infrastrutturali generiche: si appoggia 
 L'integrazione avviene tramite un bundle **vendorizzato**, non tramite import diretti dei sorgenti TypeScript della libreria:
 
 1. `GasLibraryFactory` viene compilato in modalità testing con il proprio build pipeline, producendo `GasLibraryFactory/dist/Code.js`.
-2. `npm run refresh:vendor` (script `scripts/refresh-vendor.cjs`) copia quel bundle in `vendor/gaslibs.Code.js`, insieme a un file `CHECKSUM` (sha256) e `VERSION` (versione della libreria da `package.json`).
+2. `npm run refresh:vendor` (script `scripts/refresh-vendor.cjs`) richiede la versione **TypeScript** di GLF (`src/index.ts`), esegue `build:types` e la build testing senza test online, quindi copia il bundle in `vendor/gaslibs.Code.js`, le dichiarazioni generate in `vendor/types/` e gli alias TypeScript in `vendor/tsconfig.json`, insieme a `CHECKSUM` (sha256) e `VERSION`.
 3. `npm run verify:vendor` (`scripts/verify-vendor.cjs`) verifica che il bundle vendorizzato sia coerente con il checksum registrato, così da evitare drift silenziosi tra il codice testato e quello effettivamente pacchettizzato.
 4. La build applicativa di ALDO (`scripts/build-and-prepare.cjs`) unisce il webpack bundle di `src/` con `vendor/gaslibs.Code.js` in un unico `dist/Code.js`, oltre a generare `dist/EntryPoints.js` da `src/entrypoints/EntryPoints.ts`. Il risultato è un singolo script Apps Script che espone sia le API delle librerie sia il codice applicativo di ALDO nello stesso namespace globale GAS.
 
 Tutte le chiamate ai servizi nativi GAS (`DriveApp`, `SpreadsheetApp`, `DocumentApp`, `MailApp`, `PropertiesService`, `UrlFetchApp`, ecc.) sono confinate dentro `GoogleApiWrapper` (L2 di GasLibraryFactory); il resto del codice applicativo vi accede solo tramite le facade infrastrutturali di ALDO. Questo vincolo è imposto anche a livello di lint (`no-restricted-globals`).
+
+`GasLibraryFactory_JS/` è soltanto un archivio locale, escluso da Git, lint e formattazione: nessuna build o test lo carica. Può essere spostato fuori dal workspace. Il JavaScript in `vendor/` e `dist/` resta necessario perché Apps Script esegue il codice compilato. I contratti ristretti di ALDO in `types/gaslibs/index.d.ts` sono verificati contro i membri pubblici, statici e di istanza delle dichiarazioni GLF da `test/types/glf-api.contract.ts` durante `npm run typecheck`, con verifica completa delle dichiarazioni. Le dipendenze di sviluppo `es-toolkit`, `fuse.js` e `zod` risolvono i tipi pubblicati da GLF. I test eseguono il bundle vendorizzato; un checkout ALDO con `vendor/` versionato e le dipendenze npm installate non richiede i sorgenti GLF per compilare o eseguire i test.
 
 ---
 

@@ -6,6 +6,14 @@ const vendorDir = path.join(__dirname, '..', 'vendor');
 const bundle = path.join(vendorDir, 'gaslibs.Code.js');
 const checksumFile = path.join(vendorDir, 'CHECKSUM');
 
+if (
+  !fs.existsSync(path.join(vendorDir, 'tsconfig.json')) ||
+  !fs.existsSync(path.join(vendorDir, 'types', 'src', 'index.d.ts'))
+) {
+  console.error('vendor: TypeScript declarations missing. Run npm run refresh:vendor.');
+  process.exit(1);
+}
+
 if (!fs.existsSync(bundle) || !fs.existsSync(checksumFile)) {
   console.error('vendor: gaslibs.Code.js or CHECKSUM missing. Run npm run refresh:vendor.');
   process.exit(1);

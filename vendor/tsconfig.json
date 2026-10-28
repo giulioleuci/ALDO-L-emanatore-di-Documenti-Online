@@ -1,0 +1,105 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@ComposableContentLib": [
+        "./types/ComposableContentLib/index.d.ts"
+      ],
+      "@ComposableContentLib/*": [
+        "./types/ComposableContentLib/*"
+      ],
+      "@ContextEngine": [
+        "./types/ContextEngine/index.d.ts"
+      ],
+      "@ContextEngine/*": [
+        "./types/ContextEngine/*"
+      ],
+      "@CoreUtilsLib": [
+        "./types/CoreUtilsLib/index.d.ts"
+      ],
+      "@CoreUtilsLib/*": [
+        "./types/CoreUtilsLib/*"
+      ],
+      "@DomainRepositoryLib": [
+        "./types/DomainRepositoryLib/index.d.ts"
+      ],
+      "@DomainRepositoryLib/*": [
+        "./types/DomainRepositoryLib/*"
+      ],
+      "@GasDataImporter": [
+        "./types/GasDataImporter/index.d.ts"
+      ],
+      "@GasDataImporter/*": [
+        "./types/GasDataImporter/*"
+      ],
+      "@GasExpressionEngineLib": [
+        "./types/GasExpressionEngineLib/index.d.ts"
+      ],
+      "@GasExpressionEngineLib/*": [
+        "./types/GasExpressionEngineLib/*"
+      ],
+      "@GasOnlineTestFramework": [
+        "./types/GasOnlineTestFramework/index.d.ts"
+      ],
+      "@GasOnlineTestFramework/*": [
+        "./types/GasOnlineTestFramework/*"
+      ],
+      "@GasResilienceLib": [
+        "./types/GasResilienceLib/index.d.ts"
+      ],
+      "@GasResilienceLib/*": [
+        "./types/GasResilienceLib/*"
+      ],
+      "@GasSchemaValidatorLib": [
+        "./types/GasSchemaValidatorLib/index.d.ts"
+      ],
+      "@GasSchemaValidatorLib/*": [
+        "./types/GasSchemaValidatorLib/*"
+      ],
+      "@GoogleApiWrapper": [
+        "./types/GoogleApiWrapper/index.d.ts"
+      ],
+      "@GoogleApiWrapper/*": [
+        "./types/GoogleApiWrapper/*"
+      ],
+      "@JobRunnerLib": [
+        "./types/JobRunnerLib/index.d.ts"
+      ],
+      "@JobRunnerLib/*": [
+        "./types/JobRunnerLib/*"
+      ],
+      "@PipelineFramework": [
+        "./types/PipelineFramework/index.d.ts"
+      ],
+      "@PipelineFramework/*": [
+        "./types/PipelineFramework/*"
+      ],
+      "@RoleResolutionLib": [
+        "./types/RoleResolutionLib/index.d.ts"
+      ],
+      "@RoleResolutionLib/*": [
+        "./types/RoleResolutionLib/*"
+      ],
+      "@SheetDBLib": [
+        "./types/SheetDBLib/index.d.ts"
+      ],
+      "@SheetDBLib/*": [
+        "./types/SheetDBLib/*"
+      ],
+      "@WorkspaceTemplateEngine": [
+        "./types/WorkspaceTemplateEngine/index.d.ts"
+      ],
+      "@WorkspaceTemplateEngine/*": [
+        "./types/WorkspaceTemplateEngine/*"
+      ],
+      "jsep": [
+        "./types/types/vendor/jsep.d.cts"
+      ],
+      "@GasProcessMonitorLib": [
+        "./types/GasProcessMonitorLib/index.d.ts"
+      ],
+      "@GasProcessMonitorLib/*": [
+        "./types/GasProcessMonitorLib/*"
+      ]
+    }
+  }
+}

@@ -32,6 +32,7 @@ export default tseslint.config(
       'coverage/**',
       'types/gaslibs/**',
       'GasLibraryFactory/**',
+      'GasLibraryFactory_JS/**',
       '**/.remember/**'
     ]
   },

@@ -12,7 +12,13 @@ if (!fs.existsSync(monorepo)) {
   process.exit(1);
 }
 
+if (!fs.existsSync(path.join(monorepo, 'src', 'index.ts'))) {
+  console.error('TypeScript GasLibraryFactory required (src/index.ts missing).');
+  process.exit(1);
+}
+
 console.log('Building GasLibraryFactory (testing mode)...');
+execSync('npm run build:types', { cwd: monorepo, stdio: 'inherit' });
 execSync('npm run build:testing -- --online-tests=false', { cwd: monorepo, stdio: 'inherit' });
 
 const built = path.join(monorepo, 'dist', 'Code.js');
@@ -22,6 +28,20 @@ if (!fs.existsSync(built)) {
 }
 
 fs.mkdirSync(vendorDir, { recursive: true });
+const typesDir = path.join(vendorDir, 'types');
+fs.rmSync(typesDir, { recursive: true, force: true });
+fs.cpSync(path.join(monorepo, '.cache', 'types'), typesDir, { recursive: true });
+const consumer = JSON.parse(fs.readFileSync(path.join(monorepo, 'tsconfig.consumer.json'), 'utf8'));
+const paths = Object.fromEntries(
+  Object.entries(consumer.compilerOptions.paths).map(([name, targets]) => [
+    name,
+    targets.map((target) => target.replace(/^\.cache\/types\//, './types/'))
+  ])
+);
+fs.writeFileSync(
+  path.join(vendorDir, 'tsconfig.json'),
+  JSON.stringify({ compilerOptions: { paths } }, null, 2) + '\n'
+);
 const dest = path.join(vendorDir, 'gaslibs.Code.js');
 fs.copyFileSync(built, dest);
 

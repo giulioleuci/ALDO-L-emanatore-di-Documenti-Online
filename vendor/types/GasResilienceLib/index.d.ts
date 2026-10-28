@@ -1,0 +1,11 @@
+export { ExceptionService } from './src/ExceptionService.js';
+export { TimeoutException } from './src/internal/exceptions/TimeoutException.js';
+export { RateLimitExceededException } from './src/internal/exceptions/RateLimitExceededException.js';
+export { ResilienceConfiguration } from './src/Configuration.js';
+export { ErrorClassifier } from './src/handlers/ErrorClassifier.js';
+export { ErrorReporter } from './src/handlers/ErrorReporter.js';
+export { RecoveryManager } from './src/handlers/RecoveryManager.js';
+export { CircuitBreaker } from './src/handlers/CircuitBreaker.js';
+export * as testing from './src/testing/mocks.js';
+export type * from './src/types.js';
+export type { ExceptionDependencies } from './src/ExceptionService.js';

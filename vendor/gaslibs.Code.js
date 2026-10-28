@@ -5,6 +5,8 @@ function __nativeCacheService__() {
 }
 function __nativePropertiesService__() {
 }
+function __nativeLockService__() {
+}
 function initializeServices() {
 } (() => { 
  	var __webpack_modules__ = ({
@@ -381,6 +383,18 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
  		return module.exports;
  	}
 
+
+
+ 	(() => {
+
+ 		__webpack_require__.n = (module) => {
+ 			const getter = module && module.__esModule ?
+ 				() => (module['default']) :
+ 				() => (module);
+ 			__webpack_require__.d(getter, { a: getter });
+ 			return getter;
+ 		};
+ 	})();
 
 
  	(() => {
@@ -2334,17 +2348,6 @@ __webpack_require__.d(GasProcessMonitorLib_namespaceObject, {
 });
 
 ;
-
-
-
-
-
-
-
-
-
-
-
 const MAJOR_BORDER = '='.repeat(70);
 const SECTION_BORDER = '-'.repeat(70);
 const ITEM_ICONS = {
@@ -7820,6 +7823,7 @@ class ValidationUtils {
 }
 
 var he = __webpack_require__(67);
+var he_default = __webpack_require__.n(he);
 ;
 
 
@@ -7830,11 +7834,12 @@ var he = __webpack_require__(67);
 
 
 function escapeHtmlText(value) {
-  const escaped = he.escape(String(value ?? ''), {
+
+  const escaped = he_default().escape(String(value ?? ''), {
     useNamedReferences: true,
     decimal: false
   });
-  return escaped.replace(/©/g, he.encode('©', {
+  return escaped.replace(/©/g, he_default().encode('©', {
     useNamedReferences: true,
     decimal: false
   })).replace(/&#x27;/g, '&#39;');
@@ -7846,7 +7851,7 @@ function escapeHtmlText(value) {
 
 
 function decodeHtmlEntities(value) {
-  return he.decode(String(value ?? ''));
+  return he_default().decode(String(value ?? ''));
 }
 ;
 
@@ -7898,6 +7903,7 @@ class HtmlSanitizer {
   static safeUrl(value) {
     return /^https?:\/\//i.test(value.trim()) ? value.trim() : '#';
   }
+
 
 
 
@@ -8183,6 +8189,7 @@ class LazyRef {
 
 
 
+
 class BaseError extends Error {
 
 
@@ -8308,6 +8315,7 @@ class BaseError extends Error {
 
 
 
+
   static wrap(error, context = {}) {
     if (error instanceof BaseError) {
       return Object.keys(context).length > 0 ? error.withContext(context) : error;
@@ -8391,6 +8399,7 @@ class OperationError extends BaseError {
   }
 }
 ;
+
 
 
 
@@ -8501,6 +8510,7 @@ class Result {
   }
 }
 ;
+
 
 
 
@@ -8977,6 +8987,7 @@ class TypeGuards {
   static isNonEmptyArray(value) {
     return Array.isArray(value) && value.length > 0;
   }
+
 
 
 
@@ -9479,7 +9490,6 @@ const testing = {};
 
 
 
-
 const TimeConstants = {
 
   MILLIS_PER_SECOND: 1000,
@@ -9491,7 +9501,6 @@ const TimeConstants = {
   MILLIS_PER_DAY: 24 * 60 * 60 * 1000
 };
 ;
-
 
 
 
@@ -10349,7 +10358,6 @@ class ResilienceConfiguration {
 
 
 
-
 class ExceptionService {
 
   static get ABSOLUTE_MAX_ATTEMPTS() {
@@ -10570,7 +10578,7 @@ class ExceptionService {
     this._reporter.record({
       type: 'FAILURE',
       operation: operationName,
-      classification,
+      classification: classification,
       correlationId 
     });
 
@@ -10620,6 +10628,7 @@ class ExceptionService {
     }
     throw new Error(result.error.message);
   }
+
 
 
 
@@ -11354,6 +11363,7 @@ class TextStyleMapper {
 
 
 
+
 class GoogleService {
 
 
@@ -11480,6 +11490,7 @@ class GoogleService {
 
 
 
+
   _executeWithRetry(func, context = {}, maxAttempts = 3) {
     if (this._exceptionService && typeof this._exceptionService.executeWithRetry === 'function') {
       return this._exceptionService.executeWithRetry(func, context, maxAttempts);
@@ -11503,6 +11514,7 @@ class GoogleService {
 function _getNativeCacheService() {
   return __webpack_require__.g.__nativeCacheService__ || __webpack_require__.g.CacheService;
 }
+
 
 
 
@@ -11745,6 +11757,10 @@ class Cache {
   }
 }
 ;
+
+
+
+
 
 
 
@@ -12748,6 +12764,7 @@ class DriveMetadataService {
 
 
 
+
   getFiles(fileIds, options = {}) {
     const isSingleId = !Array.isArray(fileIds);
     const idsArray = isSingleId ? [fileIds] : fileIds;
@@ -12800,6 +12817,7 @@ class DriveMetadataService {
     });
     return isSingleId ? cacheResults[fileIds] : cacheResults;
   }
+
 
 
 
@@ -12891,7 +12909,6 @@ class DriveMetadataService {
   }
 }
 ;
-
 
 
 
@@ -15136,6 +15153,7 @@ class DocumentBatchUpdateHandler {
 
 
 
+
   getDocument(documentIds) {
     const isArray = Array.isArray(documentIds);
     const ids = isArray ? documentIds : [documentIds];
@@ -15198,6 +15216,7 @@ class DocumentBatchUpdateHandler {
 
   _executeExportPDF(documentId, op) {
     try {
+
       const blob = Drive.Files.export(documentId, 'application/pdf');
       const fileMetadata = {
         name: op.fileName,
@@ -15351,6 +15370,7 @@ class DocumentBatchUpdateHandler {
   }
 }
 ;
+
 
 
 
@@ -16259,6 +16279,7 @@ class SpreadsheetHybridManager {
 
 
 
+
 class SpreadsheetService extends GoogleService {
   constructor(logger, cache, utils, exceptionService, options = {}) {
     super(logger, cache, utils, exceptionService);
@@ -16305,6 +16326,7 @@ class SpreadsheetService extends GoogleService {
   }
 }
 ;
+
 
 
 
@@ -17220,6 +17242,7 @@ class PermissionService extends GoogleService {
 
 
 
+
   getPermissions(fileIds, _options = {}) {
     const isSingleId = !Array.isArray(fileIds);
     const fileIdsArray = isSingleId ? [fileIds] : fileIds;
@@ -17266,6 +17289,7 @@ class PermissionService extends GoogleService {
     });
     return isSingleId ? cacheResults[fileIds] : cacheResults;
   }
+
 
 
 
@@ -17457,6 +17481,7 @@ function _getNativePropertiesService() {
 
 
 class PropertiesService {
+
 
 
 
@@ -17866,7 +17891,10 @@ class PropertiesService {
 
 
 
+
+
 class TriggerService {
+
 
 
 
@@ -18540,6 +18568,7 @@ class UiService extends GoogleService {
 
 
 
+
 class UserService {
 
 
@@ -18567,6 +18596,7 @@ class UserService {
 function ServiceFactory_defineProperty(e, r, t) { return (r = ServiceFactory_toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function ServiceFactory_toPropertyKey(t) { var i = ServiceFactory_toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
 function ServiceFactory_toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+
 
 
 
@@ -18898,7 +18928,7 @@ class LockService {
 
 
 
-    const candidate = typeof __webpack_require__.g !== 'undefined' && __webpack_require__.g.LockService ? __webpack_require__.g.LockService : null;
+    const candidate = typeof __webpack_require__.g !== 'undefined' ? __webpack_require__.g.__nativeLockService__ || __webpack_require__.g.LockService || null : null;
     this._nativeLockService = candidate && typeof candidate.getScriptLock === 'function' ? candidate : null;
   }
 
@@ -19080,9 +19110,6 @@ class MockLock {
   }
 }
 ;
-
-
-
 
 
 
@@ -34112,6 +34139,7 @@ class GasValidators {
   }
 
 
+
   static jsonString(innerSchema = any()) {
     return schemas_string().transform(str => JSON.parse(str)).pipe(innerSchema);
   }
@@ -42683,10 +42711,12 @@ class TableService {
 
 
 
+
   insertRow(rowObj) {
     const results = this.insertRows([rowObj]);
     return results.length > 0 ? results[0] : null;
   }
+
 
 
 
@@ -43164,6 +43194,7 @@ class TableService {
 
 
 
+
   getRows(options = {}) {
     if (options.preserveEmptyRows === true) {
       const data = this.spreadsheetService.getRanges(this.spreadsheetId, `'${this.sheetName}'!A:ZZ`);
@@ -43410,6 +43441,7 @@ class TableService {
     };
     return this._applyVirtualColumns(foundRow);
   }
+
 
 
 
@@ -43735,7 +43767,6 @@ function _compareValues(leftValue, operator, rightValue) {
 
 
 
-
 class QueryAggregation {
 
 
@@ -43804,6 +43835,7 @@ const AdvancedQueryParser = {
   _compareValues
 };
 ;
+
 
 
 
@@ -43936,7 +43968,6 @@ function _createFuzzyCondition(field, query, options = {}, type) {
 
 
 
-
 class QueryCache {
 
 
@@ -44008,10 +44039,12 @@ class QueryCache {
 
 
 
+
   invalidateTable() {
     if (!this.service) {
       return false;
     }
+
     this.service.removeAll();
     return true;
   }
@@ -46210,7 +46243,6 @@ class JobQueue {
         stateManager.resetRetryCount();
 
 
-
         if (this._config.purgeOnComplete && !executionResult.cancelled) {
           this.resetJobState(jobName);
         }
@@ -47110,6 +47142,7 @@ class MyJobRunnerService {
 
 
 
+
 class PipelineContext {
 
 
@@ -47143,12 +47176,14 @@ class PipelineContext {
 
 
 
+
   get(key, defaultValue = null) {
     if (typeof key !== 'string') {
       throw new Error('PipelineContext.get: key must be a string');
     }
     return Object.prototype.hasOwnProperty.call(this._data, key) ? this._data[key] : defaultValue;
   }
+
 
 
 
@@ -47268,6 +47303,7 @@ class PipelineContext {
   }
 }
 ;
+
 
 
 
@@ -47739,6 +47775,7 @@ class StepExecutionError extends PipelineError {
   }
 }
 ;
+
 
 
 
@@ -51918,6 +51955,7 @@ class Transformer {
 
 
 
+
   transform(sourceData, transformConfig) {
     if (!Array.isArray(sourceData)) {
       throw new TransformError('Source data must be an array', 'INVALID_SOURCE_DATA', {
@@ -54390,6 +54428,7 @@ class EntityMapper {
 
 
 
+
   toData(entity) {
     if (!entity) {
       return null;
@@ -54488,6 +54527,7 @@ class EntityMapper {
 
     return value;
   }
+
 
 
 
@@ -56667,7 +56707,6 @@ class SampleSpreadsheetBuilder {
 
 
 
-
 class TestContext {
   constructor() {
     this.TEST_ROOT_NAME = 'GAS_TEST_ROOT_PERSISTENT';
@@ -56689,6 +56728,7 @@ class TestContext {
     this._rootFolder = this.getOrCreateNamedFolder(this.TEST_ROOT_NAME);
     return this._rootFolder;
   }
+
 
 
 
@@ -63783,6 +63823,7 @@ class ContentComposer {
     }
 
 
+
     if (!this._rendererRegistry.hasRenderer(compositionRecipe.outputFormat)) {
       errors.push(`No renderer for format: ${compositionRecipe.outputFormat}`);
     }
@@ -64555,6 +64596,9 @@ class RendererRegistry {
 
 
 ;
+function ProcessMonitorService_defineProperty(e, r, t) { return (r = ProcessMonitorService_toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function ProcessMonitorService_toPropertyKey(t) { var i = ProcessMonitorService_toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
+function ProcessMonitorService_toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 
 
 
@@ -64624,6 +64668,10 @@ class ProcessMonitorService {
 
 
   constructor(logger, cacheService, propertiesService) {
+    ProcessMonitorService_defineProperty(this, "_logger", void 0);
+    ProcessMonitorService_defineProperty(this, "_cacheService", void 0);
+    ProcessMonitorService_defineProperty(this, "_propertiesService", void 0);
+    ProcessMonitorService_defineProperty(this, "_cache", void 0);
 
     if (!logger || typeof logger !== 'object') {
       throw new Error('ProcessMonitorService: logger is required and must be an object');
@@ -64716,7 +64764,7 @@ class ProcessMonitorService {
       cache.put(this._getCacheKey(jobId), stateJson, ProcessMonitorService.CACHE_EXPIRATION);
       this._logger.debug(`[ProcessMonitorService] State written to cache for job ${jobId}`);
     } catch (error) {
-      this._logger.warn(`[ProcessMonitorService] Failed to write to cache: ${error.message}`);
+      this._logger.warn(`[ProcessMonitorService] Failed to write to cache: ${error instanceof Error ? error.message : String(error)}`);
     }
 
 
@@ -64725,7 +64773,7 @@ class ProcessMonitorService {
         this._propertiesService.setProperty(this._getPropsKey(jobId), stateJson);
         this._logger.debug(`[ProcessMonitorService] State written to properties for job ${jobId}`);
       } catch (error) {
-        this._logger.error(`[ProcessMonitorService] Failed to write to properties: ${error.message}`);
+        this._logger.error(`[ProcessMonitorService] Failed to write to properties: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
   }
@@ -64746,7 +64794,7 @@ class ProcessMonitorService {
         return JSON.parse(cached);
       }
     } catch (error) {
-      this._logger.warn(`[ProcessMonitorService] Cache read failed: ${error.message}`);
+      this._logger.warn(`[ProcessMonitorService] Cache read failed: ${error instanceof Error ? error.message : String(error)}`);
     }
 
 
@@ -64760,7 +64808,7 @@ class ProcessMonitorService {
         return state;
       }
     } catch (error) {
-      this._logger.error(`[ProcessMonitorService] Properties read failed: ${error.message}`);
+      this._logger.error(`[ProcessMonitorService] Properties read failed: ${error instanceof Error ? error.message : String(error)}`);
     }
     return null;
   }
@@ -64848,7 +64896,7 @@ class ProcessMonitorService {
     try {
       this._propertiesService.deleteProperty(this._getPropsKey(jobId));
     } catch (error) {
-      this._logger.warn(`[ProcessMonitorService] Failed to clear properties: ${error.message}`);
+      this._logger.warn(`[ProcessMonitorService] Failed to clear properties: ${error instanceof Error ? error.message : String(error)}`);
     }
     this._logger.info(`[ProcessMonitorService] Job completed: ${jobId}`);
     return this;
@@ -65044,18 +65092,21 @@ class ProcessMonitorService {
       const cache = this._getCache();
       cache.remove(this._getCacheKey(jobId));
     } catch (error) {
-      this._logger.warn(`[ProcessMonitorService] Failed to clear cache: ${error.message}`);
+      this._logger.warn(`[ProcessMonitorService] Failed to clear cache: ${error instanceof Error ? error.message : String(error)}`);
     }
     try {
       this._propertiesService.deleteProperty(this._getPropsKey(jobId));
     } catch (error) {
-      this._logger.warn(`[ProcessMonitorService] Failed to clear properties: ${error.message}`);
+      this._logger.warn(`[ProcessMonitorService] Failed to clear properties: ${error instanceof Error ? error.message : String(error)}`);
     }
     this._logger.info(`[ProcessMonitorService] Job state cleared: ${jobId}`);
     return this;
   }
 }
 ;
+function DashboardUi_defineProperty(e, r, t) { return (r = DashboardUi_toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function DashboardUi_toPropertyKey(t) { var i = DashboardUi_toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
+function DashboardUi_toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 
 
 
@@ -65092,6 +65143,8 @@ class DashboardUi {
 
 
   constructor(uiService, logger) {
+    DashboardUi_defineProperty(this, "_uiService", void 0);
+    DashboardUi_defineProperty(this, "_logger", void 0);
     if (!uiService || typeof uiService !== 'object') {
       throw new Error('DashboardUi: uiService is required and must be an object');
     }
@@ -65641,6 +65694,7 @@ class DashboardUi {
 
 __webpack_require__.g.__nativeCacheService__ = __webpack_require__.g.CacheService;
 __webpack_require__.g.__nativePropertiesService__ = __webpack_require__.g.PropertiesService;
+__webpack_require__.g.__nativeLockService__ = __webpack_require__.g.LockService;
 Object.assign(__webpack_require__.g, CoreUtilsLib_namespaceObject);
 Object.assign(__webpack_require__.g, GasResilienceLib_namespaceObject);
 Object.assign(__webpack_require__.g, GoogleApiWrapper_namespaceObject);

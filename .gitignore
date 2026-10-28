@@ -11,6 +11,7 @@ coverage/
 scripts/email-examples/
 
 GasLibraryFactory/
+GasLibraryFactory_JS/
 .antigravitycli/
 .worktrees/
 __pycache__/

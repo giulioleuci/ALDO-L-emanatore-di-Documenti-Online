@@ -1,4 +1,21 @@
 describe('vendored GasLibraryFactory public API', () => {
+  it('publishes the TypeScript monitoring library and its sidebar builder', () => {
+    const sidebar = {
+      setTitle: jest.fn().mockReturnThis(),
+      setContent: jest.fn().mockReturnThis(),
+      setWidth: jest.fn().mockReturnThis(),
+      show: jest.fn()
+    };
+    const ui = { createSidebar: () => sidebar };
+    const dashboard = new DashboardUi(ui, new LoggerService());
+
+    dashboard.createSidebar('job-1', 'ALDO monitoraggio');
+
+    expect(typeof ProcessMonitorService).toBe('function');
+    expect(sidebar.setTitle).toHaveBeenCalledWith('ALDO monitoraggio');
+    expect(sidebar.setContent).toHaveBeenCalledWith(expect.stringContaining('job-1'));
+  });
+
   it('publishes the effective-assignment and collection-projection APIs', () => {
     const logger = new LoggerService();
     const slot = new AssignmentSlot({ dimensions: { channel: 'EMAIL', subject: 'S1' } });
@@ -25,9 +42,9 @@ describe('vendored GasLibraryFactory public API', () => {
     expect(override.matches(candidate, new Date('2026-01-10'))).toBe(true);
     expect(policy.toJSON().routingPolicy).toBe(RoutingPolicy.DELEGATE_OR_PRINCIPAL);
     expect(trace.toJSON()).toEqual([]);
-    expect(projector.project([{ id: 1 }, { id: 1 }], [{ type: 'distinctBy', keys: ['id'] }]).value).toEqual([
-      { id: 1 }
-    ]);
+    expect(
+      projector.project([{ id: 1 }, { id: 1 }], [{ type: 'distinctBy', keys: ['id'] }]).value
+    ).toEqual([{ id: 1 }]);
     expect(interceptor).toBeInstanceOf(ContextInterceptor);
 
     const assignmentSource = new WideRowAssignmentSource();

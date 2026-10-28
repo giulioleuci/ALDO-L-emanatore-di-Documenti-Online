@@ -1,12 +1,14 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "isolatedModules": false
+    "isolatedModules": false,
+    "skipLibCheck": false
   },
   "include": [
     "../../types/gaslibs/index.d.ts",
     "cdu-contract.contract.ts",
     "function-specification.contract.ts",
-    "specification-contract.contract.ts"
+    "specification-contract.contract.ts",
+    "glf-api.contract.ts"
   ]
 }

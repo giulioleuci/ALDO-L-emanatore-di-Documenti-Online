@@ -1,5 +1,6 @@
 // Ambient declarations for GasLibraryFactory globals (vendored bundle).
-// Authored from GasLibraryFactory/DOCS_LIBS/*_docs.md. Extend as needed.
+// ALDO's narrowed service contracts; public members are checked against the
+// TypeScript GLF declarations in vendor/types by test/types/glf-api.contract.ts.
 export {};
 
 declare global {
@@ -42,7 +43,6 @@ declare global {
   }
 
   class LoggerService {
-    trace(msg: string, ...args: unknown[]): void;
     debug(msg: string, ...args: unknown[]): void;
     info(msg: string, ...args: unknown[]): void;
     warn(msg: string, ...args: unknown[]): void;
@@ -100,8 +100,6 @@ declare global {
   /** CoreUtilsLib PII-safe logging helper (ref CoreUtilsLib/src/internal/PiiRedactor.js). */
   class PiiRedactor {
     static redact(message: string): string;
-    static redactEmails(message: string, label?: string): string;
-    static containsPii(message: string): boolean;
   }
 
   /** Generic lazy-singleton DI container (ref REPORT_GLF.md B8). */
@@ -153,9 +151,6 @@ declare global {
     registerSingleton(type: string, instance: LibContextProvider): this;
     registerFactory(type: string, factory: () => LibContextProvider): this;
     get(type: string): LibContextProvider;
-    has(type: string): boolean;
-    unregister(type: string): boolean;
-    clear(): this;
     getRegisteredTypes(): string[];
   }
   class InterceptorRegistry {
@@ -231,11 +226,6 @@ declare global {
       options?: { maxRetries?: number }
     );
     assemble(
-      recipe: ContextAssemblerRecipe,
-      initialParams?: Record<string, unknown>,
-      options?: Record<string, unknown> & { logPosition?: TreePosition }
-    ): Record<string, unknown>;
-    assembleAsync(
       recipe: ContextAssemblerRecipe,
       initialParams?: Record<string, unknown>,
       options?: Record<string, unknown> & { logPosition?: TreePosition }
@@ -1458,7 +1448,6 @@ declare global {
     constructor(logger?: LoggerService, exceptionService?: unknown);
     sleep(milliseconds: number): void;
     getUuid(): string;
-    formatDate(date: Date, timeZone: string, format: string): string;
   }
   /** GoogleApiWrapper facade over the native Session global (ref GoogleApiWrapper/src/services/UserService.js). */
   class UserService {
@@ -1469,7 +1458,7 @@ declare global {
     static configure(config?: Record<string, unknown>): void;
     static reset(resetConfig?: boolean): void;
     static getLogger(): LoggerService;
-    /** GoogleApiWrapper's own native-API wrapper (sleep, getUuid, formatDate w/ timezone, ...) — NOT the CoreUtilsLib UtilsService below. */
+    /** GoogleApiWrapper's native API wrapper (sleep, getUuid). */
     static getUtilitiesService(): UtilitiesService;
     /** CoreUtilsLib's foundational UtilsService (formatDate w/ tokens, formatISODate, isValidEmail, ...). */
     static getUtils(): UtilsService;
@@ -1740,6 +1729,7 @@ declare global {
   }
   /** Built-in SourceStrategy reading rows from a Google Sheet by ID (resolves tab, full-sheet or explicit range, header split, and value coercion). */
   class SheetByIdStrategy extends SourceStrategy {
+    protected override _extractData(config: Record<string, unknown>): Record<string, unknown>[];
     constructor(logger: LoggerService, spreadsheetService: SpreadsheetService);
     /**
      * @param config.sheetId physical spreadsheet identifier (required).
@@ -1884,7 +1874,6 @@ declare global {
   }
   class EnhancedTestRunner {
     register(path: string, fn: () => void, options?: { skip?: boolean; timeout?: number }): this;
-    addHook(type: 'beforeAll' | 'afterAll' | 'beforeEach' | 'afterEach', fn: () => void): this;
     run(filter?: string | RegExp | null): OnlineTestRunResult;
   }
   const runner: EnhancedTestRunner;
@@ -1915,7 +1904,6 @@ declare global {
     readonly TEST_ROOT_NAME: string;
     readonly TEST_SS_NAME: string;
     readonly TEST_DOC_NAME: string;
-    readonly apiCallCount: number;
     getRootFolder(): unknown;
     getOrCreateNamedFolder(name: string, parentFolder?: unknown | null): unknown;
     getSpreadsheet(): unknown;

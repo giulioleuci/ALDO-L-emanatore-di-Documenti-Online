@@ -57,8 +57,8 @@ export interface RetryCheckpoint extends RetryResumeState {
   /** Informational only (progress display) — recomputed each invocation, may shrink as groups succeed. */
   totalGroups: number;
   /**
-   * `processedKeys.length / totalGroups * 100`, read by JobRunnerLib's
-   * `monitor.updateProgress` (unlike `EmailBatchCheckpoint`, this was previously
+   * `processedKeys.length / totalGroups * 100`, saved by JobRunnerLib's
+   * progress state (unlike `EmailBatchCheckpoint`, this was previously
    * missing here, so the retry job reported 0% for its whole duration).
    */
   percentage: number;

@@ -1,8 +1,7 @@
 /**
  * Presentation-layer UI port (15 §1-§4): menu construction, modal input and
- * the GasProcessMonitorLib monitoring sidebar. The real facade goes through
- * the GoogleApiWrapper UiService (ServiceFactory) and DashboardUi — never the
- * native SpreadsheetApp/Browser globals.
+ * alerts. The real facade goes through the GoogleApiWrapper UiService
+ * (ServiceFactory) — never the native SpreadsheetApp/Browser globals.
  */
 export interface MenuVoce {
   etichetta: string;
@@ -14,8 +13,6 @@ export interface IUiFacade {
   /** Modal input; returns the trimmed text, '' when cancelled or left empty (15 §4). */
   chiediInput(titolo: string, messaggio: string): string;
   mostraMessaggio(titolo: string, messaggio: string): void;
-  /** GasProcessMonitorLib sidebar for the given job (15 §9). */
-  mostraSidebarMonitoraggio(jobId: string, titolo: string): void;
 }
 
 export class GasUiFacade implements IUiFacade {
@@ -46,9 +43,5 @@ export class GasUiFacade implements IUiFacade {
       this.logger.warn(safeMessage);
     }
     this.ui.alert(titolo, messaggio);
-  }
-
-  mostraSidebarMonitoraggio(jobId: string, titolo: string): void {
-    new DashboardUi(this.ui, this.logger).createSidebar(jobId, titolo);
   }
 }

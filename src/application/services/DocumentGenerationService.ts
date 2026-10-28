@@ -3,7 +3,6 @@ import type { IDatabase, Row } from '../../infrastructure/db/Database';
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
-import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
 import type { IConfigurazioneDocumentoRepository } from '../../domain/repositories/IConfigurazioneDocumentoRepository';
 import type { IClasseRepository } from '../../domain/repositories/IClasseRepository';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
@@ -50,8 +49,6 @@ export interface DocumentGenerationDeps {
   storicoDocumenti: StoricoDocumentiService;
   /** Injected clock — the CDU dates must be deterministic (09 §2). */
   now: Date;
-  /** Optional GasProcessMonitorLib port — per-step telemetry (15 §9), no-op when absent. */
-  monitor?: IProcessMonitor | undefined;
   logger?: LoggerService;
 }
 
@@ -106,10 +103,8 @@ export class DocumentGenerationService {
   private readonly roleResolver: IRoleResolver;
   private readonly storicoDocumenti: StoricoDocumentiService;
   private readonly now: Date;
-  private readonly monitor: IProcessMonitor | undefined;
   private readonly logger: LoggerService;
   private cachedPipeline: Pipeline | undefined;
-  private cachedPipelineJobId: string | undefined;
 
   constructor(deps: DocumentGenerationDeps) {
     this.db = deps.db;
@@ -123,13 +118,11 @@ export class DocumentGenerationService {
     this.roleResolver = deps.roleResolver;
     this.storicoDocumenti = deps.storicoDocumenti;
     this.now = deps.now;
-    this.monitor = deps.monitor;
     this.logger = deps.logger ?? new LoggerService();
   }
 
-  /** `jobId` (batch seam, 15 §9): when provided, per-step telemetry is logged via IProcessMonitor. */
-  generateForClasse(target: ClasseId, confDocId: string, jobId?: string): DocumentGenerationResult {
-    return this.generateForClasseWithRecipe(target, confDocId, 'CLASSE_COMPLETA', {}, jobId);
+  generateForClasse(target: ClasseId, confDocId: string): DocumentGenerationResult {
+    return this.generateForClasseWithRecipe(target, confDocId, 'CLASSE_COMPLETA', {});
   }
 
   /** One document per (docente, materia) cattedra of the class council — e.g. "programma svolto". */
@@ -137,56 +130,41 @@ export class DocumentGenerationService {
     target: ClasseId,
     docenteEmail: string,
     materiaId: string,
-    confDocId: string,
-    jobId?: string
+    confDocId: string
   ): DocumentGenerationResult {
-    return this.generateForClasseWithRecipe(
-      target,
-      confDocId,
-      'CLASSE_DOCENTE_MATERIA',
-      { docenteCorrente: docenteEmail, materiaCorrente: materiaId },
-      jobId
-    );
+    return this.generateForClasseWithRecipe(target, confDocId, 'CLASSE_DOCENTE_MATERIA', {
+      docenteCorrente: docenteEmail,
+      materiaCorrente: materiaId
+    });
   }
 
   /** One document per (classe, materia) of an active class — e.g. "scheda materia per classe". */
   generateForClasseMateria(
     target: ClasseId,
     materiaId: string,
-    confDocId: string,
-    jobId?: string
+    confDocId: string
   ): DocumentGenerationResult {
-    return this.generateForClasseWithRecipe(
-      target,
-      confDocId,
-      'CLASSE_MATERIA',
-      { materiaCorrente: materiaId },
-      jobId
-    );
+    return this.generateForClasseWithRecipe(target, confDocId, 'CLASSE_MATERIA', {
+      materiaCorrente: materiaId
+    });
   }
 
   /** One document per (classe, docente) pair — every subject that teacher holds in this class. */
   generateForClasseDocente(
     target: ClasseId,
     docenteEmail: string,
-    confDocId: string,
-    jobId?: string
+    confDocId: string
   ): DocumentGenerationResult {
-    return this.generateForClasseWithRecipe(
-      target,
-      confDocId,
-      'CLASSE_DOCENTE',
-      { docenteCorrente: docenteEmail },
-      jobId
-    );
+    return this.generateForClasseWithRecipe(target, confDocId, 'CLASSE_DOCENTE', {
+      docenteCorrente: docenteEmail
+    });
   }
 
   private generateForClasseWithRecipe(
     target: ClasseId,
     confDocId: string,
     cduRecipe: string,
-    extraParams: Partial<BuildParams>,
-    jobId?: string
+    extraParams: Partial<BuildParams>
   ): DocumentGenerationResult {
     const startedAt = Date.now();
     const row = this.db.table(TABLE.CONF_DOC).find((r) => r[COL_CONF_DOC.ID] === confDocId);
@@ -220,7 +198,7 @@ export class DocumentGenerationService {
     // by the steps (LOG_FOLD, LOG_DOCS) is committed only when the pipeline ran
     // to completion; a critical failure reverts the DB alongside the Drive
     // rollback performed in the onError hook.
-    return this.runTransactionalPipeline(row, config, cdu, jobId, startedAt);
+    return this.runTransactionalPipeline(row, config, cdu, startedAt);
   }
 
   /**
@@ -229,11 +207,7 @@ export class DocumentGenerationService {
    * doesn't reuse {@link generateForClasseWithRecipe} (no classiCompetenza/articolazione
    * resolution needed).
    */
-  generateForDipartimento(
-    dipartimentoId: string,
-    confDocId: string,
-    jobId?: string
-  ): DocumentGenerationResult {
+  generateForDipartimento(dipartimentoId: string, confDocId: string): DocumentGenerationResult {
     const startedAt = Date.now();
     const row = this.db.table(TABLE.CONF_DOC).find((r) => r[COL_CONF_DOC.ID] === confDocId);
     if (!row) throw new PipelineError(`CONF_DOC ${confDocId} non trovato`);
@@ -251,7 +225,7 @@ export class DocumentGenerationService {
       recipe('DIPARTIMENTO_COMPLETO', recipeOptionsFromParametri(config))
     );
 
-    return this.runTransactionalPipeline(row, config, cdu, jobId, startedAt);
+    return this.runTransactionalPipeline(row, config, cdu, startedAt);
   }
 
   /**
@@ -262,8 +236,7 @@ export class DocumentGenerationService {
   generateForDocente(
     docenteEmail: string,
     classiCompetenza: string[],
-    confDocId: string,
-    jobId?: string
+    confDocId: string
   ): DocumentGenerationResult {
     const startedAt = Date.now();
     const row = this.db.table(TABLE.CONF_DOC).find((r) => r[COL_CONF_DOC.ID] === confDocId);
@@ -284,26 +257,24 @@ export class DocumentGenerationService {
       recipe('DOCENTE_AGGREGATO', recipeOptionsFromParametri(config))
     );
 
-    return this.runTransactionalPipeline(row, config, cdu, jobId, startedAt);
+    return this.runTransactionalPipeline(row, config, cdu, startedAt);
   }
 
   /** Alunno-targeted mirror of {@link generateForClasse} (e.g. DOC_PERSONALIZZATO, one file per student). */
-  generateForAlunno(target: string, confDocId: string, jobId?: string): DocumentGenerationResult {
-    return this.generateForAlunnoWithRecipe(target, confDocId, 'ALUNNO_COMPLETO', jobId);
+  generateForAlunno(target: string, confDocId: string): DocumentGenerationResult {
+    return this.generateForAlunnoWithRecipe(target, confDocId, 'ALUNNO_COMPLETO');
   }
 
   /** Generates one document for one selected personalized plan. */
   generateForPiano(
     alunnoEmail: string,
     pianoTipo: TipoPiano,
-    confDocId: string,
-    jobId?: string
+    confDocId: string
   ): DocumentGenerationResult {
     return this.generateForAlunnoWithRecipe(
       alunnoEmail,
       confDocId,
       'PIANO_PERSONALIZZATO',
-      jobId,
       pianoTipo,
       'PIANO_PERS'
     );
@@ -313,7 +284,6 @@ export class DocumentGenerationService {
     target: string,
     confDocId: string,
     cduRecipe: string,
-    jobId?: string,
     pianoTipo?: TipoPiano,
     expectedConfDocTipo?: string
   ): DocumentGenerationResult {
@@ -338,7 +308,7 @@ export class DocumentGenerationService {
       recipe(cduRecipe, recipeOptionsFromParametri(config))
     );
 
-    return this.runTransactionalPipeline(row, config, cdu, jobId, startedAt);
+    return this.runTransactionalPipeline(row, config, cdu, startedAt);
   }
 
   /**
@@ -351,13 +321,12 @@ export class DocumentGenerationService {
     row: Row,
     config: ConfigurazioneDocumento,
     cdu: Cdu,
-    jobId: string | undefined,
     startedAt: number
   ): DocumentGenerationResult {
     this.db.beginTransaction();
     let ctx: PipelineContext;
     try {
-      ctx = this.getPipeline(jobId).execute({ config: row, confDoc: config, cdu });
+      ctx = this.getPipeline().execute({ config: row, confDoc: config, cdu });
     } catch (e) {
       this.db.rollback();
       throw e;
@@ -391,11 +360,8 @@ export class DocumentGenerationService {
   }
 
   /** Reuses one Pipeline (and its Steps) across every document of a batch run — see plan doc for the safety argument. */
-  private getPipeline(jobId?: string): Pipeline {
-    if (this.cachedPipeline === undefined || this.cachedPipelineJobId !== jobId) {
-      this.cachedPipeline = this.buildPipeline(jobId);
-      this.cachedPipelineJobId = jobId;
-    }
+  private getPipeline(): Pipeline {
+    this.cachedPipeline ??= this.buildPipeline();
     return this.cachedPipeline;
   }
 
@@ -405,7 +371,7 @@ export class DocumentGenerationService {
    * the pipeline continues (old `critical` flag semantics); a critical failure
    * rolls back the orphan clone and requests a graceful stop.
    */
-  private buildPipeline(jobId?: string): Pipeline {
+  private buildPipeline(): Pipeline {
     const pipeline = new Pipeline(this.logger, null, {
       name: 'DocumentoPipeline',
       stopOnError: false,
@@ -443,18 +409,6 @@ export class DocumentGenerationService {
       ctx.set('criticalError', `${step.getName()}: ${error.message}`);
       ctx.requestStop(`critical step failed: ${step.getName()}`);
     });
-
-    // Per-step telemetry (15 §9) for the batch monitoring dashboard — a no-op when
-    // this pipeline runs outside a monitored batch (jobId undefined, e.g. single-doc calls).
-    if (this.monitor !== undefined && jobId !== undefined) {
-      const monitor = this.monitor;
-      pipeline.beforeStep((step) => monitor.logStepStart(jobId, step.getName()));
-      pipeline.afterStep((step, _ctx, result) => {
-        if (result.skipped === true) monitor.logStepSkipped(jobId, step.getName());
-        else monitor.logStepComplete(jobId, step.getName(), result.success);
-      });
-    }
-
     return pipeline;
   }
 }

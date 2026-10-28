@@ -2,7 +2,6 @@ import type { IMasterSheetRepository } from '../domain/repositories/IMasterSheet
 import type { IGmailFacade } from '../infrastructure/facades/GmailServiceFacade';
 import type { IDriveFacade } from '../infrastructure/facades/DriveServiceFacade';
 import type { ITemplateEngine } from '../infrastructure/facades/TemplateEngineFacade';
-import type { IProcessMonitor } from '../infrastructure/facades/ProcessMonitorFacade';
 import { ExpressionEngineFacade } from '../infrastructure/facades/ExpressionEngineFacade';
 import { AlunnoRepository } from '../infrastructure/repositories/AlunnoRepository';
 import { CarenzaRepository } from '../infrastructure/repositories/CarenzaRepository';
@@ -121,7 +120,6 @@ export function composeEmailNotificationService(
   drive: IDriveFacade,
   teachingAssignments: ITeachingAssignmentResolver,
   logger?: LoggerService,
-  monitor?: IProcessMonitor,
   master: IMasterSheetRepository = new MasterSheetRepository(db)
 ): EmailNotificationService {
   const classi = new ClasseRepository(db);
@@ -147,6 +145,5 @@ export function composeEmailNotificationService(
     teachingAssignments
   };
   if (logger !== undefined) base.logger = logger;
-  if (monitor !== undefined) base.monitor = monitor;
   return new EmailNotificationService(base);
 }

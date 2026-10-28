@@ -19,7 +19,6 @@ import * as GasSchemaValidatorLib from '@GasSchemaValidatorLib';
 import * as GasOnlineTestFramework from '@GasOnlineTestFramework';
 import * as RoleResolutionLib from '@RoleResolutionLib';
 import * as ComposableContentLib from '@ComposableContentLib';
-import * as GasProcessMonitorLib from '@GasProcessMonitorLib';
 declare function initializeServices(): {
     exceptionService: GasResilienceLib.ExceptionService;
     logger: CoreUtilsLib.LoggerService;
@@ -27,4 +26,4 @@ declare function initializeServices(): {
     spreadsheetService: GoogleApiWrapper.SpreadsheetService;
     cacheService: GoogleApiWrapper.CacheService;
 };
-export { CoreUtilsLib, GasResilienceLib, GoogleApiWrapper, WorkspaceTemplateEngine, GasExpressionEngineLib, SheetDBLib, JobRunnerLib, PipelineFramework, ContextEngine, GasDataImporter, DomainRepositoryLib, GasSchemaValidatorLib, GasOnlineTestFramework, RoleResolutionLib, ComposableContentLib, GasProcessMonitorLib, initializeServices };
+export { CoreUtilsLib, GasResilienceLib, GoogleApiWrapper, WorkspaceTemplateEngine, GasExpressionEngineLib, SheetDBLib, JobRunnerLib, PipelineFramework, ContextEngine, GasDataImporter, DomainRepositoryLib, GasSchemaValidatorLib, GasOnlineTestFramework, RoleResolutionLib, ComposableContentLib, initializeServices };

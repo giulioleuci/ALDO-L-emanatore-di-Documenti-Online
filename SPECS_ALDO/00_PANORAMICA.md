@@ -15,7 +15,7 @@ Il sistema è organizzato in quattro layer sovrapposti, dove ogni layer dipende 
 ```
 ┌────────────────────────────────────────────────────────────┐
 │  PRESENTATION LAYER                                        │
-│  Menu Google Sheets, Dialoghi modali, Sidebar monitoraggio │
+│  Menu Google Sheets, Dialoghi modali                       │
 └────────────────────────────────────────────────────────────┘
                           ↓
 ┌────────────────────────────────────────────────────────────┐
@@ -61,7 +61,6 @@ SGSA si basa su una gerarchia di librerie riusabili (`GasLibraryFactory`), organ
 | **L3**  | `GasDataImporter`         | ETL da file esterni                                           |
 | **L4**  | `RoleResolutionLib`       | Risoluzione ruoli astratti → email reali con supplenze        |
 | **L4**  | `ComposableContentLib`    | Composizione di contenuto HTML modulare                       |
-| **L4**  | `GasProcessMonitorLib`    | Monitoraggio processi batch con sidebar HTML                  |
 
 SGSA non reimplementa funzionalità già offerte da queste librerie. Le referenzia, le configura e le estende con la logica di business specifica del dominio scolastico.
 

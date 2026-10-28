@@ -3,7 +3,6 @@ import type { IGmailFacade } from '../infrastructure/facades/GmailServiceFacade'
 import type { ITemplateEngine } from '../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../infrastructure/facades/ExpressionEngineFacade';
 import type { IPropertiesFacade } from '../infrastructure/facades/PropertiesFacade';
-import type { IProcessMonitor } from '../infrastructure/facades/ProcessMonitorFacade';
 import type { IMasterSheetRepository } from '../domain/repositories/IMasterSheetRepository';
 import type { EmailDb } from '../application/services/EmailNotificationService';
 import { ServiceContainer } from './ServiceContainer';
@@ -114,8 +113,6 @@ interface BootstrapDeps {
   spreadsheets?: SpreadsheetService;
   /** GoogleApiWrapper DocumentService (10 §9), needed by DOCUMENTO_CON_TABELLE_IMPORTATE. Optional for the same reason as importEngine/spreadsheets. */
   documents?: DocumentService;
-  /** GasProcessMonitorLib port (15 §9) — sidebar progress for the two batch jobs. */
-  monitor?: IProcessMonitor;
   /**
    * ScriptProperties port (15 §7), also handed to `EmailBatchService` so it can
    * persist its own pattern-scoped quota-suspend checkpoint outside
@@ -215,13 +212,6 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   if (deps.spreadsheets !== undefined) {
     c.register('spreadsheets', () => deps.spreadsheets!);
   }
-  // Same optional-dependency shape as `spreadsheets`: GasProcessMonitorLib is a
-  // GAS-only port, so off-GAS containers deliberately leave the key unregistered
-  // and `ServiceContainer.get` fails typed. The online-test telemetry probe
-  // (`processMonitorChecks`) resolves it by key.
-  if (deps.monitor !== undefined) {
-    c.register('monitor', () => deps.monitor!);
-  }
   c.register('strategyFactory', (container) => {
     // Replaces the old GENERATORE-keyed registry (10 §9): the base engine is
     // chosen from FORMATO, not a lookup key. The Sheet/Doc-structural
@@ -276,7 +266,6 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         classi: container.get<ClasseRepository>('classi'),
         storicoDocumenti: container.get<StoricoDocumentiService>('storicoDocumenti'),
         now: deps.now,
-        monitor: deps.monitor,
         logger
       })
   );
@@ -291,7 +280,6 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         container.get<ITeachingAssignmentResolver>('teachingAssignmentResolver'),
         deps.now,
         container.get<DipartimentoRepository>('dipartimenti'),
-        deps.monitor,
         logger,
         container.get<LogJobRepository>('logJob'),
         activeUser
@@ -322,7 +310,6 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         teachingAssignments: container.get<ITeachingAssignmentResolver>(
           'teachingAssignmentResolver'
         ),
-        ...(deps.monitor === undefined ? {} : { monitor: deps.monitor }),
         logger
       })
   );
@@ -331,7 +318,6 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
     (container) =>
       new EmailBatchService(
         container.get<EmailNotificationService>('emailNotificationService'),
-        deps.monitor,
         deps.properties,
         logger,
         container.get<LogJobRepository>('logJob'),
@@ -616,17 +602,6 @@ export function initAldo(
   const driveService = ServiceFactory.getDriveService();
   const documentService = ServiceFactory.getDocumentService();
 
-  // Built up-front (rather than inline in the buildAldoContainer() deps
-  // object below) so the same instance can also be threaded into
-  // ImportEngine's constructor — GasProcessMonitorLib job progress for
-  // imports (15 §9), mirroring how emailBatchService/documentBatchService
-  // already receive deps.monitor.
-  const monitor: IProcessMonitor = new ProcessMonitorService(
-    logger,
-    ServiceFactory.getCacheService(),
-    ServiceFactory.getPropertiesService()
-  );
-
   // GasDataImporter's Loader writes through the raw SheetDBLib table API
   // (insertRows/updateRowById/deleteRowById), not the ALDO IDatabase port —
   // SheetDbAdapter.getDatabaseService() (ref REPORT_GLF.md B9) shares the same
@@ -638,8 +613,7 @@ export function initAldo(
     spreadsheetService,
     db.getDatabaseService(),
     null, // expressionEngine — GasDataImporter's calculated-field feature, unused by ALDO's current CONF_IMP recipes
-    null, // exceptionService — ALDO doesn't inject GasResilienceLib retry here today; out of scope for this task
-    monitor
+    null // exceptionService — ALDO doesn't inject GasResilienceLib retry here today; out of scope for this task
   );
   const driveFacade = new DriveServiceFacade(
     ServiceFactory.getDriveService(),
@@ -659,7 +633,6 @@ export function initAldo(
     importEngine,
     spreadsheets: spreadsheetService,
     documents: documentService,
-    monitor,
     properties,
     now,
     logger,

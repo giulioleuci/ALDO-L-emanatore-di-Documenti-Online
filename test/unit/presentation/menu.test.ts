@@ -27,15 +27,12 @@ test('costruisciMenu builds AVVIA PROCESSI with the six launchers (15 §3)', () 
   ]);
 });
 
-test('wrapper: input → sidebar → delegate (15 §4)', () => {
+test('wrapper: input → delegate (15 §4)', () => {
   const ui = new FakeUiFacade();
   ui.risposteInput.push('CD1');
   const avviati: string[] = [];
   menuGenerazioneDocumenti(ui, (id) => avviati.push(id));
   expect(avviati).toEqual(['CD1']);
-  expect(ui.sidebars).toEqual([
-    { jobId: 'gen_CD1', titolo: 'Monitoraggio — GENERAZIONE DOCUMENTI' }
-  ]);
   expect(ui.messaggi).toHaveLength(0);
 });
 
@@ -44,7 +41,6 @@ test('wrapper: cancelled/empty input aborts with a message and never delegates (
   const avviati: string[] = [];
   menuComunicazioniEmail(ui, (id) => avviati.push(id));
   expect(avviati).toEqual([]);
-  expect(ui.sidebars).toEqual([]);
   expect(ui.messaggi[0]!.messaggio).toContain('annullata');
 });
 
@@ -144,9 +140,6 @@ test('menuEsecuzioneAzioni lists the active actions and delegates the chosen id'
     avviati.push(ids)
   );
   expect(avviati).toEqual([['SANIFICA_TRIM']]);
-  expect(ui.sidebars).toEqual([
-    { jobId: 'azioni_SANIFICA_TRIM', titolo: 'Monitoraggio — ESEGUI AZIONI' }
-  ]);
 });
 
 test('menuEsecuzioneAzioni runs every active action when TUTTE is typed', () => {

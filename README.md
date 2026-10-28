@@ -12,7 +12,7 @@ SGSA non è uno script lineare ma un framework applicativo basato su pattern arc
 
 ## Legame con GasLibraryFactory
 
-ALDO **non reimplementa** funzionalità infrastrutturali generiche: si appoggia a [**GasLibraryFactory**](https://github.com/giulioleuci/GasLibraryFactory), un monorepo indipendente di 16 librerie Google Apps Script riusabili, versionato e testato separatamente.
+ALDO **non reimplementa** funzionalità infrastrutturali generiche: si appoggia a [**GasLibraryFactory**](https://github.com/giulioleuci/GasLibraryFactory), un monorepo indipendente di 15 librerie Google Apps Script riusabili, versionato e testato separatamente.
 
 - `GasLibraryFactory` è un repository Git a sé stante, con propria build, propri test e proprio ciclo di rilascio. In questo workspace vive come sottocartella `GasLibraryFactory/` **esclusa da Git** (vedi `.gitignore`): non è un submodule né codice duplicato, ma una dipendenza a monte che viene compilata e "vendorizzata" localmente.
 - Ogni scelta implementativa non banale in ALDO parte da una verifica in `GasLibraryFactory/DOCS_LIBS`: se la libreria copre già il caso, si usa direttamente; se lo copre solo in parte, si valuta se estendere la libreria invece di scrivere codice custom in ALDO. Il codice ALDO-locale è riservato alla logica di dominio SGSA specifica (es. struttura del CDU, interpretazione di `CONF_DOC`/`CONF_MAIL`) che non ha senso generalizzare in una libreria.
@@ -53,7 +53,7 @@ SGSA è organizzato in quattro layer sovrapposti (Clean Architecture), dove ogni
 ```
 ┌────────────────────────────────────────────────────────────┐
 │  PRESENTATION LAYER                                         │
-│  Menu Google Sheets, dialoghi modali, sidebar di monitoraggio│
+│  Menu Google Sheets, dialoghi modali                         │
 └────────────────────────────────────────────────────────────┘
                           ↓
 ┌────────────────────────────────────────────────────────────┐
@@ -118,7 +118,6 @@ L'albero dei test rispecchia `src/` sotto `test/unit/`; `test/integration/` e `t
 | L3      | `GasDataImporter`         | ETL da file esterni                                       |
 | L4      | `RoleResolutionLib`       | Risoluzione ruoli astratti → email reali, con supplenze   |
 | L4      | `ComposableContentLib`    | Composizione di contenuto HTML modulare                   |
-| L4      | `GasProcessMonitorLib`    | Monitoraggio processi batch con sidebar HTML              |
 
 Il grafo di dipendenza delle librerie è rigorosamente a livelli (L0→L4), senza dipendenze circolari.
 

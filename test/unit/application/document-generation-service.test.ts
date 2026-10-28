@@ -12,7 +12,6 @@ import type { DocumentStrategyFactory } from '../../../src/application/factories
 import { FakeDatabase } from '../../fakes/FakeDatabase';
 import { FakeDriveFacade } from '../../fakes/FakeDriveFacade';
 import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
-import { FakeProcessMonitor } from '../../fakes/FakeProcessMonitor';
 import { fixtureTables } from '../../fixtures/tables';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { TipoPiano } from '../../../src/domain/value-objects/enums';
@@ -54,7 +53,6 @@ function wire(
     strategyFactory?: DocumentStrategyFactory;
     db?: FakeDatabase;
     now?: Date;
-    monitor?: FakeProcessMonitor;
     storicoDocumenti?: StoricoDocumentiService;
     storicoDb?: {
       anniStorici: (
@@ -81,8 +79,7 @@ function wire(
     classi: new ClasseRepository(db),
     storicoDocumenti:
       options.storicoDocumenti ?? new StoricoDocumentiService({ anniStorici: () => [] }),
-    now: options.now ?? new Date('2026-07-01T09:00:00Z'),
-    monitor: options.monitor
+    now: options.now ?? new Date('2026-07-01T09:00:00Z')
   };
   const service = new DocumentGenerationService(deps);
   return { db, drive, templates, service };
@@ -168,27 +165,6 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
     } finally {
       nowSpy.mockRestore();
     }
-  });
-
-  test('registra gli step SKIPPED come saltati, non come completati', () => {
-    const tables = fixtureTables();
-    tables.CONF_DOC[0] = { ...tables.CONF_DOC[0]!, CONDIZIONE: 'false' };
-    const monitor = new FakeProcessMonitor();
-    const { service } = wire(tables, { monitor });
-
-    service.generateForClasse(ClasseId.of('5A'), 'CD1', 'job1');
-
-    expect(monitor.steps).toContainEqual({
-      jobId: 'job1',
-      stepName: 'PrepareInfrastructure',
-      event: 'skipped'
-    });
-    expect(monitor.steps).not.toContainEqual({
-      jobId: 'job1',
-      stepName: 'PrepareInfrastructure',
-      event: 'complete',
-      success: true
-    });
   });
 
   test('generates one document per class in a shared folder and skips the same class retry', () => {
@@ -350,7 +326,7 @@ describe('DocumentGenerationService.generateForPiano', () => {
 
     try {
       expect(
-        service.generateForPiano('a2@school.it', TipoPiano.PDP_DSA, 'PIANI_PERSONALIZZATI', 'job')
+        service.generateForPiano('a2@school.it', TipoPiano.PDP_DSA, 'PIANI_PERSONALIZZATI')
       ).toEqual({
         fileId: 'file_2',
         fileName: 'Piano_PDP (DSA)_NERI PAOLO',
@@ -744,48 +720,31 @@ describe('DocumentGenerationService.generateForDocenteClasseMateria', () => {
     expect(result.fileName).toBe('Programma_MATE_bianchi@school.it');
   });
 
-  test('reuses the same Pipeline instance for one jobId and rebuilds it when the jobId changes', () => {
+  test('reuses the same Pipeline instance across calls', () => {
     const tables = fixtureTables();
     pushDocenteClasseMateriaConfig(tables);
     const strategy = new CapturingStrategy();
     const { service } = wire(tables, { strategy });
     const seen: Pipeline[] = [];
     const originalBuildPipeline = (
-      service as unknown as { buildPipeline: (jobId?: string) => Pipeline }
+      service as unknown as { buildPipeline: () => Pipeline }
     ).buildPipeline.bind(service);
-    (service as unknown as { buildPipeline: (jobId?: string) => Pipeline }).buildPipeline = (
-      jobId?: string
-    ) => {
-      const pipeline = originalBuildPipeline(jobId);
+    (service as unknown as { buildPipeline: () => Pipeline }).buildPipeline = () => {
+      const pipeline = originalBuildPipeline();
       seen.push(pipeline);
       return pipeline;
     };
 
-    service.generateForDocenteClasseMateria(
-      ClasseId.of('5A'),
-      'bianchi@school.it',
-      'MATE',
-      'CD_DOCENTE_CLASSE_MATERIA',
-      'job-1'
-    );
-    service.generateForDocenteClasseMateria(
-      ClasseId.of('5A'),
-      'bianchi@school.it',
-      'MATE',
-      'CD_DOCENTE_CLASSE_MATERIA',
-      'job-1'
-    );
+    for (let i = 0; i < 2; i++) {
+      service.generateForDocenteClasseMateria(
+        ClasseId.of('5A'),
+        'bianchi@school.it',
+        'MATE',
+        'CD_DOCENTE_CLASSE_MATERIA'
+      );
+    }
 
     expect(seen).toHaveLength(1);
-
-    service.generateForDocenteClasseMateria(
-      ClasseId.of('5A'),
-      'bianchi@school.it',
-      'MATE',
-      'CD_DOCENTE_CLASSE_MATERIA',
-      'job-2'
-    );
-    expect(seen).toHaveLength(2);
   });
 
   // The DocenteClasseMateriaFocusProvider PipelineError is thrown during

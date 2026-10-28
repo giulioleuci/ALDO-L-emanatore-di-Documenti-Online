@@ -52,7 +52,6 @@ import { registerSupplenzeRuoliChecks } from '../../../src/onlinetests/checks/su
 import { registerAclRealiChecks } from '../../../src/onlinetests/checks/aclRealiChecks';
 import { registerCacheIsolamentoChecks } from '../../../src/onlinetests/checks/cacheIsolamentoChecks';
 import { registerPermessiChecks } from '../../../src/onlinetests/checks/permessiChecks';
-import { registerProcessMonitorChecks } from '../../../src/onlinetests/checks/processMonitorChecks';
 
 jest.mock('../../../src/infrastructure/facades/PropertiesFacade', () => {
   const actual = jest.requireActual<
@@ -121,9 +120,6 @@ jest.mock('../../../src/onlinetests/checks/cacheIsolamentoChecks', () => ({
 }));
 jest.mock('../../../src/onlinetests/checks/permessiChecks', () => ({
   registerPermessiChecks: jest.fn()
-}));
-jest.mock('../../../src/onlinetests/checks/processMonitorChecks', () => ({
-  registerProcessMonitorChecks: jest.fn()
 }));
 
 const sample: SharedTestDatabase = {
@@ -331,8 +327,7 @@ describe('executeFullOnlineTests', () => {
       supplenzeRuoli: register('supplenze'),
       aclReali: register('acl'),
       cacheIsolamento: register('cache'),
-      permessi: register('permessi'),
-      processMonitor: register('processMonitor')
+      permessi: register('permessi')
     };
     const deps: Partial<FullOnlineTestDeps> = {
       properties: properties(),
@@ -368,11 +363,10 @@ describe('executeFullOnlineTests', () => {
       'supplenze',
       'acl',
       'cache',
-      'permessi',
-      'processMonitor'
+      'permessi'
     ]);
     expect(registerInterceptor).toHaveBeenCalledTimes(1);
-    expect(report).toMatchObject({ passed: 12, failed: 0 });
+    expect(report).toMatchObject({ passed: 11, failed: 0 });
   });
 
   it('uses the default transitional adapters to run existing checks instead of reporting 0/0', () => {
@@ -409,9 +403,6 @@ describe('executeFullOnlineTests', () => {
     const assignmentConsumer = registerExisting('supplenze.consumer');
     const cache = registerExisting('cache');
     const permessi = registerExisting('permessi');
-    const processMonitor = registerExisting(
-      'monitor.telemetria::lo step registrato sopravvive alla rilettura'
-    );
     jest.mocked(registerRepositoryChecks).mockImplementation(repository);
     jest.mocked(registerContextEngineChecks).mockImplementation(context);
     jest.mocked(registerDocumentiChecks).mockImplementation(documenti);
@@ -432,7 +423,6 @@ describe('executeFullOnlineTests', () => {
     jest.mocked(registerEffectiveAssignmentConsumerChecks).mockImplementation(assignmentConsumer);
     jest.mocked(registerCacheIsolamentoChecks).mockImplementation(cache as never);
     jest.mocked(registerPermessiChecks).mockImplementation(permessi as never);
-    jest.mocked(registerProcessMonitorChecks).mockImplementation(processMonitor as never);
 
     const report = executeFullOnlineTests({
       properties: properties(),
@@ -471,8 +461,7 @@ describe('executeFullOnlineTests', () => {
       'supplenze',
       'acl',
       'cache',
-      'permessi',
-      'monitor.telemetria::lo step registrato sopravvive alla rilettura'
+      'permessi'
     ]);
     expect(registerEmailChecks).toHaveBeenCalledWith(
       expect.anything(),
@@ -491,7 +480,7 @@ describe('executeFullOnlineTests', () => {
     expect(cacheCall?.[2]).toMatchObject({ testMode: true });
     expect(cacheCall?.[3].secondMasterSpreadsheetId).toBe('cache-master');
     expect({ passed: report.passed, failed: report.failed }).toEqual({
-      passed: 17,
+      passed: 16,
       failed: 13
     });
     expect(report.results.map((result) => result.name)).toEqual([
@@ -523,8 +512,7 @@ describe('executeFullOnlineTests', () => {
       'supplenze',
       'acl',
       'cache',
-      'permessi',
-      'monitor.telemetria::lo step registrato sopravvive alla rilettura'
+      'permessi'
     ]);
     expect(report.results.some((result) => result.name.includes('trigger reale'))).toBe(false);
   });
@@ -608,8 +596,7 @@ const ONLINE_TEST_GROUP_NAMES: Array<keyof FullOnlineTestRegistrations> = [
   'supplenzeRuoli',
   'aclReali',
   'cacheIsolamento',
-  'permessi',
-  'processMonitor'
+  'permessi'
 ];
 
 /** Properties fixture without the cache-isolated master: batches 1-3 must not need it. */
@@ -865,12 +852,11 @@ describe('online test batches', () => {
     ]);
   });
 
-  it('registers only supplenzeRuoli, cacheIsolamento, permessi and processMonitor in batch 4', () => {
+  it('registers only supplenzeRuoli, cacheIsolamento and permessi in batch 4', () => {
     expect(recordBatchGroups(executeOnlineTestsBatch4, properties())).toEqual([
       'supplenzeRuoli',
       'cacheIsolamento',
-      'permessi',
-      'processMonitor'
+      'permessi'
     ]);
   });
 
@@ -884,7 +870,7 @@ describe('online test batches', () => {
     expect(covered.slice().sort()).toEqual(ONLINE_TEST_GROUP_NAMES.slice().sort());
   });
 
-  it('locks the 106-scenario acceptance contract across all four batches', () => {
+  it('locks the 105-scenario acceptance contract across all four batches', () => {
     const batch1 = recordActualBatchScenarioNames(
       executeOnlineTestsBatch1,
       propertiesWithoutCacheFixture()
@@ -899,9 +885,9 @@ describe('online test batches', () => {
     );
     const batch4 = recordActualBatchScenarioNames(executeOnlineTestsBatch4, properties());
     const allNames = [...batch1, ...batch2, ...batch3, ...batch4];
-    expect([batch1.length, batch2.length, batch3.length, batch4.length]).toEqual([26, 17, 27, 36]);
-    expect(allNames).toHaveLength(106);
-    expect(new Set(allNames).size).toBe(106);
+    expect([batch1.length, batch2.length, batch3.length, batch4.length]).toEqual([26, 17, 27, 35]);
+    expect(allNames).toHaveLength(105);
+    expect(new Set(allNames).size).toBe(105);
     expect(allNames).toContain(
       'E2E scenario 10b: genera documento complesso classe articolata (3C)'
     );

@@ -37,7 +37,6 @@ import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
 import { FakeGmailFacade } from '../../../test/fakes/FakeGmailFacade';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import { ExpressionEngineFacade } from '../../../src/infrastructure/facades/ExpressionEngineFacade';
-import { FakeProcessMonitor } from '../../../test/fakes/FakeProcessMonitor';
 import { MasterSheetRepository } from '../../../src/infrastructure/repositories/MasterSheetRepository';
 import { DriveServiceFacade } from '../../../src/infrastructure/facades/DriveServiceFacade';
 import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
@@ -480,17 +479,6 @@ describe('buildAldoContainer — optional generator strategies', () => {
     expect(c.get('spreadsheets')).toBe(spreadsheets);
   });
 
-  test("registers 'monitor' in the container when deps.monitor is provided", () => {
-    const monitor = { registerJob: jest.fn() } as never;
-    const c = buildAldoContainer({ ...baseDeps(), monitor });
-    expect(c.get('monitor')).toBe(monitor);
-  });
-
-  test("does not register 'monitor' when deps.monitor is omitted", () => {
-    const c = buildAldoContainer(baseDeps());
-    expect(() => c.get('monitor')).toThrow(/monitor/);
-  });
-
   test('databaseValidationService is registered only when a report facade is wired', () => {
     const senza = buildAldoContainer(baseDeps());
     expect(senza.has('databaseValidationService')).toBe(false);
@@ -755,27 +743,7 @@ describe('initAldo — singleton reuse + missing master id', () => {
   });
 });
 
-test('deps.monitor flows through to both batch services (15 §9)', () => {
-  const monitor = new FakeProcessMonitor();
-  const db = new FakeDatabase(fixtureTables());
-  const c = buildAldoContainer({
-    db,
-    master: new MasterSheetRepository(db),
-    drive: new FakeDriveFacade(),
-    gmail: new FakeGmailFacade(),
-    templates: new FakeTemplateEngine(),
-    expressionEngine: new ExpressionEngineFacade(),
-    monitor,
-    now: NOW
-  });
-  const docBatch = c.get<DocumentBatchService>('documentBatchService');
-  const gen = docBatch.batchGenerateHandler({ confDocId: 'CD1', jobId: 'job_gen_CD1' });
-  let step = gen.next();
-  while (!step.done) step = gen.next();
-  expect(monitor.registered).toEqual(['job_gen_CD1']);
-});
-
-test('wired PIANI batch rerun reports both plans SKIPPED and creates no duplicate files', () => {
+test('wired PIANI batch rerun creates no duplicate files', () => {
   const tables = fixtureTables();
   tables.PIANI!.push({
     STUDENTE: 'a1@school.it',
@@ -808,7 +776,6 @@ test('wired PIANI batch rerun reports both plans SKIPPED and creates no duplicat
   });
   const db = new FakeDatabase(tables);
   const drive = new FakeDriveFacade();
-  const monitor = new FakeProcessMonitor();
   const c = buildAldoContainer({
     db,
     master: new MasterSheetRepository(db),
@@ -816,7 +783,6 @@ test('wired PIANI batch rerun reports both plans SKIPPED and creates no duplicat
     gmail: new FakeGmailFacade(),
     templates: new FakeTemplateEngine(),
     expressionEngine: new ExpressionEngineFacade(),
-    monitor,
     now: NOW
   });
   const batch = c.get<DocumentBatchService>('documentBatchService');
@@ -833,16 +799,7 @@ test('wired PIANI batch rerun reports both plans SKIPPED and creates no duplicat
   expect(drain('job_piani_1')).toMatchObject({ success: true, totale: 2 });
   expect(drive.copies.map(({ templateId }) => templateId)).toEqual(['tmpl_pei', 'tmpl_pdp_bes']);
 
-  monitor.progress = [];
   expect(drain('job_piani_2')).toMatchObject({ success: true, totale: 2 });
-  expect(monitor.progress.map(({ message }) => message)).toEqual([
-    expect.stringMatching(
-      /^✔️ Document skipped: a1@school\.it:PEI — Duplicato \(SKIPPED in \d+ms\)$/
-    ),
-    expect.stringMatching(
-      /^✔️ Document skipped: a1@school\.it:PDP_BES — Duplicato \(SKIPPED in \d+ms\)$/
-    )
-  ]);
   expect(drive.copies).toHaveLength(2);
 });
 

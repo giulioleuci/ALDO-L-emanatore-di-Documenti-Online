@@ -8,7 +8,6 @@ import { fixtureTables } from '../../../test/fixtures/tables';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import { FakeGmailFacade } from '../../../test/fakes/FakeGmailFacade';
 import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
-import { FakeProcessMonitor } from '../../../test/fakes/FakeProcessMonitor';
 import { FakePropertiesFacade } from '../../../test/fakes/FakePropertiesFacade';
 import type { IPropertiesFacade } from '../../../src/infrastructure/facades/PropertiesFacade';
 import { AldoTeachingAssignmentResolver } from '../../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
@@ -37,7 +36,6 @@ function fakeLogJob(): { logJob: ILogJobRepository; entries: LogJobEntryInput[] 
 }
 
 function wire(
-  monitor?: FakeProcessMonitor,
   properties?: IPropertiesFacade,
   logger?: LoggerService,
   db: FakeDatabase = new FakeDatabase(fixtureTables()),
@@ -52,7 +50,7 @@ function wire(
     new FakeDriveFacade(),
     new AldoTeachingAssignmentResolver(db)
   );
-  const service = new EmailBatchService(notification, monitor, properties, logger, logJob);
+  const service = new EmailBatchService(notification, properties, logger, logJob);
   return { db, gmail, notification, service };
 }
 
@@ -61,7 +59,7 @@ const ONLINE_TEST_SAFE_EMAIL = 'sgsa-onlinetests@onlinetest.aldo.local';
 test('emits structured email batch/items', () => {
   const lines: string[] = [];
   jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
-  const { service } = wire(undefined, undefined, new LoggerService());
+  const { service } = wire(undefined, new LoggerService());
 
   drain(service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 1, resumeState: null }));
 
@@ -100,7 +98,6 @@ test('emits a content-first timed summary using the per-target email result', ()
   const service = new EmailBatchService(
     notification as unknown as EmailNotificationService,
     undefined,
-    undefined,
     new LoggerService()
   );
 
@@ -137,7 +134,6 @@ test('prints an end-of-job summary with total/succeeded/failed counts and the fa
   };
   const service = new EmailBatchService(
     notification as unknown as EmailNotificationService,
-    undefined,
     undefined,
     new LoggerService()
   );
@@ -182,7 +178,6 @@ test('skipped targets are reported per reason and excluded from successes and CO
   const service = new EmailBatchService(
     notification as unknown as EmailNotificationService,
     undefined,
-    undefined,
     new LoggerService(),
     logJob
   );
@@ -200,7 +195,7 @@ test('skipped targets are reported per reason and excluded from successes and CO
 test('resumed email batch carries forward failed targets from a prior timeout-resume into the final summary', () => {
   const lines: string[] = [];
   jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
-  const { gmail, service } = wire(undefined, undefined, new LoggerService());
+  const { gmail, service } = wire(undefined, new LoggerService());
 
   drain(
     service.batchSendHandler({
@@ -235,7 +230,7 @@ test('resumed email batch carries forward failed targets from a prior timeout-re
 test('resumed email batch logs persisted item index without resending earlier targets', () => {
   const lines: string[] = [];
   jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
-  const { gmail, service } = wire(undefined, undefined, new LoggerService());
+  const { gmail, service } = wire(undefined, new LoggerService());
 
   drain(
     service.batchSendHandler({
@@ -258,7 +253,7 @@ test('resumed email batch logs persisted item index without resending earlier ta
 test('quota suspension before processing logs the batch but no email item', () => {
   const lines: string[] = [];
   jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
-  const { gmail, service } = wire(undefined, undefined, new LoggerService());
+  const { gmail, service } = wire(undefined, new LoggerService());
   gmail.remainingQuota = 0;
 
   drain(service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 2, resumeState: null }));
@@ -316,12 +311,7 @@ test.each([
       ERRORE: '',
       TESTO: 'prior send'
     });
-    const { service, notification, gmail } = wire(
-      undefined,
-      undefined,
-      undefined,
-      new FakeDatabase(tables)
-    );
+    const { service, notification, gmail } = wire(undefined, undefined, new FakeDatabase(tables));
     const sendToTarget = jest.spyOn(notification, 'sendToTarget');
 
     const { result } = drain(service.batchSendHandler({ patternId: 'CDC_OTTOBRE' }));
@@ -338,7 +328,7 @@ test.each(['service', 'checkpoint'])(
   (mode) => {
     const first = wire();
     drain(first.service.batchSendHandler({ patternId: 'CDC_OTTOBRE' }));
-    const { service, notification, gmail } = wire(undefined, undefined, undefined, first.db);
+    const { service, notification, gmail } = wire(undefined, undefined, first.db);
     if (mode === 'service') notification.enableTestMode(ONLINE_TEST_SAFE_EMAIL);
 
     const { result } = drain(
@@ -383,7 +373,7 @@ test('same-job duplicates still reach the pipeline guard and send only once', ()
 test('PERMESSA keeps all targets eligible when reusing the same job cache', () => {
   const tables = fixtureTables();
   tables['CONF_MAIL']![0]!['DUPLICAZIONE'] = 'PERMESSA';
-  const { service, gmail } = wire(undefined, undefined, undefined, new FakeDatabase(tables));
+  const { service, gmail } = wire(undefined, undefined, new FakeDatabase(tables));
 
   drain(service.batchSendHandler({ patternId: 'CDC_OTTOBRE', jobId: 'same-job' }));
   const { result } = drain(
@@ -467,7 +457,7 @@ test('a JobRunner resume state recovers pattern and safe recipient in a fresh co
   // This models initAldo() having already enabled MASTER.TEST_MODE to the
   // Master owner before the online scenario pins this particular JobRunner job.
   const properties = new FakePropertiesFacade();
-  const first = wire(undefined, properties);
+  const first = wire(properties);
   first.notification.enableTestMode('master-owner@onlinetest.aldo.local');
   first.gmail.remainingQuota = 1;
   const initialRun = fakeRunner();
@@ -497,7 +487,7 @@ test('a JobRunner resume state recovers pattern and safe recipient in a fresh co
   // TEST_MODE recipient is the Master owner. JobRunnerLib invokes its handler
   // with only the persisted resumeState: no original pattern/job params and no
   // recipient override survive its trigger-resume boundary.
-  const resumed = wire(undefined, properties);
+  const resumed = wire(properties);
   resumed.notification.enableTestMode('master-owner@onlinetest.aldo.local');
   drain(
     resumed.service.batchSendHandler({
@@ -519,7 +509,7 @@ test('a JobRunner resume state recovers pattern and safe recipient in a fresh co
 
 test('start stores the safe recipient in EmailBatchService persisted state, not arbitrary JobRunner params', () => {
   const properties = new FakePropertiesFacade();
-  const { service } = wire(undefined, properties);
+  const { service } = wire(properties);
   const { runner, calls } = fakeRunner();
 
   service.start(
@@ -574,7 +564,7 @@ test('a completed non-test batch is rerunnable without resending durable SUCCESS
   const firstRun = drain(
     first.service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 2, resumeState: null })
   );
-  const fresh = wire(undefined, undefined, undefined, first.db);
+  const fresh = wire(undefined, undefined, first.db);
   fresh.gmail.remainingQuota = 0;
   const sendToTarget = jest.spyOn(fresh.notification, 'sendToTarget');
   const secondRun = drain(
@@ -600,23 +590,6 @@ test('registerJobHandlers registers under INVIO_EMAIL_BATCH', () => {
   } as unknown as JobQueueLike;
   service.registerJobHandlers(queue);
   expect(registered).toEqual([JOB_TYPE_INVIO_EMAIL]);
-});
-
-test('GasProcessMonitorLib progress calls (15 §9): register/start once, progress per chunk, complete at the end', () => {
-  const monitor = new FakeProcessMonitor();
-  const { service } = wire(monitor);
-  drain(
-    service.batchSendHandler({
-      patternId: 'CDC_OTTOBRE',
-      chunkSize: 1,
-      jobId: 'job_mail_1',
-      resumeState: null
-    })
-  );
-  expect(monitor.registered).toEqual(['job_mail_1']);
-  expect(monitor.started).toEqual(['job_mail_1']);
-  expect(monitor.progress).toHaveLength(2);
-  expect(monitor.completed).toHaveLength(1);
 });
 
 test('caps a chunk to remaining Gmail quota, not just chunkSize (11 §14)', () => {
@@ -649,7 +622,7 @@ test('zero remaining quota suspends cleanly without sending (no resume-trigger c
 
 test('LOG_JOB (NEW_TABLE_LOG_JOB.md): quota suspension appends a SOSPESO_QUOTA row directly (not backfilled)', () => {
   const { logJob, entries } = fakeLogJob();
-  const { gmail, service } = wire(undefined, undefined, undefined, undefined, logJob);
+  const { gmail, service } = wire(undefined, undefined, undefined, logJob);
   gmail.remainingQuota = 1;
   drain(
     service.batchSendHandler({
@@ -675,7 +648,7 @@ test('LOG_JOB (NEW_TABLE_LOG_JOB.md): quota suspension appends a SOSPESO_QUOTA r
 
 test('LOG_JOB: resuming a quota-suspended checkpoint completes without re-logging or backfilling SOSPESO_TEMPO', () => {
   const { logJob, entries } = fakeLogJob();
-  const { gmail, service } = wire(undefined, undefined, undefined, undefined, logJob);
+  const { gmail, service } = wire(undefined, undefined, undefined, logJob);
   gmail.remainingQuota = 1;
   drain(
     service.batchSendHandler({
@@ -713,7 +686,7 @@ test('LOG_JOB: resuming a quota-suspended checkpoint completes without re-loggin
 
 test('LOG_JOB: resuming a raw JobRunnerLib timeout checkpoint (no viaQuotaSuspend) backfills SOSPESO_TEMPO for the cut-off execution', () => {
   const { logJob, entries } = fakeLogJob();
-  const { service } = wire(undefined, undefined, undefined, undefined, logJob);
+  const { service } = wire(undefined, undefined, undefined, logJob);
   drain(
     service.batchSendHandler({
       patternId: 'CDC_OTTOBRE',
@@ -749,7 +722,7 @@ test('LOG_JOB: resuming a raw JobRunnerLib timeout checkpoint (no viaQuotaSuspen
 
 test('Finding 1: quota suspend persists a resume checkpoint that start() seeds on the next call, so restart does not resend', () => {
   const properties = new FakePropertiesFacade();
-  const { gmail, service } = wire(undefined, properties);
+  const { gmail, service } = wire(properties);
   gmail.remainingQuota = 1;
 
   // CDC_OTTOBRE enumerates 2 targets; chunkSize 2 but quota only allows 1, so
@@ -781,7 +754,7 @@ test('Finding 1: quota suspend persists a resume checkpoint that start() seeds o
 
 test('Finding 1: a run that reaches the end of the target list clears the persisted checkpoint (no stale seed on a later run)', () => {
   const properties = new FakePropertiesFacade();
-  const { gmail, service } = wire(undefined, properties);
+  const { gmail, service } = wire(properties);
 
   // First: suspend for quota, persisting a checkpoint (mirrors the previous test).
   gmail.remainingQuota = 1;
@@ -824,7 +797,7 @@ test('Finding 1: a run that reaches the end of the target list clears the persis
 
 test('Finding 1: forceRestart discards the persisted checkpoint instead of seeding it', () => {
   const properties = new FakePropertiesFacade();
-  const { gmail, service } = wire(undefined, properties);
+  const { gmail, service } = wire(properties);
   gmail.remainingQuota = 1;
   drain(
     service.batchSendHandler({
@@ -843,26 +816,4 @@ test('Finding 1: forceRestart discards the persisted checkpoint instead of seedi
     eseguitoDa: ''
   });
   expect(calls[0]!.params).not.toHaveProperty('resumeState');
-});
-
-test('resume does not re-register/re-start the job', () => {
-  const monitor = new FakeProcessMonitor();
-  const { service } = wire(monitor);
-  drain(
-    service.batchSendHandler({
-      patternId: 'CDC_OTTOBRE',
-      chunkSize: 1,
-      jobId: 'job_mail_1',
-      resumeState: {
-        nextIndex: 1,
-        processedIds: ['cdc:5A'],
-        processed: ['5A'],
-        sent: 1,
-        errors: []
-      }
-    })
-  );
-  expect(monitor.registered).toEqual([]);
-  expect(monitor.started).toEqual([]);
-  expect(monitor.completed).toHaveLength(1);
 });

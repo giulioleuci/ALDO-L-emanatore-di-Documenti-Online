@@ -6,7 +6,6 @@ import type { ConfigurazioneDocumento } from '../../domain/entities/Configurazio
 import { GeneratoreAxis, StatoJob } from '../../domain/value-objects/enums';
 import { ConfigurationError, EntityNotFoundError } from '../../domain/errors/DomainError';
 import type { DocumentGenerationService } from './DocumentGenerationService';
-import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import type { ITeachingAssignmentResolver } from '../ports/ITeachingAssignmentResolver';
 import type { ILogJobRepository } from '../../domain/repositories/ILogJobRepository';
@@ -127,7 +126,6 @@ export class DocumentBatchService {
     private readonly now: Date,
     /** Enumerates DIPART rows for the DIPARTIMENTO batch axis (generateDipartimenti). */
     private readonly dipartimenti: IDipartimentoRepository,
-    private readonly monitor?: IProcessMonitor,
     private readonly logger?: LoggerService,
     private readonly logJob?: ILogJobRepository,
     private readonly activeUser?: IActiveUserFacade
@@ -258,7 +256,7 @@ export class DocumentBatchService {
    * run), log the batch header, delegate to `body` for the per-target loop (which
    * yields the resumable checkpoints), then complete the job and return the
    * aggregate result. `body` runs with `this` bound to the service so it can still
-   * call `this.documenti`/`this.logger`/`this.monitor` as before extraction.
+   * call `this.documenti`/`this.logger` as before extraction.
    */
   /** Backfills the SOSPESO_TEMPO row for the execution JobRunnerLib just cut off — the app generator never gets a chance to log at the actual timeout, so this runs once, at the start of the resume that picks the job back up (ref NEW_TABLE_LOG_JOB.md "Dove si scrive" §3). */
   private backfillSospesoTempo(
@@ -301,13 +299,9 @@ export class DocumentBatchService {
     totale: number,
     processed: string[],
     errori: string[],
-    entityLabel: string,
     body: (this: DocumentBatchService) => Generator<BatchCheckpoint, void, void>
   ): Generator<BatchCheckpoint, BatchResult, void> {
-    if (resume === null) {
-      this.monitor?.registerJob(jobId);
-      this.monitor?.startJob(jobId);
-    } else if (this.runCount >= 2) {
+    if (resume !== null && this.runCount >= 2) {
       this.backfillSospesoTempo(jobId, confDocId, totale, resume);
     }
     this.logger?.logBatchStart(totale);
@@ -315,7 +309,6 @@ export class DocumentBatchService {
     yield* body.call(this);
 
     const success = errori.length === 0;
-    this.monitor?.completeJob(jobId, `${processed.length} ${entityLabel}, ${errori.length} errori`);
     this.logger?.logJobReport({
       jobType: JOB_LABEL_GENERAZIONE_DOCUMENTI,
       runCount: this.runCount,
@@ -360,18 +353,16 @@ export class DocumentBatchService {
     errori: string[],
     targets: readonly T[],
     targetId: (target: T) => string,
-    generate: (target: T, confDocId: string, jobId: string) => GeneratedDocument,
-    onError: (targetId: string, reason: string, index: number, total: number) => string,
+    generate: (target: T) => GeneratedDocument,
     extra: Partial<BatchResumeState>
   ): Generator<BatchCheckpoint, void, void> {
     for (let i = resume?.nextIndex ?? 0; i < targets.length; i++) {
       const target = targets[i]!;
       const id = targetId(target);
       this.logger?.logItemStart(i + 1, targets.length, 'Target', id, 'DOCUMENT');
-      let message: string;
       const itemStartedAt = Date.now();
       try {
-        const result = generate(target, confDocId, jobId);
+        const result = generate(target);
         const name = result.fileName ?? id;
         const outcome = DocumentBatchService.documentOutcome(result.status);
         if (result.skipReason !== undefined) {
@@ -383,7 +374,6 @@ export class DocumentBatchService {
           isLast: true,
           ancestorHasNext: [i + 1 < targets.length]
         });
-        message = `${outcome}: ${detail} (${result.status} in ${result.durationMs}ms)`;
       } catch (e) {
         const reason = e instanceof Error ? e.message : String(e);
         errori.push(`${id}: ${reason}`);
@@ -393,11 +383,9 @@ export class DocumentBatchService {
           `${id}: ${reason}`,
           { depth: 1, isLast: true, ancestorHasNext: [i + 1 < targets.length] }
         );
-        message = onError(id, reason, i, targets.length);
       }
       processed.push(id);
       const percentage = ((i + 1) / targets.length) * 100;
-      this.monitor?.updateProgress(jobId, percentage, message);
       yield {
         confDocId,
         jobId,
@@ -446,7 +434,6 @@ export class DocumentBatchService {
       targets.length,
       processed,
       errori,
-      'piani elaborati',
       () =>
         this.iterateTargets(
           jobId,
@@ -456,10 +443,7 @@ export class DocumentBatchService {
           errori,
           targets,
           (target) => `${target.studente}:${target.tipo}`,
-          (target) =>
-            this.documenti.generateForPiano(target.studente, target.tipo, confDocId, jobId),
-          (targetId, reason, index, total) =>
-            `Errore piano ${index + 1}/${total} ${targetId}: ${reason}`,
+          (target) => this.documenti.generateForPiano(target.studente, target.tipo, confDocId),
           { planTargets: targets }
         )
     );
@@ -499,7 +483,6 @@ export class DocumentBatchService {
       targets.length,
       processed,
       errori,
-      'documenti docente/materia elaborati',
       () =>
         this.iterateTargets(
           jobId,
@@ -514,10 +497,8 @@ export class DocumentBatchService {
               ClasseId.of(target.classe),
               target.docenteEmail,
               target.materiaId,
-              confDocId,
-              jobId
+              confDocId
             ),
-          (targetId, reason, index, total) => `Errore ${index + 1}/${total} ${targetId}: ${reason}`,
           { docenteClasseMateriaTargets: targets }
         )
     );
@@ -556,7 +537,6 @@ export class DocumentBatchService {
       targets.length,
       processed,
       errori,
-      'documenti classe/materia elaborati',
       () =>
         this.iterateTargets(
           jobId,
@@ -570,10 +550,8 @@ export class DocumentBatchService {
             this.documenti.generateForClasseMateria(
               ClasseId.of(target.classe),
               target.materiaId,
-              confDocId,
-              jobId
+              confDocId
             ),
-          (targetId, reason, index, total) => `Errore ${index + 1}/${total} ${targetId}: ${reason}`,
           { classeMateriaTargets: targets }
         )
     );
@@ -611,7 +589,6 @@ export class DocumentBatchService {
       targets.length,
       processed,
       errori,
-      'documenti classe/docente elaborati',
       () =>
         this.iterateTargets(
           jobId,
@@ -625,10 +602,8 @@ export class DocumentBatchService {
             this.documenti.generateForClasseDocente(
               ClasseId.of(target.classe),
               target.docenteEmail,
-              confDocId,
-              jobId
+              confDocId
             ),
-          (targetId, reason, index, total) => `Errore ${index + 1}/${total} ${targetId}: ${reason}`,
           { classeDocenteTargets: targets }
         )
     );
@@ -669,7 +644,6 @@ export class DocumentBatchService {
       targets.length,
       processed,
       errori,
-      'docenti elaborati',
       () =>
         this.iterateTargets(
           jobId,
@@ -683,10 +657,8 @@ export class DocumentBatchService {
             this.documenti.generateForDocente(
               target.docenteEmail,
               target.classiCompetenza,
-              confDocId,
-              jobId
+              confDocId
             ),
-          (targetId, reason, index, total) => `Errore ${index + 1}/${total} ${targetId}: ${reason}`,
           { docenteTargets: targets }
         )
     );
@@ -718,7 +690,6 @@ export class DocumentBatchService {
       targets.length,
       processed,
       errori,
-      'alunni elaborati',
       () =>
         this.iterateTargets(
           jobId,
@@ -728,8 +699,7 @@ export class DocumentBatchService {
           errori,
           targets,
           (target) => target.email,
-          (target) => this.documenti.generateForAlunno(target.email, confDocId, jobId),
-          (targetId, reason) => `Errore: ${reason} (alunno ${targetId})`,
+          (target) => this.documenti.generateForAlunno(target.email, confDocId),
           { alunnoTargets: targets }
         )
     );
@@ -755,27 +725,18 @@ export class DocumentBatchService {
       tutti = resume.dipartimentoTargets.slice();
     }
 
-    return yield* this.runBatchJob(
-      jobId,
-      confDocId,
-      resume,
-      tutti.length,
-      processed,
-      errori,
-      'dipartimenti elaborati',
-      () =>
-        this.iterateTargets(
-          jobId,
-          confDocId,
-          resume,
-          processed,
-          errori,
-          tutti,
-          (id) => id,
-          (id) => this.documenti.generateForDipartimento(id, confDocId, jobId),
-          (targetId, reason) => `Errore: ${reason} (dipartimento ${targetId})`,
-          { dipartimentoTargets: tutti }
-        )
+    return yield* this.runBatchJob(jobId, confDocId, resume, tutti.length, processed, errori, () =>
+      this.iterateTargets(
+        jobId,
+        confDocId,
+        resume,
+        processed,
+        errori,
+        tutti,
+        (id) => id,
+        (id) => this.documenti.generateForDipartimento(id, confDocId),
+        { dipartimentoTargets: tutti }
+      )
     );
   }
 
@@ -813,7 +774,6 @@ export class DocumentBatchService {
       classeTargets.length,
       processed,
       errori,
-      'classi elaborate',
       () =>
         this.iterateTargets(
           jobId,
@@ -828,9 +788,8 @@ export class DocumentBatchService {
             if (classe === null) {
               throw new EntityNotFoundError('classe non più presente in CLASSI — saltata');
             }
-            return this.documenti.generateForClasse(classe.classeId, confDocId, jobId);
+            return this.documenti.generateForClasse(classe.classeId, confDocId);
           },
-          (targetId, reason) => `Errore: ${reason} (classe ${targetId})`,
           { classeTargets }
         )
     );

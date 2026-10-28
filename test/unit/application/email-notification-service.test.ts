@@ -12,7 +12,6 @@ import { fixtureTables } from '../../../test/fixtures/tables';
 import { FakeTemplateEngine } from '../../../test/fakes/FakeTemplateEngine';
 import { FakeGmailFacade } from '../../../test/fakes/FakeGmailFacade';
 import { FakeDriveFacade } from '../../../test/fakes/FakeDriveFacade';
-import { FakeProcessMonitor } from '../../../test/fakes/FakeProcessMonitor';
 import type { Row } from '../../../src/infrastructure/db/Database';
 import type { ContextBuilder } from '../../../src/application/context-engine/ContextBuilder';
 import {
@@ -1226,7 +1225,7 @@ test('unknown pattern throws', () => {
 });
 
 // --- A17: remaining uncovered branches (defensive re-checks, id fallbacks,
-// dedup/skip guards, monitor wiring) ---
+// dedup/skip guards) ---
 
 describe('EmailNotificationService — remaining uncovered branches (A17)', () => {
   test('sendPattern throws via the confMail defensive re-check when findById cannot resolve an existing row', () => {
@@ -1342,49 +1341,6 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     expect(result.durationMs).toBeGreaterThanOrEqual(0);
   });
 
-  test('registra gli step SKIPPED come saltati, non come completati', () => {
-    const monitor = new FakeProcessMonitor();
-    const { db, gmail } = wire([
-      {
-        ID: 'CDC_NEVER',
-        OGGETTO: 'X',
-        PROCESSO: 'PER_CDC',
-        BOX_CFG: null,
-        TESTO_START: '',
-        SUPPLENTI: 'SOLO_TITOLARI',
-        NOREPLY: false,
-        COLORE_HEADER: '',
-        CONDIZIONE: 'false',
-        POST_PROCESSO: null
-      }
-    ]);
-    const service = new EmailNotificationService(fullDeps(db, gmail, { monitor }));
-
-    service.sendToTarget(
-      'CDC_NEVER',
-      {
-        tipo: 'cdc',
-        tipoTarget: 'classe',
-        target: '5A',
-        emails: ['rossi@school.it'],
-        classiCompetenza: ['5A']
-      },
-      'job1'
-    );
-
-    expect(monitor.steps).toContainEqual({
-      jobId: 'job1',
-      stepName: 'ComposeEmail',
-      event: 'skipped'
-    });
-    expect(monitor.steps).not.toContainEqual({
-      jobId: 'job1',
-      stepName: 'ComposeEmail',
-      event: 'complete',
-      success: true
-    });
-  });
-
   test('sendToTarget sends and returns sent/errors/skipped:false on a successful run', () => {
     const { service, gmail } = wire();
     const result = service.sendToTarget('CDC_OTTOBRE', {
@@ -1410,58 +1366,6 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     expect(() => service.getConfigurazione('CDC_OTTOBRE')).toThrow(PipelineError);
   });
 
-  test('static create wires an optional monitor, and buildPipeline reports per-step telemetry when a jobId is given', () => {
-    const tables = fixtureTables();
-    const db = new FakeDatabase(tables);
-    const gmail = new FakeGmailFacade();
-    const monitor = new FakeProcessMonitor();
-    const service = composeEmailNotificationService(
-      db,
-      gmail,
-      new FakeTemplateEngine(),
-      NOW,
-      new FakeDriveFacade(),
-      new AldoTeachingAssignmentResolver(db),
-      undefined,
-      monitor
-    );
-    service.sendToTarget(
-      'CDC_OTTOBRE',
-      {
-        tipo: 'cdc',
-        tipoTarget: 'classe',
-        target: '5A',
-        emails: ['rossi@school.it'],
-        classiCompetenza: ['5A']
-      },
-      'job-1'
-    );
-    expect(monitor.steps.map((s) => `${s.stepName}:${s.event}`)).toEqual([
-      'BuildCDU:start',
-      'BuildCDU:complete',
-      'ValutaCondizioniInvio:start',
-      'ValutaCondizioniInvio:complete',
-      'CheckAlreadySent:start',
-      'CheckAlreadySent:complete',
-      'RenderBoxes:start',
-      'RenderBoxes:complete',
-      'ComposeEmail:start',
-      'ComposeEmail:complete',
-      'ResolveRecipients:start',
-      'ResolveRecipients:complete',
-      'SendEmail:start',
-      'SendEmail:complete',
-      'LogEmail:start',
-      'LogEmail:complete',
-      'PostProcessEmail:start',
-      'PostProcessEmail:skipped'
-    ]);
-    expect(monitor.steps.some((s) => s.stepName === 'BuildCDU' && s.event === 'start')).toBe(true);
-    expect(monitor.steps.some((s) => s.stepName === 'BuildCDU' && s.event === 'complete')).toBe(
-      true
-    );
-  });
-
   test('composition wires the supplied teaching resolver into notification enumeration', () => {
     const db = new FakeDatabase(fixtureTables());
     const master = new MasterSheetRepository(db);
@@ -1478,7 +1382,6 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
       NOW,
       new FakeDriveFacade(),
       teachingResolverFor([assignmentFor(injected)]),
-      undefined,
       undefined,
       master
     );

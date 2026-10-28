@@ -35,7 +35,6 @@ export function avvioPersonalizzato(
   ui: IUiFacade,
   titolo: string,
   promptId: string,
-  jobPrefix: string,
   avvia: (configId: string) => void
 ): void {
   const configId = ui.chiediInput(titolo, promptId);
@@ -43,7 +42,6 @@ export function avvioPersonalizzato(
     ui.mostraMessaggio(titolo, 'Operazione annullata: nessun ID di configurazione fornito.');
     return;
   }
-  ui.mostraSidebarMonitoraggio(`${jobPrefix}${configId}`, `Monitoraggio — ${titolo}`);
   try {
     avvia(configId);
   } catch (e) {
@@ -56,7 +54,6 @@ export function menuGenerazioneDocumenti(ui: IUiFacade, avvia: (configId: string
     ui,
     'GENERAZIONE DOCUMENTI',
     "Inserisci l'ID di configurazione (CONF_DOC.ID):",
-    'gen_',
     avvia
   );
 }
@@ -66,19 +63,12 @@ export function menuComunicazioniEmail(ui: IUiFacade, avvia: (patternId: string)
     ui,
     'COMUNICAZIONI EMAIL',
     "Inserisci l'ID del pattern (CONF_MAIL.ID):",
-    'mail_',
     avvia
   );
 }
 
 export function menuImportazioni(ui: IUiFacade, avvia: (configId: string) => void): void {
-  avvioPersonalizzato(
-    ui,
-    'IMPORTAZIONI',
-    "Inserisci l'ID di configurazione (CONF_IMP.ID):",
-    'imp_',
-    avvia
-  );
+  avvioPersonalizzato(ui, 'IMPORTAZIONI', "Inserisci l'ID di configurazione (CONF_IMP.ID):", avvia);
 }
 
 export const PAROLA_CONFERMA = 'CONFERMA';
@@ -158,10 +148,6 @@ export function menuEsecuzioneAzioni(
     return;
   }
   const ids = tutte ? attive.map((a) => a.id) : [scelta];
-  ui.mostraSidebarMonitoraggio(
-    `azioni_${tutte ? PAROLA_TUTTE : scelta}`,
-    `Monitoraggio — ${titolo}`
-  );
   try {
     avvia(ids);
   } catch (e) {

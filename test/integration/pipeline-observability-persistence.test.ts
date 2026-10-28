@@ -212,12 +212,7 @@ test('pipeline observability survives real SheetDB commit and dynamic job execut
 
     logger.withPosition({ depth: 1, isLast: true, ancestorHasNext: [] }, () => {
       expect(
-        documentService.generateForPiano(
-          'a1@school.it',
-          TipoPiano.PDP_DSA,
-          'PIANI_PERSONALIZZATI',
-          'gen_PIANI_CUSTOMIZZATI'
-        )
+        documentService.generateForPiano('a1@school.it', TipoPiano.PDP_DSA, 'PIANI_PERSONALIZZATI')
       ).toMatchObject({
         fileId: '1GeneratedFileId',
         fileName: 'PDP_DSA_Rossi_Mario_2026',

@@ -1,5 +1,4 @@
 import type { EmailNotificationService } from './EmailNotificationService';
-import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
 import type { IPropertiesFacade } from '../../infrastructure/facades/PropertiesFacade';
 import type { ILogJobRepository } from '../../domain/repositories/ILogJobRepository';
 import type { IActiveUserFacade } from '../../infrastructure/facades/ActiveUserFacade';
@@ -109,7 +108,6 @@ interface EmailBatchResult {
 export class EmailBatchService {
   constructor(
     private readonly email: EmailNotificationService,
-    private readonly monitor?: IProcessMonitor,
     private readonly properties?: IPropertiesFacade,
     private readonly logger?: LoggerService,
     private readonly logJob?: ILogJobRepository,
@@ -242,7 +240,7 @@ export class EmailBatchService {
    * Shared tail for both quota-suspend branches below: records the
    * user-facing error, persists the resumable checkpoint so a subsequent
    * `start()` for this pattern picks up where this run stopped (see class
-   * docstring), and reports completion to the monitor. Returns the
+   * docstring). Returns the
    * checkpoint the caller must `yield` before `return`ing.
    */
   private suspendForQuota(
@@ -280,7 +278,6 @@ export class EmailBatchService {
       saltati: { ...this.saltati }
     };
     this.savePersistedResume(patternId, resumeStateWithFlag);
-    this.monitor?.completeJob(jobId, `${sent} email inviate, sospeso per quota esaurita`);
     // Quota exhaustion makes JobRunnerLib treat this as the job's terminal return
     // (see class docstring) — the batch isn't logically finished, but this launch is.
     this.logJobSummary(total, failedTargets);
@@ -351,11 +348,6 @@ export class EmailBatchService {
       let i = 0;
       this.logger?.logBatchStart(targets.length);
 
-      // A quota suspend completes the monitor job (which drops its PM_ property), so a restart re-registers it.
-      if (resume === null || resume.viaQuotaSuspend === true) {
-        this.monitor?.registerJob(jobId);
-        this.monitor?.startJob(jobId);
-      }
       if (resume !== null && this.runCount >= 2) {
         this.backfillSospesoTempo(patternId, jobId, totale, resume);
       }
@@ -387,7 +379,6 @@ export class EmailBatchService {
         const quotaCapped = remainingQuota < chunkSize;
         const effectiveChunk = Math.min(chunkSize, remainingQuota);
         const fine = Math.min(i + effectiveChunk, targets.length);
-        let progressDetail = '';
         for (; i < fine; i++) {
           const target = targets[i]!;
           const targetHeader = target.emails.join(',') || target.target;
@@ -410,7 +401,6 @@ export class EmailBatchService {
           const detail =
             `${subject} -> ${recipients.join(',')}` +
             (esito.skipReason === undefined ? '' : ` — ${esito.skipReason}`);
-          progressDetail = detail;
           this.logger?.logSummary(outcome, esito.durationMs, detail, {
             depth: 1,
             isLast: true,
@@ -439,11 +429,6 @@ export class EmailBatchService {
           return { success: false, totale, processed, sent, errors, failedTargets };
         }
 
-        this.monitor?.updateProgress(
-          jobId,
-          percentage,
-          `${processed.length}/${totale} destinatari elaborati: ${progressDetail}`
-        );
         yield {
           patternId,
           jobId,
@@ -465,7 +450,6 @@ export class EmailBatchService {
       }
 
       const success = errors.length === 0;
-      this.monitor?.completeJob(jobId, `${sent} email inviate, ${errors.length} errori`);
       this.clearPersistedResume(patternId);
       this.clearPersistedTestRecipient(patternId);
       this.logJobSummary(totale, failedTargets);

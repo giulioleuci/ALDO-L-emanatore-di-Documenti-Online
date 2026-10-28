@@ -4,7 +4,6 @@ import type { IUiFacade, MenuVoce } from '../../src/infrastructure/facades/UiFac
 export class FakeUiFacade implements IUiFacade {
   public readonly menus: Array<{ titolo: string; voci: MenuVoce[] }> = [];
   public readonly messaggi: Array<{ titolo: string; messaggio: string }> = [];
-  public readonly sidebars: Array<{ jobId: string; titolo: string }> = [];
   public readonly risposteInput: string[] = [];
 
   creaMenu(titolo: string, voci: MenuVoce[]): void {
@@ -17,9 +16,5 @@ export class FakeUiFacade implements IUiFacade {
 
   mostraMessaggio(titolo: string, messaggio: string): void {
     this.messaggi.push({ titolo, messaggio });
-  }
-
-  mostraSidebarMonitoraggio(jobId: string, titolo: string): void {
-    this.sidebars.push({ jobId, titolo });
   }
 }

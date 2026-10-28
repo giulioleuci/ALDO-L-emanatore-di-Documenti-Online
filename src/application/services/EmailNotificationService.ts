@@ -3,7 +3,6 @@ import type { IGmailFacade } from '../../infrastructure/facades/GmailServiceFaca
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
-import type { IProcessMonitor } from '../../infrastructure/facades/ProcessMonitorFacade';
 import type { PostProcessDb } from '../pipelines/standaloneActions';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
 import { emailTargetId, type EmailTarget } from '../email/saluto';
@@ -74,8 +73,6 @@ export interface EmailNotificationDeps {
   teachingAssignments: ITeachingAssignmentResolver;
   /** Injected clock — deterministic CDU dates and supplenza windows (09 §2). */
   now: Date;
-  /** Optional GasProcessMonitorLib port — per-step telemetry (15 §9), no-op when absent. */
-  monitor?: IProcessMonitor;
   logger?: LoggerService;
 }
 
@@ -111,20 +108,17 @@ interface EmailTargetResult {
  * the CONF_MAIL record, never from code branches per pattern.
  */
 export class EmailNotificationService {
-  private readonly deps: Required<Omit<EmailNotificationDeps, 'logger' | 'monitor'>>;
-  private readonly monitor: IProcessMonitor | undefined;
+  private readonly deps: Required<Omit<EmailNotificationDeps, 'logger'>>;
   private readonly logger: LoggerService;
   private testEmail: string | null = null;
   private readonly projector = new CollectionProjector({ logger: new LoggerService() });
   private cachedPipeline: Pipeline | undefined;
-  private cachedPipelineJobId: string | undefined;
   private cachedSuccessfulLogicalTargetIds:
     { patternId: string; jobId: string; ids: Set<string> } | undefined;
 
   constructor(deps: EmailNotificationDeps) {
-    const { logger, monitor, ...rest } = deps;
+    const { logger, ...rest } = deps;
     this.deps = rest;
-    this.monitor = monitor;
     this.logger = logger ?? new LoggerService();
   }
 
@@ -205,7 +199,7 @@ export class EmailNotificationService {
       jobId,
       activeTestRecipient
     );
-    const ctx = this.getPipeline(jobId).execute({
+    const ctx = this.getPipeline().execute({
       config: row,
       confMail: conf,
       emailTarget: target,
@@ -299,18 +293,15 @@ export class EmailNotificationService {
   }
 
   /** Reuses one Pipeline (and its Steps) across every target of a batch run — see plan doc for the safety argument. */
-  private getPipeline(jobId?: string): Pipeline {
-    if (this.cachedPipeline === undefined || this.cachedPipelineJobId !== jobId) {
-      this.cachedPipeline = this.buildPipeline(jobId);
-      this.cachedPipelineJobId = jobId;
-    }
+  private getPipeline(): Pipeline {
+    this.cachedPipeline ??= this.buildPipeline();
     return this.cachedPipeline;
   }
 
   /** The 9 steps of 11 §2 on the library orchestrator; failures are collected, never thrown. */
-  private buildPipeline(jobId?: string): Pipeline {
+  private buildPipeline(): Pipeline {
     const d = this.deps;
-    const pipeline = new Pipeline(this.logger, null, {
+    return new Pipeline(this.logger, null, {
       name: 'NotificaPipeline',
       stopOnError: false,
       collapseSkippedSteps: true,
@@ -335,19 +326,6 @@ export class EmailNotificationService {
       .addStep(new SendEmailStep(this.logger, d.gmail, d.master))
       .addStep(new LogEmailStep(this.logger, d.logMail))
       .addStep(new PostProcessEmailStep(this.logger, d.db, d.templates));
-
-    // Per-step telemetry (15 §9) for the batch monitoring dashboard — a no-op when
-    // this pipeline runs outside a monitored batch (jobId undefined, e.g. sendPattern).
-    if (this.monitor !== undefined && jobId !== undefined) {
-      const monitor = this.monitor;
-      pipeline.beforeStep((step) => monitor.logStepStart(jobId, step.getName()));
-      pipeline.afterStep((step, _ctx, result) => {
-        if (result.skipped === true) monitor.logStepSkipped(jobId, step.getName());
-        else monitor.logStepComplete(jobId, step.getName(), result.success);
-      });
-    }
-
-    return pipeline;
   }
 
   /** Logical recipients per CONF_MAIL.PROCESSO (11 §3, §12). */

@@ -262,35 +262,6 @@ test('vendored DocumentBuilder exposes appendParagraph/setText (blank-doc conten
   expect(builder.appendParagraph('x')).toBe(builder);
 });
 
-test('vendored ProcessMonitorService exposes the real job-progress API', () => {
-  const logger = new LoggerService();
-  // Stateful fake cache so hasJob (which reads state back) can be exercised.
-  // cacheService is a FACTORY exposing getScriptCache() (mirrors CacheService), not the cache itself.
-  const store = new Map<string, string>();
-  const scriptCache = {
-    get: (k: string) => store.get(k) ?? null,
-    put: (k: string, v: string) => store.set(k, v),
-    remove: (k: string) => store.delete(k)
-  };
-  const fakeCacheService = { getScriptCache: () => scriptCache };
-  const fakeProps = {
-    getProperty: () => null,
-    setProperty: () => undefined,
-    deleteProperty: () => undefined
-  };
-  const monitor = new ProcessMonitorService(logger, fakeCacheService, fakeProps);
-  expect(typeof monitor.registerJob).toBe('function');
-  expect(typeof monitor.startJob).toBe('function');
-  expect(typeof monitor.updateProgress).toBe('function');
-  expect(typeof monitor.completeJob).toBe('function');
-  expect(typeof monitor.setError).toBe('function');
-  monitor.registerJob('job1');
-  monitor.startJob('job1');
-  monitor.updateProgress('job1', 50, 'halfway');
-  monitor.completeJob('job1', 'done');
-  expect(monitor.hasJob('job1')).toBe(true);
-});
-
 test('custom SourceStrategy registered via ImportEngine.registerCustomSource works end-to-end (GasLibraryFactory extensibility fix)', () => {
   const logger = new LoggerService();
   const fakeCache = { get: () => null, put: () => undefined, remove: () => undefined };

@@ -93,12 +93,6 @@
       ],
       "jsep": [
         "./types/types/vendor/jsep.d.cts"
-      ],
-      "@GasProcessMonitorLib": [
-        "./types/GasProcessMonitorLib/index.d.ts"
-      ],
-      "@GasProcessMonitorLib/*": [
-        "./types/GasProcessMonitorLib/*"
       ]
     }
   }

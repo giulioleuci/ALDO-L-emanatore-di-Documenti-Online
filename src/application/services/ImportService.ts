@@ -51,8 +51,8 @@ export const JOB_LABEL_IMPORTAZIONE_DATI = 'IMPORTAZIONE DATI';
  * /`_executeLoad` phase methods directly, via `runImport`'s `postTransform`
  * hook (`(transformedData, config) => filteredData`) — this keeps ghost
  * filtering entirely inside the library's own pipeline, so imports still get
- * `GasResilienceLib`-backed retry/backoff and `GasProcessMonitorLib` job
- * progress reporting, both of which the private-method bypass silently lost.
+ * `GasResilienceLib`-backed retry/backoff, which the private-method bypass
+ * silently lost.
  *
  * `executeImportChunked` (below) drives the library's alternative
  * checkpoint-based `startImport`/`runImportChunk` pair (GasDataImporter.md
@@ -78,21 +78,6 @@ export const JOB_LABEL_IMPORTAZIONE_DATI = 'IMPORTAZIONE DATI';
  * under the cap for the row shapes ALDO's CONF_IMP recipes use today. If a
  * future recipe has much wider rows, re-derive this budget from an estimate
  * of the serialized row size, don't just raise it back toward 500.
- *
- * **Known gap #3 — no progress visibility on the chunked path:** unlike the
- * synchronous path (`executeImport`, `jobId: imp_<configId>`, consumed by
- * `Menu.ts`'s monitoring sidebar via its `imp_` prefix match),
- * `executeImportChunked` gives no equivalent visibility. GLF's
- * `ImportEngine.runImportChunk` (out of scope to change here) makes no
- * `monitor.*` calls, `ImportService.start`'s `jobName` is
- * `imp_chunked_<configId>` — which would not match the sidebar's `imp_`
- * prefix scan anyway — and `ImportCheckpoint` has no `percentage` field for
- * JobRunnerLib's own progress tracking to read. This is a real gap but,
- * exactly like the Ghost Record Detection gap above, the chunked launcher is
- * not wired to any live CONF_IMP recipe yet, so this is flagged rather than
- * fixed here. Wiring real progress into this path would need a GLF-side
- * change to `runImportChunk` (to accept a monitor / emit percentage), out of
- * scope for ALDO-local changes.
  */
 export class ImportService {
   constructor(

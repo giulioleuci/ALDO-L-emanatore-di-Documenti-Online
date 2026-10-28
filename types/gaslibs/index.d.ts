@@ -1543,26 +1543,6 @@ declare global {
     ): { violations: DatasetViolation[] };
   }
 
-  // --- GasProcessMonitorLib (L4): job progress tracking + monitoring sidebar ---
-  class ProcessMonitorService {
-    constructor(logger: LoggerService, cacheService: unknown, propertiesService: unknown);
-    registerJob(jobId: string): void;
-    startJob(jobId: string): void;
-    updateProgress(jobId: string, percentage: number, message?: string): void;
-    logStepStart(jobId: string, stepName: string): void;
-    logStepComplete(jobId: string, stepName: string, success: boolean): void;
-    logStepSkipped(jobId: string, stepName: string): void;
-    setError(jobId: string, error: unknown): void;
-    completeJob(jobId: string, message?: string): void;
-    getJobState(jobId: string): Record<string, unknown> | null;
-    hasJob(jobId: string): boolean;
-    clearJob(jobId: string): void;
-  }
-  class DashboardUi {
-    constructor(uiService: LibUiService, logger: LoggerService);
-    createSidebar(jobId: string, title?: string, options?: Record<string, unknown>): void;
-  }
-
   // --- GasDataImporter (L3): ETL recipe engine ---
   interface ImportSourceConfig {
     /** Built-in 'SheetById' | 'Folder', or any type registered via ImportEngine.registerCustomSource. */

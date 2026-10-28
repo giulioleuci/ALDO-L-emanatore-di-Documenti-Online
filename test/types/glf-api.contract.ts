@@ -13,7 +13,6 @@ import type * as GasSchemaValidatorLib from '../../vendor/types/GasSchemaValidat
 import type * as GasDataImporter from '../../vendor/types/GasDataImporter/index';
 import type * as ComposableContentLib from '../../vendor/types/ComposableContentLib/index';
 import type * as GasOnlineTestFramework from '../../vendor/types/GasOnlineTestFramework/index';
-import type * as GasProcessMonitorLib from '@GasProcessMonitorLib';
 
 type Assert<T extends true> = T;
 type ConstructorShape = { prototype: object };
@@ -22,8 +21,6 @@ type MissingMembers<Declared extends ConstructorShape, Published extends Constru
   | Exclude<keyof Declared['prototype'], keyof Published['prototype']>;
 
 type MissingApi = [
-  MissingMembers<typeof ProcessMonitorService, typeof GasProcessMonitorLib.ProcessMonitorService>,
-  MissingMembers<typeof DashboardUi, typeof GasProcessMonitorLib.DashboardUi>,
   MissingMembers<typeof LoggerService, typeof CoreUtilsLib.LoggerService>,
   MissingMembers<typeof HtmlSanitizer, typeof CoreUtilsLib.HtmlSanitizer>,
   MissingMembers<typeof PiiRedactor, typeof CoreUtilsLib.PiiRedactor>,

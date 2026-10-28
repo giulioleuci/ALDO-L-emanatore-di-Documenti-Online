@@ -10,7 +10,6 @@ import type { DocumentGenerationService } from '../../../src/application/service
 import type { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { FakeDatabase } from '../../fakes/FakeDatabase';
 import { fixtureTables } from '../../fixtures/tables';
-import { FakeProcessMonitor } from '../../fakes/FakeProcessMonitor';
 import { Alunno } from '../../../src/domain/entities/Alunno';
 import { Piano } from '../../../src/domain/entities/Piano';
 import { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
@@ -72,7 +71,6 @@ const noopDipartimenti = {
 function wire(
   options: {
     failFor?: string;
-    monitor?: FakeProcessMonitor;
     logger?: LoggerService;
     resultStatus?: 'GENERATO' | 'SKIPPED';
     resultDurationMs?: number;
@@ -106,7 +104,6 @@ function wire(
     noopTeachingAssignments,
     FIXED_NOW,
     noopDipartimenti,
-    options.monitor,
     options.logger,
     options.logJob,
     options.activeUser
@@ -116,7 +113,6 @@ function wire(
 
 function wirePiani(
   options: {
-    monitor?: FakeProcessMonitor;
     configTipo?: string;
     configId?: string;
     missingConfig?: boolean;
@@ -166,11 +162,10 @@ function wirePiani(
     studente: string;
     tipo: TipoPiano;
     confDocId: string;
-    jobId?: string;
   }> = [];
   const documenti = {
-    generateForPiano: (studente: string, tipo: TipoPiano, confDocId: string, jobId?: string) => {
-      generated.push({ studente, tipo, confDocId, jobId });
+    generateForPiano: (studente: string, tipo: TipoPiano, confDocId: string) => {
+      generated.push({ studente, tipo, confDocId });
       if (tipo === options.failForTipo) throw new Error('template non trovato');
       const skipped = options.resultStatus === 'SKIPPED';
       return {
@@ -193,7 +188,6 @@ function wirePiani(
     noopTeachingAssignments,
     FIXED_NOW,
     noopDipartimenti,
-    options.monitor,
     options.logger
   );
   return { service, generated, studenti, piani };
@@ -251,22 +245,19 @@ test('PIANO_PERS configuration with a nonstandard ID still runs one target per p
     {
       studente: 'con-piani@school.it',
       tipo: TipoPiano.PEI,
-      confDocId: configId,
-      jobId: 'job_inclusione'
+      confDocId: configId
     },
     {
       studente: 'con-piani@school.it',
       tipo: TipoPiano.PDP_BES,
-      confDocId: configId,
-      jobId: 'job_inclusione'
+      confDocId: configId
     }
   ]);
   expect(step.value).toMatchObject({ success: true, totale: 2 });
 });
 
-test('PIANI batch yields one persisted checkpoint and one progress update per active-student plan', () => {
-  const monitor = new FakeProcessMonitor();
-  const { service, generated } = wirePiani({ monitor });
+test('PIANI batch yields one persisted checkpoint per active-student plan', () => {
+  const { service, generated } = wirePiani();
   const gen = service.batchGenerateHandler({
     confDocId: 'PIANI_PERSONALIZZATI',
     jobId: 'job_piani'
@@ -282,14 +273,12 @@ test('PIANI batch yields one persisted checkpoint and one progress update per ac
     {
       studente: 'con-piani@school.it',
       tipo: TipoPiano.PEI,
-      confDocId: 'PIANI_PERSONALIZZATI',
-      jobId: 'job_piani'
+      confDocId: 'PIANI_PERSONALIZZATI'
     },
     {
       studente: 'con-piani@school.it',
       tipo: TipoPiano.PDP_BES,
-      confDocId: 'PIANI_PERSONALIZZATI',
-      jobId: 'job_piani'
+      confDocId: 'PIANI_PERSONALIZZATI'
     }
   ]);
   expect(checkpoints).toHaveLength(2);
@@ -301,11 +290,6 @@ test('PIANI batch yields one persisted checkpoint and one progress update per ac
       { studente: 'con-piani@school.it', tipo: TipoPiano.PDP_BES }
     ]
   });
-  expect(monitor.progress.map(({ percentage }) => percentage)).toEqual([50, 100]);
-  expect(monitor.progress.map(({ message }) => message)).toEqual([
-    '✅ Document generated: Piano_PEI_con-piani@school.it (GENERATO in 8572ms)',
-    '✅ Document generated: Piano_PDP_BES_con-piani@school.it (GENERATO in 8572ms)'
-  ]);
   expect(step.value).toEqual({
     success: true,
     totale: 2,
@@ -337,14 +321,12 @@ test('PIANI resume consumes its persisted target order without querying current 
     {
       studente: 'con-piani@school.it',
       tipo: TipoPiano.PEI,
-      confDocId: 'PIANI_PERSONALIZZATI',
-      jobId: 'job_piani'
+      confDocId: 'PIANI_PERSONALIZZATI'
     },
     {
       studente: 'con-piani@school.it',
       tipo: TipoPiano.PDP_BES,
-      confDocId: 'PIANI_PERSONALIZZATI',
-      jobId: 'job_piani'
+      confDocId: 'PIANI_PERSONALIZZATI'
     }
   ]);
   expect(resumedStep.value.processed).toEqual([
@@ -376,8 +358,7 @@ test('registered handler resumes a raw PIANI checkpoint without top-level IDs or
 });
 
 test('PIANI isolates one plan error with the email:TIPO prefix and continues remaining targets', () => {
-  const monitor = new FakeProcessMonitor();
-  const { service, generated } = wirePiani({ monitor, failForTipo: TipoPiano.PEI });
+  const { service, generated } = wirePiani({ failForTipo: TipoPiano.PEI });
   const gen = service.batchGenerateHandler({
     confDocId: 'PIANI_PERSONALIZZATI',
     jobId: 'job_piani'
@@ -392,10 +373,6 @@ test('PIANI isolates one plan error with the email:TIPO prefix and continues rem
     processed: ['con-piani@school.it:PEI', 'con-piani@school.it:PDP_BES'],
     errori: ['con-piani@school.it:PEI: template non trovato']
   });
-  expect(monitor.progress.map(({ message }) => message)).toEqual([
-    'Errore piano 1/2 con-piani@school.it:PEI: template non trovato',
-    '✅ Document generated: Piano_PDP_BES_con-piani@school.it (GENERATO in 8572ms)'
-  ]);
 });
 
 test.each([
@@ -410,8 +387,7 @@ test.each([
     error: 'CONF_DOC PIANI_PERSONALIZZATI deve avere TIPO PIANO_PERS'
   }
 ])('PIANI stops before job startup on invalid configuration: $error', (scenario) => {
-  const monitor = new FakeProcessMonitor();
-  const { service, generated } = wirePiani({ monitor, ...scenario });
+  const { service, generated } = wirePiani({ ...scenario });
   const gen = service.batchGenerateHandler({
     confDocId: 'PIANI_PERSONALIZZATI',
     jobId: 'job_piani'
@@ -424,7 +400,6 @@ test.each([
       .next()
   ).toThrow(scenario.error);
   expect(generated).toEqual([]);
-  expect(monitor.registered).toEqual([]);
 });
 
 test('handler yields one resumable checkpoint per targeted class and returns the total', () => {
@@ -680,54 +655,6 @@ test('uses the elapsed duration in a failed class summary', () => {
   );
 });
 
-test('GasProcessMonitorLib progress calls (15 §9): register/start once, progress per class, complete at the end', () => {
-  const monitor = new FakeProcessMonitor();
-  const { service } = wire({ monitor });
-  const gen = service.batchGenerateHandler({ confDocId: 'CD1', jobId: 'job_1' });
-  let step = gen.next();
-  while (!step.done) step = gen.next();
-  expect(monitor.registered).toEqual(['job_1']);
-  expect(monitor.started).toEqual(['job_1']);
-  expect(monitor.progress).toHaveLength(2);
-  expect(monitor.progress[0]!.message).toContain('5A');
-  expect(monitor.progress[1]!.percentage).toBe(100);
-  expect(monitor.completed).toHaveLength(1);
-  expect(monitor.errors).toHaveLength(0); // non-critical per-element errors never call setError
-});
-
-test('a failing class surfaces an "Errore: ..." progress message but setError is never called (15 §8/§9)', () => {
-  const monitor = new FakeProcessMonitor();
-  const { service } = wire({ failFor: '1F', monitor });
-  const gen = service.batchGenerateHandler({ confDocId: 'CD1', jobId: 'job_1' });
-  let step = gen.next();
-  while (!step.done) step = gen.next();
-  const failedMessage = monitor.progress.find((p) => p.message?.includes('Errore'));
-  expect(failedMessage?.message).toContain('template non trovato');
-  expect(monitor.errors).toHaveLength(0);
-});
-
-test('resume does not re-register/re-start the job (only the initial invocation does)', () => {
-  const monitor = new FakeProcessMonitor();
-  const { service } = wire({ monitor });
-  const gen = service.batchGenerateHandler({
-    confDocId: 'CD1',
-    jobId: 'job_1',
-    resumeState: {
-      confDocId: 'CD1',
-      jobId: 'job_1',
-      nextIndex: 1,
-      processed: ['5A'],
-      errori: [],
-      classeTargets: ['5A', '1F']
-    }
-  });
-  let step = gen.next();
-  while (!step.done) step = gen.next();
-  expect(monitor.registered).toEqual([]);
-  expect(monitor.started).toEqual([]);
-  expect(monitor.completed).toHaveLength(1);
-});
-
 test('LOG_JOB (NEW_TABLE_LOG_JOB.md): a fresh completed run appends one ESECUZIONE=0 COMPLETATO row', () => {
   const { logJob, entries } = fakeLogJob();
   const { service } = wire({ logJob });
@@ -877,7 +804,6 @@ function fakeAssignmentWithSlot(
 function wireDocentiClasseMateria(
   options: {
     failFor?: string;
-    monitor?: FakeProcessMonitor;
     logger?: LoggerService;
     /** Extra base-council assignments merged in per classe id — used to model
      * same-(materia,docente) slots that differ only by kind/specifica (Finding 1). */
@@ -890,15 +816,13 @@ function wireDocentiClasseMateria(
     docente: string;
     materia: string;
     confDocId: string;
-    jobId?: string;
   }> = [];
   const documenti = {
     generateForDocenteClasseMateria: (
       target: ClasseId,
       docenteEmail: string,
       materiaId: string,
-      confDocId: string,
-      jobId?: string
+      confDocId: string
     ) => {
       const key = `${target.value}:${materiaId}:${docenteEmail}`;
       if (key === options.failFor) throw new Error('template non trovato');
@@ -906,8 +830,7 @@ function wireDocentiClasseMateria(
         classe: target.value,
         docente: docenteEmail,
         materia: materiaId,
-        confDocId,
-        jobId
+        confDocId
       });
       return {
         fileId: `file_${target.value}_${materiaId}`,
@@ -985,7 +908,6 @@ function wireDocentiClasseMateria(
     teachingAssignments,
     FIXED_NOW,
     noopDipartimenti,
-    options.monitor,
     options.logger
   );
   return { service, generated, configIds };
@@ -1013,11 +935,7 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
     );
 
     expect(configIds).toEqual(['PROGRAMMA_SVOLTO', 'PROGRAMMA_SVOLTO']);
-    expect(
-      generated.every(
-        ({ confDocId, jobId }) => confDocId === 'PROGRAMMA_SVOLTO' && jobId === 'job_docenti'
-      )
-    ).toBe(true);
+    expect(generated.every(({ confDocId }) => confDocId === 'PROGRAMMA_SVOLTO')).toBe(true);
     expect(new Set(targetIds).size).toBe(targetIds.length);
     expect(result).toMatchObject({ success: true, totale: targetIds.length });
   });
@@ -1045,29 +963,25 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
         classe: '5A',
         docente: 'bianchi@school.it',
         materia: 'MATE',
-        confDocId: 'PROGRAMMA_SVOLTO',
-        jobId: 'job1'
+        confDocId: 'PROGRAMMA_SVOLTO'
       },
       {
         classe: '5A',
         docente: 'bianchi@school.it',
         materia: 'FISI',
-        confDocId: 'PROGRAMMA_SVOLTO',
-        jobId: 'job1'
+        confDocId: 'PROGRAMMA_SVOLTO'
       },
       {
         classe: '5A',
         docente: 'verdi@school.it',
         materia: 'IRC',
-        confDocId: 'PROGRAMMA_SVOLTO',
-        jobId: 'job1'
+        confDocId: 'PROGRAMMA_SVOLTO'
       },
       {
         classe: '1F',
         docente: 'rossi@school.it',
         materia: 'MATE',
-        confDocId: 'PROGRAMMA_SVOLTO',
-        jobId: 'job1'
+        confDocId: 'PROGRAMMA_SVOLTO'
       }
     ]);
     expect(checkpoints).toHaveLength(4);
@@ -1100,8 +1014,7 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
       classe: '5A',
       docente: 'verdi@school.it',
       materia: 'IRC',
-      confDocId: 'PROGRAMMA_SVOLTO',
-      jobId: 'PROGRAMMA_SVOLTO'
+      confDocId: 'PROGRAMMA_SVOLTO'
     });
   });
 
@@ -1134,15 +1047,13 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
         classe: '5A',
         docente: 'verdi@school.it',
         materia: 'IRC',
-        confDocId: 'PROGRAMMA_SVOLTO',
-        jobId: 'PROGRAMMA_SVOLTO'
+        confDocId: 'PROGRAMMA_SVOLTO'
       },
       {
         classe: '1F',
         docente: 'rossi@school.it',
         materia: 'MATE',
-        confDocId: 'PROGRAMMA_SVOLTO',
-        jobId: 'PROGRAMMA_SVOLTO'
+        confDocId: 'PROGRAMMA_SVOLTO'
       }
     ]);
     expect(step.value.processed).toEqual([
@@ -1196,22 +1107,19 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
         classe: '5A',
         docente: 'bianchi@school.it',
         materia: 'MATE',
-        confDocId: 'PROGRAMMA_SVOLTO',
-        jobId: 'PROGRAMMA_SVOLTO'
+        confDocId: 'PROGRAMMA_SVOLTO'
       },
       {
         classe: '5A',
         docente: 'verdi@school.it',
         materia: 'IRC',
-        confDocId: 'PROGRAMMA_SVOLTO',
-        jobId: 'PROGRAMMA_SVOLTO'
+        confDocId: 'PROGRAMMA_SVOLTO'
       },
       {
         classe: '1F',
         docente: 'rossi@school.it',
         materia: 'MATE',
-        confDocId: 'PROGRAMMA_SVOLTO',
-        jobId: 'PROGRAMMA_SVOLTO'
+        confDocId: 'PROGRAMMA_SVOLTO'
       }
     ]);
     expect(result.errori).toEqual(['5A:FISI:bianchi@school.it: template non trovato']);
@@ -1233,8 +1141,7 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
       classe: '5A',
       docente: 'bianchi@school.it',
       materia: 'INTERPRET.CHITARRA',
-      confDocId: 'PROGRAMMA_SVOLTO',
-      jobId: 'job1'
+      confDocId: 'PROGRAMMA_SVOLTO'
     });
     expect(result.processed).toContain('5A:INTERPRET.CHITARRA:bianchi@school.it');
   });
@@ -1281,8 +1188,7 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
       classe: '1F',
       docente: 'rossi@school.it',
       materia: 'MATE',
-      confDocId: 'PROGRAMMA_SVOLTO',
-      jobId: 'job1'
+      confDocId: 'PROGRAMMA_SVOLTO'
     });
     expect(result.processed.filter((id) => id === '1F:MATE:rossi@school.it')).toHaveLength(1);
   });
@@ -1290,18 +1196,12 @@ describe('DocumentBatchService.generateDocentiClasseMateria', () => {
 
 function wireClassiMateria(options: { failFor?: string; tipoLabel?: string } = {}) {
   const db = new FakeDatabase(fixtureTables());
-  const generated: Array<{ classe: string; materia: string; confDocId: string; jobId?: string }> =
-    [];
+  const generated: Array<{ classe: string; materia: string; confDocId: string }> = [];
   const documenti = {
-    generateForClasseMateria: (
-      target: ClasseId,
-      materiaId: string,
-      confDocId: string,
-      jobId?: string
-    ) => {
+    generateForClasseMateria: (target: ClasseId, materiaId: string, confDocId: string) => {
       const key = `${target.value}:${materiaId}`;
       if (key === options.failFor) throw new Error('template non trovato');
-      generated.push({ classe: target.value, materia: materiaId, confDocId, jobId });
+      generated.push({ classe: target.value, materia: materiaId, confDocId });
       return {
         fileId: `file_${target.value}_${materiaId}`,
         fileName: `Doc_${target.value}_${materiaId}`,
@@ -1370,10 +1270,10 @@ describe('DocumentBatchService.generateClassiMateria', () => {
     drain(service.batchGenerateHandler({ confDocId: 'SCHEDA_MATERIA', jobId: 'job_cm' }));
 
     expect(generated).toEqual([
-      { classe: '5A', materia: 'MATE', confDocId: 'SCHEDA_MATERIA', jobId: 'job_cm' },
-      { classe: '5A', materia: 'FISI', confDocId: 'SCHEDA_MATERIA', jobId: 'job_cm' },
-      { classe: '5A', materia: 'IRC', confDocId: 'SCHEDA_MATERIA', jobId: 'job_cm' },
-      { classe: '1F', materia: 'MATE', confDocId: 'SCHEDA_MATERIA', jobId: 'job_cm' }
+      { classe: '5A', materia: 'MATE', confDocId: 'SCHEDA_MATERIA' },
+      { classe: '5A', materia: 'FISI', confDocId: 'SCHEDA_MATERIA' },
+      { classe: '5A', materia: 'IRC', confDocId: 'SCHEDA_MATERIA' },
+      { classe: '1F', materia: 'MATE', confDocId: 'SCHEDA_MATERIA' }
     ]);
     expect(resolvedClassIds).toEqual(['5A', '1F']);
   });
@@ -1403,8 +1303,8 @@ describe('DocumentBatchService.generateClassiMateria', () => {
 
     expect(getResolveCalls()).toBe(0);
     expect(generated).toEqual([
-      { classe: '5A', materia: 'IRC', confDocId: 'SCHEDA_MATERIA', jobId: 'job_cm' },
-      { classe: '1F', materia: 'MATE', confDocId: 'SCHEDA_MATERIA', jobId: 'job_cm' }
+      { classe: '5A', materia: 'IRC', confDocId: 'SCHEDA_MATERIA' },
+      { classe: '1F', materia: 'MATE', confDocId: 'SCHEDA_MATERIA' }
     ]);
     expect(result.processed).toEqual(['5A:MATE', '5A:FISI', '5A:IRC', '1F:MATE']);
   });
@@ -1724,7 +1624,6 @@ function fakeDipartimento(id: string): Dipartimento {
 function wireDipartimenti(
   options: {
     failFor?: string;
-    monitor?: FakeProcessMonitor;
     logger?: LoggerService;
   } = {}
 ) {
@@ -1732,11 +1631,11 @@ function wireDipartimenti(
     findAll: () => [fakeDipartimento('LETTERE'), fakeDipartimento('SCIENZE')],
     findByMateria: () => null
   } as unknown as IDipartimentoRepository;
-  const generated: Array<{ dipartimentoId: string; confDocId: string; jobId?: string }> = [];
+  const generated: Array<{ dipartimentoId: string; confDocId: string }> = [];
   const documenti = {
-    generateForDipartimento: (dipartimentoId: string, confDocId: string, jobId?: string) => {
+    generateForDipartimento: (dipartimentoId: string, confDocId: string) => {
       if (dipartimentoId === options.failFor) throw new Error('template non trovato');
-      generated.push({ dipartimentoId, confDocId, jobId });
+      generated.push({ dipartimentoId, confDocId });
       return {
         fileId: `file_${dipartimentoId}`,
         fileName: `Verbale_${dipartimentoId}`,
@@ -1768,7 +1667,6 @@ function wireDipartimenti(
     noopTeachingAssignments,
     FIXED_NOW,
     dipartimenti,
-    options.monitor,
     options.logger
   );
   return { service, generated, configIds };
@@ -1783,8 +1681,8 @@ describe('DocumentBatchService.generateDipartimenti', () => {
     );
 
     expect(generated).toEqual([
-      { dipartimentoId: 'LETTERE', confDocId: 'VERBALE_DIPARTIMENTO', jobId: 'job1' },
-      { dipartimentoId: 'SCIENZE', confDocId: 'VERBALE_DIPARTIMENTO', jobId: 'job1' }
+      { dipartimentoId: 'LETTERE', confDocId: 'VERBALE_DIPARTIMENTO' },
+      { dipartimentoId: 'SCIENZE', confDocId: 'VERBALE_DIPARTIMENTO' }
     ]);
     expect(checkpoints).toHaveLength(2);
     expect(result).toEqual({
@@ -1803,8 +1701,7 @@ describe('DocumentBatchService.generateDipartimenti', () => {
     expect(generated).toEqual([
       {
         dipartimentoId: 'LETTERE',
-        confDocId: 'VERBALE_DIPARTIMENTO',
-        jobId: 'VERBALE_DIPARTIMENTO'
+        confDocId: 'VERBALE_DIPARTIMENTO'
       }
     ]);
     expect(result.errori).toEqual(['SCIENZE: template non trovato']);
@@ -1831,8 +1728,7 @@ describe('DocumentBatchService.generateDipartimenti', () => {
     expect(generated).toEqual([
       {
         dipartimentoId: 'SCIENZE',
-        confDocId: 'VERBALE_DIPARTIMENTO',
-        jobId: 'VERBALE_DIPARTIMENTO'
+        confDocId: 'VERBALE_DIPARTIMENTO'
       }
     ]);
     expect(result.processed).toEqual(['LETTERE', 'SCIENZE']);
@@ -1860,12 +1756,7 @@ describe('DocumentBatchService.generateDipartimenti', () => {
 
     expect(configIds).toEqual(['VERBALE_DIPARTIMENTO', 'VERBALE_DIPARTIMENTO']);
     expect(generated.map(({ dipartimentoId }) => dipartimentoId)).toEqual(['LETTERE', 'SCIENZE']);
-    expect(
-      generated.every(
-        ({ confDocId, jobId }) =>
-          confDocId === 'VERBALE_DIPARTIMENTO' && jobId === 'job_dipartimenti'
-      )
-    ).toBe(true);
+    expect(generated.every(({ confDocId }) => confDocId === 'VERBALE_DIPARTIMENTO')).toBe(true);
     expect(result).toMatchObject({ success: true, processed: ['LETTERE', 'SCIENZE'] });
   });
 

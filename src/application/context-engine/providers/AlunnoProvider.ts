@@ -70,7 +70,9 @@ export class AlunnoProvider implements ContextProvider {
       isPfp: false,
       isStranieri: false,
       isRipetente: alunno.isRipetente(),
-      isRappresentante: alunno.isRappresentante(),
+      isRappresentante: alunno.isRappresentante() || alunno.isRappresentanteGenitore(),
+      isRappresentanteStudente: alunno.isRappresentante(),
+      isRappresentanteGenitore: alunno.isRappresentanteGenitore(),
       presenza: {
         annoPrecedente: precedente,
         isPresenteTuttoAnno: true,

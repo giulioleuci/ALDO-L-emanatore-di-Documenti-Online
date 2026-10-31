@@ -55,6 +55,8 @@ export class StudentiProvider implements ContextProvider {
       stranieri: elenco.filter((alunno) => alunno.isStranieri),
       ripetenti: elenco.filter((alunno) => alunno.isRipetente),
       rappresentanti: elenco.filter((alunno) => alunno.isRappresentante),
+      rappresentantiStudenti: elenco.filter((alunno) => alunno.isRappresentanteStudente),
+      rappresentantiGenitori: elenco.filter((alunno) => alunno.isRappresentanteGenitore),
       conPiani: elenco.filter((alunno) => alunno.piani.hasElenco)
     };
     const irc = elenco.filter((alunno) => alunno.isIrc);
@@ -107,7 +109,9 @@ export class StudentiProvider implements ContextProvider {
         conBes: 0,
         conDsa: 0,
         ripetenti: 0,
-        rappresentanti: 0
+        rappresentanti: 0,
+        rappresentantiStudenti: 0,
+        rappresentantiGenitori: 0
       },
       perStato: {
         ...perStato,
@@ -119,6 +123,8 @@ export class StudentiProvider implements ContextProvider {
         hasStranieri: perStato.stranieri.length > 0,
         hasRipetenti: perStato.ripetenti.length > 0,
         hasRappresentanti: perStato.rappresentanti.length > 0,
+        hasRappresentantiStudenti: perStato.rappresentantiStudenti.length > 0,
+        hasRappresentantiGenitori: perStato.rappresentantiGenitori.length > 0,
         hasConPiani: perStato.conPiani.length > 0,
         numeroBes: perStato.bes.length,
         numeroDsa: perStato.dsa.length,
@@ -128,6 +134,8 @@ export class StudentiProvider implements ContextProvider {
         numeroStranieri: perStato.stranieri.length,
         numeroRipetenti: perStato.ripetenti.length,
         numeroRappresentanti: perStato.rappresentanti.length,
+        numeroRappresentantiStudenti: perStato.rappresentantiStudenti.length,
+        numeroRappresentantiGenitori: perStato.rappresentantiGenitori.length,
         numeroConPiani: perStato.conPiani.length
       },
       perReligione,
@@ -185,7 +193,9 @@ export class StudentiProvider implements ContextProvider {
       isPfp: piani.some((piano) => piano.tipo === String(TipoPiano.PFP)),
       isStranieri: piani.some((piano) => piano.tipo === String(TipoPiano.PDP_STRANIERI)),
       isRipetente: alunno.isRipetente(),
-      isRappresentante: alunno.isRappresentante(),
+      isRappresentante: alunno.isRappresentante() || alunno.isRappresentanteGenitore(),
+      isRappresentanteStudente: alunno.isRappresentante(),
+      isRappresentanteGenitore: alunno.isRappresentanteGenitore(),
       presenza: {
         annoPrecedente: {
           isCalcolato: storico !== null,

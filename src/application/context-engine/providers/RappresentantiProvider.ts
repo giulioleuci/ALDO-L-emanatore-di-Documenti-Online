@@ -1,5 +1,10 @@
 import type { ContextProvider } from '../ContextProvider';
-import type { Cdu, RappresentanteGenitoreVM, RappresentanteStudenteVM } from '../Cdu';
+import type {
+  Cdu,
+  RappresentanteGenitoreVM,
+  RappresentanteStudenteVM,
+  RappresentanteVM
+} from '../Cdu';
 import type { IClasseRepository } from '../../../domain/repositories/IClasseRepository';
 import { getClasseEntity } from '../techEntities';
 import { elencoVm } from '../mappers/elencoVm';
@@ -48,7 +53,31 @@ export class RappresentantiProvider implements ContextProvider {
     }
     studenti.sort((a, b) => a.studente.nomeCompleto.localeCompare(b.studente.nomeCompleto));
     genitori.sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto));
+    const tutti: RappresentanteVM[] = [
+      ...studenti.map((item): RappresentanteVM => ({
+        tipo: 'STUDENTE',
+        isStudente: true,
+        isGenitore: false,
+        nomeCompleto: item.studente.nomeCompleto,
+        studente: item.studente,
+        indirizzo: item.indirizzo,
+        hasIndirizzo: item.hasIndirizzo,
+        descrizione: item.studente.nomeCompleto
+      })),
+      ...genitori.map((item): RappresentanteVM => ({
+        tipo: 'GENITORE',
+        isStudente: false,
+        isGenitore: true,
+        nomeCompleto: item.nomeCompleto,
+        studente: item.studente,
+        indirizzo: item.indirizzo,
+        hasIndirizzo: item.hasIndirizzo,
+        descrizione: item.descrizione
+      }))
+    ].sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto));
     focus.rappresentanti = {
+      ...elencoVm(tutti),
+      elencoDescrizione: tutti.map((item) => item.descrizione).join(', '),
       studenti: {
         ...elencoVm(studenti),
         elencoDescrizione: studenti.map((item) => item.studente.nomeCompleto).join(', ')

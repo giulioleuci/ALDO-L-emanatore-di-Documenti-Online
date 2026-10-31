@@ -280,6 +280,8 @@ export interface AlunnoVM extends PersonaRiferimentoVM {
   isStranieri: boolean;
   isRipetente: boolean;
   isRappresentante: boolean;
+  isRappresentanteStudente: boolean;
+  isRappresentanteGenitore: boolean;
   presenza: PresenzaAlunnoVM;
   movimenti: ElencoMovimentiAlunnoVM;
   curriculum: CurriculumVM[];
@@ -335,6 +337,8 @@ export interface StatisticheAlunniVM {
   conDsa: number;
   ripetenti: number;
   rappresentanti: number;
+  rappresentantiStudenti: number;
+  rappresentantiGenitori: number;
 }
 
 export interface StatisticheIstitutoVM {
@@ -518,7 +522,19 @@ export interface TutorClasseVM {
   };
 }
 
-export interface RappresentantiClasseVM {
+export interface RappresentanteVM {
+  tipo: 'STUDENTE' | 'GENITORE';
+  isStudente: boolean;
+  isGenitore: boolean;
+  nomeCompleto: string;
+  studente: PersonaRiferimentoVM;
+  indirizzo: IndirizzoVM | null;
+  hasIndirizzo: boolean;
+  descrizione: string;
+}
+
+export interface RappresentantiClasseVM extends ElencoVM<RappresentanteVM> {
+  elencoDescrizione: string;
   studenti: ElencoVM<RappresentanteStudenteVM> & { elencoDescrizione: string };
   genitori: ElencoVM<RappresentanteGenitoreVM> & { elencoDescrizione: string };
 }
@@ -605,6 +621,8 @@ export interface StudentiClasseVM extends ElencoVM<AlunnoVM> {
     stranieri: AlunnoVM[];
     ripetenti: AlunnoVM[];
     rappresentanti: AlunnoVM[];
+    rappresentantiStudenti: AlunnoVM[];
+    rappresentantiGenitori: AlunnoVM[];
     conPiani: AlunnoVM[];
     hasBes: boolean;
     hasDsa: boolean;
@@ -614,6 +632,8 @@ export interface StudentiClasseVM extends ElencoVM<AlunnoVM> {
     hasStranieri: boolean;
     hasRipetenti: boolean;
     hasRappresentanti: boolean;
+    hasRappresentantiStudenti: boolean;
+    hasRappresentantiGenitori: boolean;
     hasConPiani: boolean;
     numeroBes: number;
     numeroDsa: number;
@@ -623,6 +643,8 @@ export interface StudentiClasseVM extends ElencoVM<AlunnoVM> {
     numeroStranieri: number;
     numeroRipetenti: number;
     numeroRappresentanti: number;
+    numeroRappresentantiStudenti: number;
+    numeroRappresentantiGenitori: number;
     numeroConPiani: number;
   };
   perReligione: {

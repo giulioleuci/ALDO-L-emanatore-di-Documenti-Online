@@ -88,6 +88,8 @@ test('AlunnoProvider: flat identity/religione/curriculum/classe + ASL hours (02 
   expect(a.isBes).toBe(true);
   expect(a.isRipetente).toBe(false);
   expect(a.isRappresentante).toBe(true);
+  expect(a.isRappresentanteStudente).toBe(true);
+  expect(a.isRappresentanteGenitore).toBe(false);
   // includiStorico defaults to false — the lookup is gated off, storicoDb is never touched.
   expect(a.presenza.annoPrecedente).toEqual({ isCalcolato: false, isPresente: false });
   expect(a.presenza.isPresenteTuttoAnno).toBe(true); // a1@school.it has no MOV_ALUNNI row in fixtureTables()

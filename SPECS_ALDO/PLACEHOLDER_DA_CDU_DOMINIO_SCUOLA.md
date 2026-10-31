@@ -355,7 +355,8 @@ Rendering:
 |   2 | ESPOSITO GIULIA | Piano educativo individualizzato       | —   | No        |
 
 Le partizioni disponibili sono bes, dsa, pfp, pei, ripetenti,
-rappresentanti e conPiani. Per esempio:
+rappresentanti (studenti e genitori), rappresentantiStudenti,
+rappresentantiGenitori e conPiani. Per esempio:
 
 ```
 {{#focus.classe.studenti.perStato.hasPei}}
@@ -401,7 +402,8 @@ Rendering:
 
 ## 6. Rappresentanti di studenti e genitori
 
-I rappresentanti studenti sono in
+Tutti i rappresentanti (studenti e genitori, con `tipo`) sono in
+focus.classe.rappresentanti.elenco. I rappresentanti studenti sono in
 focus.classe.rappresentanti.studenti.elenco; i genitori rappresentanti sono
 nomi liberi, non docenti o indirizzi email, e sono in
 focus.classe.rappresentanti.genitori.elenco.
@@ -1070,6 +1072,7 @@ sempre array con ordine stabile.
 | Ripetenti                 | focus.classe.studenti.perStato.ripetenti                                      |
 | IRC / ALT / NO            | focus.classe.studenti.perReligione                                            |
 | Piani non verbalizzati    | focus.classe.pianiPersonalizzati.nonVerbalizzati.elenco                       |
+| Rappresentanti (tutti)    | focus.classe.rappresentanti.elenco                                            |
 | Rappresentanti studenti   | focus.classe.rappresentanti.studenti.elenco                                   |
 | Rappresentanti genitori   | focus.classe.rappresentanti.genitori.elenco                                   |
 | Statistiche studenti      | focus.classe.studenti.statistiche                                             |

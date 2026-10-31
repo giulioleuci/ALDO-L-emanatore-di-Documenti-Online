@@ -40,6 +40,8 @@ function cduConPiani(
           isBes: true,
           isRipetente: false,
           isRappresentante: false,
+          isRappresentanteStudente: false,
+          isRappresentanteGenitore: false,
           presenteAnnoPrecedente: false,
           presenteTuttoAnno: true
         },

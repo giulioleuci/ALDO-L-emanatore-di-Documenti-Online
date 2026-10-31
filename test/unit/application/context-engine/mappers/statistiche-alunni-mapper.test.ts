@@ -24,7 +24,9 @@ describe('computeStatisticheAlunni', () => {
       conBes: 1,
       conDsa: 1,
       ripetenti: 1,
-      rappresentanti: 1
+      rappresentanti: 1,
+      rappresentantiStudenti: 1,
+      rappresentantiGenitori: 0
     });
   });
 });

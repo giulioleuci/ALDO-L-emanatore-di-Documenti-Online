@@ -79,6 +79,10 @@ export class Alunno extends AldoEntity {
     return this.rapprGen;
   }
 
+  isRappresentanteGenitore(): boolean {
+    return this.rapprGen.trim() !== '';
+  }
+
   /** Non-empty tutor emails (TUTOR_1, TUTOR_2). */
   getTutors(): Email[] {
     return [this.tutor1, this.tutor2]

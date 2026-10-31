@@ -325,6 +325,11 @@ TutorClasseVM:
 
 ```yaml
 RappresentantiClasseVM:
+  elenco: RappresentanteVM[] # Tutti i rappresentanti (studenti + genitori), ordinati per nome
+  hasElenco: boolean # true se l'elenco non è vuoto
+  numero: number # Numero complessivo dei rappresentanti
+  elencoDescrizione: string # Descrizioni separate da virgola; es. "ROSSI MARIO, Maria Bianchi (genitore di BIANCHI SOFIA)"
+
   studenti:
     elenco: RappresentanteStudenteVM[] # Rappresentanti degli studenti
     hasElenco: boolean # true se l'elenco non è vuoto
@@ -464,7 +469,9 @@ StudentiClasseVM:
     pei: AlunnoVM[]               # Studenti con Piano Educativo Individualizzato
     stranieri: AlunnoVM[]         # Studenti con almeno un piano PDP_STRANIERI
     ripetenti: AlunnoVM[]         # Studenti marcati ripetenti
-    rappresentanti: AlunnoVM[]    # Rappresentanti degli studenti
+    rappresentanti: AlunnoVM[]    # Studenti con almeno un ruolo di rappresentante (studente o genitore)
+    rappresentantiStudenti: AlunnoVM[] # Studenti eletti rappresentanti di classe
+    rappresentantiGenitori: AlunnoVM[] # Studenti il cui genitore è rappresentante (RAPPR_GEN valorizzato)
     conPiani: AlunnoVM[]          # Studenti con almeno un piano
 
     hasBes: boolean              # true se bes non è vuoto
@@ -475,6 +482,8 @@ StudentiClasseVM:
     hasStranieri: boolean        # true se stranieri non è vuoto
     hasRipetenti: boolean        # true se ripetenti non è vuoto
     hasRappresentanti: boolean   # true se rappresentanti non è vuoto
+    hasRappresentantiStudenti: boolean # true se rappresentantiStudenti non è vuoto
+    hasRappresentantiGenitori: boolean # true se rappresentantiGenitori non è vuoto
     hasConPiani: boolean         # true se conPiani non è vuoto
 
     numeroBes: number            # Conteggio studenti BES
@@ -484,7 +493,9 @@ StudentiClasseVM:
     numeroPei: number            # Conteggio studenti PEI
     numeroStranieri: number      # Conteggio studenti stranieri
     numeroRipetenti: number      # Conteggio studenti ripetenti
-    numeroRappresentanti: number # Conteggio rappresentanti
+    numeroRappresentanti: number # Conteggio studenti con almeno un ruolo di rappresentante
+    numeroRappresentantiStudenti: number # Conteggio rappresentanti studenti
+    numeroRappresentantiGenitori: number # Conteggio rappresentanti genitori
     numeroConPiani: number       # Conteggio studenti con almeno un piano
 
   perReligione:
@@ -609,7 +620,9 @@ AlunnoFocusVM:
   isPfp: boolean                 # true se l'alunno ha almeno un PFP associato nella tabella PIANI
   isStranieri: boolean           # true se l'alunno ha almeno un PDP_STRANIERI associato nella tabella PIANI
   isRipetente: boolean           # Stato di ripetenza nell'anno corrente
-  isRappresentante: boolean      # true se rappresentante degli studenti
+  isRappresentante: boolean      # true se rappresentante degli studenti o ha un genitore rappresentante
+  isRappresentanteStudente: boolean # true se rappresentante degli studenti
+  isRappresentanteGenitore: boolean # true se un genitore dell'alunno è rappresentante (RAPPR_GEN valorizzato)
 
   presenza: PresenzaAlunnoVM     # Continuità di presenza nell'istituto e nella classe
   movimenti: ElencoMovimentiAlunnoVM # Mobilità dell'anno corrente fino alla data di riferimento
@@ -1115,7 +1128,9 @@ AlunnoVM:
   isPfp: boolean                 # true se l'alunno ha almeno un PFP associato nella tabella PIANI
   isStranieri: boolean           # true se l'alunno ha almeno un PDP_STRANIERI associato nella tabella PIANI
   isRipetente: boolean           # Stato di ripetenza nell'anno
-  isRappresentante: boolean      # Rappresentante degli studenti
+  isRappresentante: boolean      # Rappresentante degli studenti o con genitore rappresentante
+  isRappresentanteStudente: boolean # Rappresentante degli studenti
+  isRappresentanteGenitore: boolean # Genitore rappresentante (RAPPR_GEN valorizzato)
 
   presenza: PresenzaAlunnoVM     # Continuità nell'istituto e nella classe
   movimenti: ElencoMovimentiAlunnoVM # Mobilità dell'anno della proiezione
@@ -1397,7 +1412,9 @@ StatisticheAlunniVM:
   conBes: number # Studenti con stato BES
   conDsa: number # Studenti con stato DSA
   ripetenti: number # Studenti ripetenti
-  rappresentanti: number # Rappresentanti degli studenti
+  rappresentanti: number # Studenti con almeno un ruolo di rappresentante (studente o genitore)
+  rappresentantiStudenti: number # Rappresentanti degli studenti
+  rappresentantiGenitori: number # Rappresentanti dei genitori
 ```
 
 ```yaml
@@ -1408,6 +1425,18 @@ StatisticheIstitutoVM:
 ```
 
 ### 8.24 Rappresentanti
+
+```yaml
+RappresentanteVM:
+  tipo: "STUDENTE" | "GENITORE" # Categoria del rappresentante
+  isStudente: boolean # true se tipo = STUDENTE
+  isGenitore: boolean # true se tipo = GENITORE
+  nomeCompleto: string # Nome dello studente rappresentante o nome libero del genitore
+  studente: PersonaRiferimentoVM # Studente eletto, o figlio cui si riferisce la rappresentanza
+  indirizzo: IndirizzoVM | null # Indirizzo di provenienza in una parent articolata
+  hasIndirizzo: boolean # true se indirizzo è valorizzato
+  descrizione: string # Studente: nome completo; genitore: "Maria Rossi (ROSSI MARIO)"
+```
 
 ```yaml
 RappresentanteStudenteVM:

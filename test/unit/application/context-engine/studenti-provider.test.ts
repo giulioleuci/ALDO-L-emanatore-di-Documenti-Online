@@ -83,6 +83,8 @@ test('StudentiProvider: full flat AlunnoVM (status/curriculum/carenze/piani/asl)
     isAltroBes: false,
     isRipetente: false,
     isRappresentante: true,
+    isRappresentanteStudente: true,
+    isRappresentanteGenitore: false,
     religione: 'IRC',
     religioneLabel: 'Religione cattolica',
     // includiStorico defaults to false — the lookup is gated off, storicoDb is
@@ -143,7 +145,9 @@ test('StatisticheProvider: class stats over active students (09 §11, 02 §4.1)'
     conBes: 1,
     conDsa: 0,
     ripetenti: 0,
-    rappresentanti: 1
+    rappresentanti: 1,
+    rappresentantiStudenti: 1,
+    rappresentantiGenitori: 0
   });
 });
 

@@ -168,6 +168,12 @@ test('RappresentantiProvider: attaches studente.nomeCompleto to each genitore fo
       descrizione: 'Giuseppe Neri (Marco Neri)'
     }
   ]);
+  expect(c.rappresentanti).toMatchObject({
+    hasElenco: true,
+    numero: 1,
+    elencoDescrizione: 'Giuseppe Neri (Marco Neri)'
+  });
+  expect(c.rappresentanti?.elenco[0]).toMatchObject({ tipo: 'GENITORE', isGenitore: true });
 });
 
 test('ClasseProvider: articulated parent flags + materie split (02 §4.1, 09 §9)', () => {

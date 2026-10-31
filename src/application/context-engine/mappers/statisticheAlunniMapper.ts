@@ -13,14 +13,29 @@ export function computeStatisticheAlunni(
     conBes = 0,
     conDsa = 0,
     ripetenti = 0,
-    rappresentanti = 0;
+    rappresentanti = 0,
+    rappresentantiStudenti = 0,
+    rappresentantiGenitori = 0;
   for (const a of attivi) {
     const piani = alunni.getPiani(a);
     if (piani.length > 0) conPiani++;
     if (piani.some((p) => p.isBES())) conBes++;
     if (piani.some((p) => p.tipo === TipoPiano.PDP_DSA)) conDsa++;
     if (a.isRipetente()) ripetenti++;
-    if (a.isRappresentante()) rappresentanti++;
+    const studente = a.isRappresentante();
+    const genitore = a.isRappresentanteGenitore();
+    if (studente) rappresentantiStudenti++;
+    if (genitore) rappresentantiGenitori++;
+    if (studente || genitore) rappresentanti++;
   }
-  return { totale: attivi.length, conPiani, conBes, conDsa, ripetenti, rappresentanti };
+  return {
+    totale: attivi.length,
+    conPiani,
+    conBes,
+    conDsa,
+    ripetenti,
+    rappresentanti,
+    rappresentantiStudenti,
+    rappresentantiGenitori
+  };
 }

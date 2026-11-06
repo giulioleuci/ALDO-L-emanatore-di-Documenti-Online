@@ -139,7 +139,8 @@ export const COL_DIPART = {
 export const COL_PIANI = {
   STUDENTE: 'STUDENTE',
   TIPO: 'TIPO',
-  PARAMETRI: 'PARAMETRI'
+  PARAMETRI: 'PARAMETRI',
+  GENERATO: 'GENERATO'
 } as const;
 
 export const COL_CLASSI = {

@@ -16,7 +16,8 @@ import {
   DuplicazioneDocumento,
   GestioneSupplenti,
   FormatoOutput,
-  GeneratoreAxis
+  GeneratoreAxis,
+  type TipoPiano
 } from '../../domain/value-objects/enums';
 import { ConfigurationError, PipelineError } from '../../domain/errors/DomainError';
 import { eseguiAzioni, hasJsonValue, type PostProcessDb } from './standaloneActions';
@@ -24,6 +25,7 @@ import type { Azione } from './standaloneActions';
 import { parseRegola, risolviAcl, type AclEntry, type PermessiConfig } from './permessiAcl';
 import { AlberoCartelle } from '../../infrastructure/services/AlberoCartelle';
 import { resolveLogRegistration } from './logRegistration';
+import type { IPianoRepository } from '../../domain/repositories/IPianoRepository';
 import type { StoricoDocumentiService } from '../storico/StoricoDocumentiService';
 
 /**
@@ -54,7 +56,8 @@ export const CRITICAL_STEPS: ReadonlySet<string> = new Set([
   'SelectTemplate',
   'CloneTemplate',
   'RenderTemplate',
-  'RegisterDocument'
+  'RegisterDocument',
+  'MarkPianoGenerato'
 ]);
 
 /** Gate shared by every step after AnalyzeContext (10 §1). */
@@ -504,6 +507,30 @@ export class RegisterDocumentStep extends Step {
     this.setResult(ctx, 'documentStatus', StatoDocumento.GENERATO);
   }
 
+  protected override _getLogDetails(): null {
+    return null;
+  }
+}
+
+/**
+ * Right after RegisterDocument, same transaction: PIANI.GENERATO=TRUE for the
+ * plan just documented, so the plan batch skips it next run. Critical: flag and
+ * LOG_DOCS row commit or roll back together.
+ */
+export class MarkPianoGeneratoStep extends Step {
+  constructor(
+    logger: LoggerService,
+    private readonly piani: IPianoRepository
+  ) {
+    super('MarkPianoGenerato', logger, {
+      shouldExecuteCondition: (ctx) => generateGate(ctx) && isPianoPersonalizzato(ctx),
+      requiredKeys: ['cdu']
+    });
+  }
+  protected _executeLogic(ctx: PipelineContext): void {
+    const focus = cdu(ctx).focus;
+    this.piani.markGenerato(focus.alunno?.email ?? '', focus.piano!.tipo as TipoPiano);
+  }
   protected override _getLogDetails(): null {
     return null;
   }

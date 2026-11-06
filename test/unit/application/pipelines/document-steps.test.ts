@@ -1037,6 +1037,7 @@ test('RegisterDocumentStep composes materia SOTTOTIPO from GENERATORE=CLASSE_MAT
 test('critical steps are exactly the rollback points of 10 §8', () => {
   expect([...CRITICAL_STEPS].sort()).toEqual([
     'CloneTemplate',
+    'MarkPianoGenerato',
     'PrepareInfrastructure',
     'RegisterDocument',
     'RenderTemplate',

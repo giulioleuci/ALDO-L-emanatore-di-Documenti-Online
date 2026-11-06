@@ -39,6 +39,7 @@ import { ConfigurazioneDocumentoRepository } from '../infrastructure/repositorie
 import { ConfigurazioneImportRepository } from '../infrastructure/repositories/ConfigurazioneImportRepository';
 import { ClasseRepository } from '../infrastructure/repositories/ClasseRepository';
 import { AlunnoRepository } from '../infrastructure/repositories/AlunnoRepository';
+import { PianoRepository } from '../infrastructure/repositories/PianoRepository';
 import { LogCartellaRepository } from '../infrastructure/repositories/LogCartellaRepository';
 import { LogDocumentoRepository } from '../infrastructure/repositories/LogDocumentoRepository';
 import { BounceReconciliationService } from '../application/email/BounceReconciliationService';
@@ -154,6 +155,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
   c.register('classi', () => new ClasseRepository(deps.db));
   c.register('docenti', () => new DocenteRepository(deps.db));
   c.register('alunni', () => new AlunnoRepository(deps.db));
+  c.register('piani', () => new PianoRepository(deps.db));
   c.register('materie', () => new MateriaRepository(deps.db));
   c.register('variazioni', () => new VariazioneCattedraRepository(deps.db));
   c.register('supplenze', () => new SupplenzaRepository(deps.db));
@@ -265,6 +267,7 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         roleResolver: container.get<RisolutoreRuoliService>('risolutoreRuoli'),
         classi: container.get<ClasseRepository>('classi'),
         storicoDocumenti: container.get<StoricoDocumentiService>('storicoDocumenti'),
+        piani: container.get<PianoRepository>('piani'),
         now: deps.now,
         logger
       })

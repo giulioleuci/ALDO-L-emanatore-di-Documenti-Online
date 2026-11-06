@@ -19,6 +19,7 @@ import {
   RenderTemplateStep,
   ApplyPermissionsStep,
   RegisterDocumentStep,
+  MarkPianoGeneratoStep,
   PostProcessStep,
   CRITICAL_STEPS,
   type IRoleResolver
@@ -28,6 +29,7 @@ import { ConfigurazioneDocumento } from '../../domain/entities/ConfigurazioneDoc
 import { TABLE, COL_CONF_DOC } from '../../config/schema';
 import { PipelineError } from '../../domain/errors/DomainError';
 import type { TipoPiano } from '../../domain/value-objects/enums';
+import type { IPianoRepository } from '../../domain/repositories/IPianoRepository';
 import type { StoricoDocumentiService } from '../storico/StoricoDocumentiService';
 
 export interface DocumentGenerationDeps {
@@ -47,6 +49,8 @@ export interface DocumentGenerationDeps {
   /** Role -> Email resolver for ACL application (14 §1); RisolutoreRuoliService satisfies it. */
   roleResolver: IRoleResolver;
   storicoDocumenti: StoricoDocumentiService;
+  /** PIANI.GENERATO writer (MarkPianoGeneratoStep). */
+  piani: IPianoRepository;
   /** Injected clock — the CDU dates must be deterministic (09 §2). */
   now: Date;
   logger?: LoggerService;
@@ -102,6 +106,7 @@ export class DocumentGenerationService {
   private readonly classi: IClasseRepository;
   private readonly roleResolver: IRoleResolver;
   private readonly storicoDocumenti: StoricoDocumentiService;
+  private readonly piani: IPianoRepository;
   private readonly now: Date;
   private readonly logger: LoggerService;
   private cachedPipeline: Pipeline | undefined;
@@ -117,6 +122,7 @@ export class DocumentGenerationService {
     this.classi = deps.classi;
     this.roleResolver = deps.roleResolver;
     this.storicoDocumenti = deps.storicoDocumenti;
+    this.piani = deps.piani;
     this.now = deps.now;
     this.logger = deps.logger ?? new LoggerService();
   }
@@ -390,6 +396,7 @@ export class DocumentGenerationService {
         new ApplyPermissionsStep(this.logger, this.drive, this.roleResolver, this.expressionEngine)
       )
       .addStep(new RegisterDocumentStep(this.logger, this.db, this.templates))
+      .addStep(new MarkPianoGeneratoStep(this.logger, this.piani))
       .addStep(
         new PostProcessStep(
           this.logger,

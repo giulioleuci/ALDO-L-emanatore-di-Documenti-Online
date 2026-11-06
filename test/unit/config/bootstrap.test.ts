@@ -799,7 +799,18 @@ test('wired PIANI batch rerun creates no duplicate files', () => {
   expect(drain('job_piani_1')).toMatchObject({ success: true, totale: 2 });
   expect(drive.copies.map(({ templateId }) => templateId)).toEqual(['tmpl_pei', 'tmpl_pdp_bes']);
 
-  expect(drain('job_piani_2')).toMatchObject({ success: true, totale: 2 });
+  // Both plans now carry PIANI.GENERATO=TRUE (written inside the generation transaction).
+  expect(
+    db
+      .table('PIANI')
+      .findAll()
+      .filter((r) => r['STUDENTE'] === 'a1@school.it' && r['GENERATO'] === true)
+      .map((r) => r['TIPO'])
+      .sort()
+  ).toEqual(['PDP_BES', 'PEI']);
+
+  // Rerun: generated plans are dropped before any CDU build / LOG_DOCS scan.
+  expect(drain('job_piani_2')).toMatchObject({ success: true, totale: 0 });
   expect(drive.copies).toHaveLength(2);
 });
 

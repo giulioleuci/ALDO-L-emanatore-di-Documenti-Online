@@ -120,6 +120,8 @@ function wirePiani(
     logger?: LoggerService;
     resultStatus?: 'GENERATO' | 'SKIPPED';
     resultDurationMs?: number;
+    generatedTipi?: TipoPiano[];
+    duplicazione?: string;
   } = {}
 ) {
   const configId = options.configId ?? 'PIANI_PERSONALIZZATI';
@@ -142,7 +144,13 @@ function wirePiani(
   const piani = [
     new Piano({ STUDENTE: 'con-piani@school.it', TIPO: 'PEI', PARAMETRI: null }),
     new Piano({ STUDENTE: 'con-piani@school.it', TIPO: 'PDP_BES', PARAMETRI: null })
-  ];
+  ].map(
+    (piano) =>
+      new Piano({
+        ...piano.toData(),
+        GENERATO: options.generatedTipi?.includes(piano.tipo) === true
+      })
+  );
   const alunni = {
     findAttivi: () => studenti,
     getPiani: (alunno: Alunno) => (alunno.email.value === 'con-piani@school.it' ? piani : [])
@@ -154,7 +162,8 @@ function wirePiani(
             ID: id,
             TIPO: options.configTipo ?? 'PIANO_PERS',
             GENERATORE: GeneratoreAxis.PIANO_PERSONALIZZATO,
-            FORMATO: 'GDOC'
+            FORMATO: 'GDOC',
+            DUPLICAZIONE: options.duplicazione ?? 'NEGATA'
           })
         : null
   };
@@ -254,6 +263,47 @@ test('PIANO_PERS configuration with a nonstandard ID still runs one target per p
     }
   ]);
   expect(step.value).toMatchObject({ success: true, totale: 2 });
+});
+
+test('PIANI batch drops plans with GENERATO=TRUE before generating (DUPLICAZIONE=NEGATA)', () => {
+  const { service, generated } = wirePiani({ generatedTipi: [TipoPiano.PEI] });
+  const generator = service.batchGenerateHandler({
+    confDocId: 'PIANI_PERSONALIZZATI',
+    jobId: 'job_generato'
+  });
+  let step = generator.next();
+  while (!step.done) step = generator.next();
+
+  expect(generated.map((g) => g.tipo)).toEqual([TipoPiano.PDP_BES]);
+  expect(step.value).toMatchObject({ success: true, totale: 1 });
+});
+
+test('PIANI batch with every plan GENERATO=TRUE has no targets and never calls the generator', () => {
+  const { service, generated } = wirePiani({ generatedTipi: [TipoPiano.PEI, TipoPiano.PDP_BES] });
+  const generator = service.batchGenerateHandler({
+    confDocId: 'PIANI_PERSONALIZZATI',
+    jobId: 'job_all_generated'
+  });
+  let step = generator.next();
+  while (!step.done) step = generator.next();
+
+  expect(generated).toEqual([]);
+  expect(step.value).toMatchObject({ success: true, totale: 0 });
+});
+
+test('PIANI batch keeps GENERATO=TRUE plans when DUPLICAZIONE=PERMESSA', () => {
+  const { service, generated } = wirePiani({
+    generatedTipi: [TipoPiano.PEI, TipoPiano.PDP_BES],
+    duplicazione: 'PERMESSA'
+  });
+  const generator = service.batchGenerateHandler({
+    confDocId: 'PIANI_PERSONALIZZATI',
+    jobId: 'job_permessa'
+  });
+  let step = generator.next();
+  while (!step.done) step = generator.next();
+
+  expect(generated).toHaveLength(2);
 });
 
 test('PIANI batch yields one persisted checkpoint per active-student plan', () => {

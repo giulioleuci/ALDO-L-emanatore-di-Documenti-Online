@@ -92,10 +92,12 @@ export function targetsClasse(
   return classi.filterPerGestioneArticolazione(classi.findAttive(), gestione);
 }
 
-export function targetsPiani(alunni: IAlunnoRepository): PianoBatchTarget[] {
+/** `skipGenerati`: drop plans with PIANI.GENERATO=TRUE (document batch with DUPLICAZIONE=NEGATA). */
+export function targetsPiani(alunni: IAlunnoRepository, skipGenerati = false): PianoBatchTarget[] {
   const targets: PianoBatchTarget[] = [];
   for (const alunno of alunni.findAttivi()) {
     for (const piano of alunni.getPiani(alunno)) {
+      if (skipGenerati && piano.generato) continue;
       targets.push({ studente: alunno.email.value, tipo: piano.tipo });
     }
   }

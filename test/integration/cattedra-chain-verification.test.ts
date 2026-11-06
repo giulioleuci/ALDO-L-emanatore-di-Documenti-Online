@@ -22,6 +22,7 @@ import { AldoTeachingAssignmentResolver } from '../../src/infrastructure/role-re
 import { COL_CONF_MAIL } from '../../src/config/schema';
 import type { Row } from '../../src/infrastructure/db/Database';
 import type { ClasseFocusVM } from '../../src/application/context-engine/Cdu';
+import { PianoRepository } from '../../src/infrastructure/repositories/PianoRepository';
 import { ClasseRepository } from '../../src/infrastructure/repositories/ClasseRepository';
 import { StoricoDocumentiService } from '../../src/application/storico/StoricoDocumentiService';
 
@@ -88,6 +89,7 @@ test('doc-gen: 2-hop VARIAZIONI_CATTEDRA chain resolves the generated CDU to the
     configs: new ConfigurazioneDocumentoRepository(db),
     roleResolver: composeRisolutoreRuoli(db),
     classi: new ClasseRepository(db),
+    piani: new PianoRepository(db),
     storicoDocumenti: new StoricoDocumentiService({ anniStorici: () => [] }),
     now: CHAIN_NOW
   });

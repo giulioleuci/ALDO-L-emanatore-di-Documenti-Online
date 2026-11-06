@@ -1,4 +1,9 @@
-import { FormatoOutput, GestioneArticolazione, GeneratoreAxis } from '../value-objects/enums';
+import {
+  DuplicazioneDocumento,
+  FormatoOutput,
+  GestioneArticolazione,
+  GeneratoreAxis
+} from '../value-objects/enums';
 import { COL_CONF_DOC } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 import { ConfigurationError } from '../errors/DomainError';
@@ -44,6 +49,8 @@ export class ConfigurazioneDocumento extends AldoEntity {
   public readonly generatore: GeneratoreAxis;
   public readonly formato: FormatoOutput;
   public readonly gestioneArticolazione: GestioneArticolazione;
+  /** DUPLICAZIONE=PERMESSA; anything else (incl. blank) behaves as NEGATA, like CheckDuplicatesStep. */
+  public readonly duplicazionePermessa: boolean;
   private readonly modelliRaw: string | null;
   private readonly condizioneRaw: string;
   private readonly parametriRaw: string | null;
@@ -72,6 +79,7 @@ export class ConfigurazioneDocumento extends AldoEntity {
       data[COL_CONF_DOC.GESTIONE_ARTICOLAZIONE] === GestioneArticolazione.ARTICOLATA
         ? GestioneArticolazione.ARTICOLATA
         : GestioneArticolazione.COMPLETA;
+    this.duplicazionePermessa = data[COL_CONF_DOC.DUPLICAZIONE] === DuplicazioneDocumento.PERMESSA;
     this.modelliRaw =
       typeof data[COL_CONF_DOC.MODELLI] === 'string'
         ? (data[COL_CONF_DOC.MODELLI] as string)

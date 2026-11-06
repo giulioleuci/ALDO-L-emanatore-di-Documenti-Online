@@ -6,6 +6,7 @@ export type PianoData = {
   [COL_PIANI.STUDENTE]?: string;
   [COL_PIANI.TIPO]?: string;
   [COL_PIANI.PARAMETRI]?: string | null;
+  [COL_PIANI.GENERATO]?: boolean;
 };
 
 /**
@@ -17,6 +18,8 @@ export class Piano extends AldoEntity {
   public readonly studente: string;
   public readonly tipo: TipoPiano;
   private readonly parametriRaw: string | null;
+  /** TRUE once the plan batch has produced and registered its document (absent column reads FALSE). */
+  public readonly generato: boolean;
 
   constructor(data: PianoData = {}) {
     super(data);
@@ -25,6 +28,7 @@ export class Piano extends AldoEntity {
     this.tipo = data[COL_PIANI.TIPO] as TipoPiano;
     this.parametriRaw =
       typeof data[COL_PIANI.PARAMETRI] === 'string' ? (data[COL_PIANI.PARAMETRI] as string) : null;
+    this.generato = data[COL_PIANI.GENERATO] === true;
     // Synthetic composite id for identity-map purposes; not a persisted column.
     this.id = this.studente && this.tipo ? `${this.studente}::${this.tipo}` : null;
   }
@@ -44,7 +48,8 @@ export class Piano extends AldoEntity {
     return {
       [COL_PIANI.STUDENTE]: this.studente,
       [COL_PIANI.TIPO]: this.tipo,
-      [COL_PIANI.PARAMETRI]: this.parametriRaw
+      [COL_PIANI.PARAMETRI]: this.parametriRaw,
+      [COL_PIANI.GENERATO]: this.generato
     };
   }
 

@@ -268,13 +268,16 @@ Insufficienze degli studenti. **Struttura a matrice**: ogni riga è una rilevazi
 
 Piani Didattici Personalizzati. Parte dell'aggregato Alunno.
 
-| Colonna     | Tipo   | PK (parte) | FK           | Descrizione                                                                                                            |
-| ----------- | ------ | ---------- | ------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| `STUDENTE`  | String | ✅         | ALUNNI.EMAIL | Studente titolare                                                                                                      |
-| `TIPO`      | String | ✅         | —            | Enum; parte della chiave primaria composita                                                                            |
-| `PARAMETRI` | JSON   | —          | —            | Dati specifici del piano, utilizzabili per placeholder e per le condizioni di generazione dei documenti personalizzati |
+| Colonna     | Tipo    | PK (parte) | FK           | Descrizione                                                                                                                                                                                                                                                       |
+| ----------- | ------- | ---------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `STUDENTE`  | String  | ✅         | ALUNNI.EMAIL | Studente titolare                                                                                                                                                                                                                                                 |
+| `TIPO`      | String  | ✅         | —            | Enum; parte della chiave primaria composita                                                                                                                                                                                                                       |
+| `PARAMETRI` | JSON    | —          | —            | Dati specifici del piano, utilizzabili per placeholder e per le condizioni di generazione dei documenti personalizzati                                                                                                                                            |
+| `GENERATO`  | Boolean | —          | —            | Default `FALSE`. Impostato a `TRUE` dal generatore quando produce e registra in `LOG_DOCS` il documento del piano (stessa transazione). Il batch dei piani salta i piani con `GENERATO=TRUE` (solo con `CONF_DOC.DUPLICAZIONE=NEGATA`). Colonna assente = `FALSE` |
 
-**Chiave primaria composita:** `(STUDENTE, TIPO)` — DEVE esistere AL PIÙ un piano attivo per ogni valore di `TIPO` per ciascuno studente. NON esiste una colonna `ID` UUID.
+**Chiave primaria composita:** `(STUDENTE, TIPO)` — DEVE esistere AL PIÙ un piano attivo per ogni valore di `TIPO` per ciascuno studente. NON esiste una colonna `ID` UUID. `GENERATO` NON fa parte della chiave.
+
+**`GENERATO` — reset e limiti:** il flag è per piano, non per `CONF_DOC` (qualunque documento di piano generato lo imposta) e non rileva file cancellati o `PARAMETRI` modificati. Riportarlo a `FALSE` a mano rimette il piano tra i target del batch, ma `CheckDuplicatesStep` lo salta comunque se il documento esiste in `LOG_DOCS` e `DUPLICAZIONE=NEGATA`: per rigenerare serve anche eliminare la riga `LOG_DOCS` o usare `PERMESSA`. Sui fogli esistenti l'intestazione `GENERATO` va aggiunta a mano (e i piani già generati marcati `TRUE` a mano).
 
 La generazione documentale usa `PIANI.TIPO` come discriminatore del singolo
 piano: il valore viene esposto in `focus.piano.tipo`, copiato in

@@ -356,9 +356,9 @@ export function fixtureTables(): Record<string, Row[]> {
       }
     ],
     PIANI: [
-      { STUDENTE: 'a1@school.it', TIPO: 'PEI', PARAMETRI: '{"gravita":"media"}' },
-      { STUDENTE: 'a2@school.it', TIPO: 'PDP_DSA', PARAMETRI: null },
-      { STUDENTE: 'a3@school.it', TIPO: 'PFP', PARAMETRI: null }
+      { STUDENTE: 'a1@school.it', TIPO: 'PEI', PARAMETRI: '{"gravita":"media"}', GENERATO: false },
+      { STUDENTE: 'a2@school.it', TIPO: 'PDP_DSA', PARAMETRI: null, GENERATO: false },
+      { STUDENTE: 'a3@school.it', TIPO: 'PFP', PARAMETRI: null, GENERATO: false }
     ],
     DIPART: [
       {

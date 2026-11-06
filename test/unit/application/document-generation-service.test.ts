@@ -19,6 +19,7 @@ import { TABLE } from '../../../src/config/schema';
 import { ConfigurationError, PipelineError } from '../../../src/domain/errors/DomainError';
 import type { Row, IReadableTable } from '../../../src/infrastructure/db/Database';
 import { ClasseRepository } from '../../../src/infrastructure/repositories/ClasseRepository';
+import { PianoRepository } from '../../../src/infrastructure/repositories/PianoRepository';
 import { LogDocumentoRepository } from '../../../src/infrastructure/repositories/LogDocumentoRepository';
 import { StoricoDocumentiService } from '../../../src/application/storico/StoricoDocumentiService';
 import type { Cdu } from '../../../src/application/context-engine/Cdu';
@@ -77,6 +78,7 @@ function wire(
     configs: new ConfigurazioneDocumentoRepository(db),
     roleResolver: composeRisolutoreRuoli(db),
     classi: new ClasseRepository(db),
+    piani: new PianoRepository(db),
     storicoDocumenti:
       options.storicoDocumenti ?? new StoricoDocumentiService({ anniStorici: () => [] }),
     now: options.now ?? new Date('2026-07-01T09:00:00Z')
@@ -252,6 +254,16 @@ describe('DocumentGenerationService — CONF_DOC.PARAMETRI.includiStorico wiring
     });
   });
 });
+
+/** PIANI.GENERATO per TIPO (absent/falsy reads as false). */
+function generatoByTipo(db: FakeDatabase): Record<string, boolean> {
+  return Object.fromEntries(
+    db
+      .table(TABLE.PIANI)
+      .findAll()
+      .map((row) => [String(row['TIPO']), row['GENERATO'] === true])
+  );
+}
 
 describe('DocumentGenerationService.generateForPiano', () => {
   test('grants the configured role access to matching historical plans after registering the new plan', () => {
@@ -454,6 +466,22 @@ describe('DocumentGenerationService.generateForPiano', () => {
     expect(firstRun.drive.copies).toHaveLength(1);
     expect(laterRun.drive.copies).toHaveLength(1);
     expect(db.table(TABLE.LOG_DOCS).findAll()).toHaveLength(2);
+    expect(generatoByTipo(db)).toEqual({ PEI: true, PDP_BES: true, PDP_DSA: false, PFP: false });
+  });
+
+  test('a rolled-back critical failure leaves PIANI.GENERATO FALSE', () => {
+    const boomStrategy: GeneratorStrategy = {
+      render: () => {
+        throw new Error('render esploso');
+      }
+    };
+    const { db, service } = wire(fixtureTables(), { strategy: boomStrategy });
+
+    expect(() =>
+      service.generateForPiano('a1@school.it', TipoPiano.PEI, 'PIANI_PERSONALIZZATI')
+    ).toThrow(PipelineError);
+    expect(generatoByTipo(db)['PEI']).toBe(false);
+    expect(db.table(TABLE.LOG_DOCS).findAll()).toEqual([]);
   });
 
   test('rejects a configuration whose TIPO is not PIANO_PERS before pipeline execution', () => {
@@ -494,7 +522,7 @@ describe('DocumentGenerationService.generateForPiano', () => {
         materie: ''
       })
     });
-    const { drive, service } = wire(tables, {
+    const { db, drive, service } = wire(tables, {
       strategy: new DocPersonalizzatoGeneratorStrategy(new FakeTemplateEngine())
     });
 
@@ -506,6 +534,8 @@ describe('DocumentGenerationService.generateForPiano', () => {
         .status
     ).toBe('GENERATO');
     expect(drive.copies.map((copy) => copy.templateId)).toEqual(['tmpl_pdp_bes']);
+    // CONDIZIONE-skipped PEI never gets the flag; only the generated plan does.
+    expect(generatoByTipo(db)).toMatchObject({ PEI: false, PDP_BES: true });
   });
 });
 

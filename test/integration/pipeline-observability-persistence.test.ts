@@ -11,6 +11,7 @@ import { TipoPiano } from '../../src/domain/value-objects/enums';
 import { SheetDbAdapter } from '../../src/infrastructure/db/SheetDbAdapter';
 import { ExpressionEngineFacade } from '../../src/infrastructure/facades/ExpressionEngineFacade';
 import { ConfigurazioneDocumentoRepository } from '../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
+import { PianoRepository } from '../../src/infrastructure/repositories/PianoRepository';
 import { ClasseRepository } from '../../src/infrastructure/repositories/ClasseRepository';
 import { AldoTeachingAssignmentResolver } from '../../src/infrastructure/role-resolution/AldoTeachingAssignmentResolver';
 import { FakeDriveFacade } from '../fakes/FakeDriveFacade';
@@ -195,6 +196,7 @@ test('pipeline observability survives real SheetDB commit and dynamic job execut
       configs: new ConfigurazioneDocumentoRepository(sheetDb.db),
       roleResolver: composeRisolutoreRuoli(sheetDb.db),
       classi: new ClasseRepository(sheetDb.db),
+      piani: new PianoRepository(sheetDb.db),
       storicoDocumenti: new StoricoDocumentiService({ anniStorici: () => [] }),
       logger,
       now: new Date('2026-07-01T09:00:00Z')

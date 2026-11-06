@@ -15,6 +15,7 @@ import { fixtureTables } from '../fixtures/tables';
 import { ClasseId } from '../../src/domain/value-objects/ClasseId';
 import { COL_LOG_DOCS } from '../../src/config/schema';
 import type { Row } from '../../src/infrastructure/db/Database';
+import { PianoRepository } from '../../src/infrastructure/repositories/PianoRepository';
 import { ClasseRepository } from '../../src/infrastructure/repositories/ClasseRepository';
 import { StoricoDocumentiService } from '../../src/application/storico/StoricoDocumentiService';
 
@@ -34,6 +35,7 @@ function wire(tables: Record<string, Row[]> = fixtureTables(), strategy?: Genera
     configs: new ConfigurazioneDocumentoRepository(db),
     roleResolver: composeRisolutoreRuoli(db),
     classi: new ClasseRepository(db),
+    piani: new PianoRepository(db),
     storicoDocumenti: new StoricoDocumentiService({ anniStorici: () => [] }),
     now: new Date('2026-07-01T09:00:00Z')
   });

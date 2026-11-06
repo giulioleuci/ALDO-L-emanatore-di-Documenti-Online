@@ -417,7 +417,7 @@ export class DocumentBatchService {
 
     let targets: PianoBatchTarget[];
     if (resume === null) {
-      targets = targetsPiani(this.alunni);
+      targets = targetsPiani(this.alunni, !config.duplicazionePermessa);
     } else {
       if (resume.planTargets === undefined) {
         throw new ConfigurationError(

@@ -36,11 +36,16 @@ export declare class DocumentContentExtractor {
     _convertContentToPOJO(content: GoogleAppsScript.Docs.Schema.StructuralElement[] | null | undefined): ContentElement[];
     /**
      * @private
-     * @description Aggregates all text runs within a paragraph element.
+     * @description Aggregates all text runs within a paragraph element. Non-text
+     * elements (footnote references, inline images, chips, auto text, breaks)
+     * occupy document indices too, so each is rendered as U+FFFC repeated over
+     * its index span: string offsets then equal document-index offsets.
      * @param {Object} paragraph Native Docs API paragraph object.
      * @returns {string} Concatenated plain text.
      */
     _extractParagraphText(paragraph: GoogleAppsScript.Docs.Schema.Paragraph | null | undefined): string;
+    /** @private Text of one paragraph element; U+FFFC placeholder(s) for non-text elements. */
+    _elementText(elem: GoogleAppsScript.Docs.Schema.ParagraphElement): string;
     /**
      * @private
      * @description Extracts per-run text + style spans from a paragraph, with

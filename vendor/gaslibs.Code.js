@@ -14757,16 +14757,23 @@ class DocumentContentExtractor {
 
 
 
+
+
+
   _extractParagraphText(paragraph) {
     if (!paragraph || !paragraph.elements) {
       return '';
     }
-    return paragraph.elements.map(elem => {
-      if (elem.textRun && elem.textRun.content) {
-        return elem.textRun.content;
-      }
-      return '';
-    }).join('');
+    return paragraph.elements.map(elem => this._elementText(elem)).join('');
+  }
+
+
+  _elementText(elem) {
+    if (elem.textRun) {
+      return elem.textRun.content || '';
+    }
+    const span = (elem.endIndex ?? 0) - (elem.startIndex ?? 0);
+    return '￼'.repeat(span > 0 ? span : 1);
   }
 
 
@@ -14793,6 +14800,8 @@ class DocumentContentExtractor {
           style: elem.textRun.textStyle || {}
         });
         offset += text.length;
+      } else {
+        offset += this._elementText(elem).length;
       }
     }
     return runs;
@@ -21671,6 +21680,9 @@ class DocumentProcessorValueResolver {
 
 
 
+
+
+const OBJECT_CHAR = '￼';
 class DocumentProcessorInjector {
   constructor(facade) {
     this.facade = facade;
@@ -21699,7 +21711,8 @@ class DocumentProcessorInjector {
     }
     const segments = this.facade.mustache.renderSegments(template, data);
     return segments.map(seg => ({
-      rendered: seg.rendered != null ? String(seg.rendered) : '',
+
+      rendered: seg.rendered != null ? String(seg.rendered).split(OBJECT_CHAR).join('') : '',
       style: this._styleAt(seg.rawStart, sourceRuns)
     }));
   }
@@ -21876,6 +21889,9 @@ class DocumentProcessorInjector {
     }
   }
   _createTextSubstitutionRequests(op) {
+    if (op.segments && op.segments.length > 0 && op.originalText.includes(OBJECT_CHAR)) {
+      return this._createSpanSubstitutionRequests(op);
+    }
     let originalText = op.originalText,
       newText = op.newText;
     if (originalText.endsWith('\n')) {
@@ -21944,6 +21960,69 @@ class DocumentProcessorInjector {
         }
         cursor += rendered.length;
         consumed += rendered.length;
+      }
+    }
+    return requests;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+  _createSpanSubstitutionRequests(op) {
+
+    const limit = op.originalText.endsWith('\n') ? op.originalText.length - 1 : op.originalText.length;
+    const requests = [];
+    for (const seg of [...op.segments].reverse()) {
+      if (seg.type !== 'value') {
+        continue;
+      }
+      const startIndex = op.index + seg.rawStart;
+      const endIndex = op.index + Math.min(seg.rawEnd, limit);
+      let text = String(seg.rendered ?? '').split(OBJECT_CHAR).join('');
+      if (seg.rawEnd > limit) {
+        text = text.replace(/\n$/, '');
+      }
+      if (endIndex > startIndex) {
+        requests.push({
+          deleteContentRange: {
+            range: {
+              startIndex,
+              endIndex
+            }
+          }
+        });
+      }
+      if (text) {
+        requests.push({
+          insertText: {
+            location: {
+              index: startIndex
+            },
+            text
+          }
+        });
+        const style = this._styleAt(seg.rawStart, op.sourceRuns || []);
+        const fields = Object.keys(style);
+        if (fields.length > 0) {
+          requests.push({
+            updateTextStyle: {
+              range: {
+                startIndex,
+                endIndex: startIndex + text.length
+              },
+              textStyle: style,
+              fields: fields.join(',')
+            }
+          });
+        }
       }
     }
     return requests;

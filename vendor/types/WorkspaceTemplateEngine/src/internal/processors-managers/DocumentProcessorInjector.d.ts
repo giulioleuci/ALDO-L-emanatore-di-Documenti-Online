@@ -50,6 +50,18 @@ export declare class DocumentProcessorInjector {
     }): DocumentRequest[];
     _createTextSubstitutionRequests(op: TextSubstitution): DocumentRequest[];
     /**
+     * @description Text substitution for a paragraph/cell that contains non-text
+     * elements (U+FFFC: footnote references, inline images, chips). Rewriting the
+     * whole paragraph would delete those elements, so only each changed `value`
+     * segment's own span is replaced, last to first so earlier indices stay valid.
+     * ponytail: a section/partial whose raw span itself contains an element still
+     * deletes it (its rendered copy is stripped of U+FFFC); split such paragraphs.
+     * @param {TextSubstitution} op Operation carrying scanner segments.
+     * @returns {Array<Object>} deleteContentRange/insertText/updateTextStyle requests.
+     * @private
+     */
+    _createSpanSubstitutionRequests(op: TextSubstitution): DocumentRequest[];
+    /**
      * @description Builds a single `deleteContentRange` request spanning
      * `[op.index, op.index + op.length)`, deleting that span in full — including
      * any paragraph-terminating `\n` characters inside it, which is what

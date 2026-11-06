@@ -265,3 +265,43 @@ describe('SheetDbAdapter.updateRowWhere — insert-vs-update and isExactKeyMatch
     expect(adapter.table('CARENZE').findAll()).toHaveLength(3);
   });
 });
+
+test.each([
+  [
+    'PIANI',
+    [
+      ['STUDENTE', 'TIPO', 'PARAMETRI', 'GENERATO'],
+      ['a@x.it', 'PDP', '{"a":1}', false],
+      ['a@x.it', 'PEI', '{"b":2}', false],
+      ['b@x.it', 'PDP', '{"c":3}', false]
+    ],
+    { STUDENTE: 'a@x.it', TIPO: 'PEI' },
+    { PARAMETRI: '{"b":2}', GENERATO: true }
+  ],
+  [
+    'ASL',
+    [
+      ['STUDENTE', 'ANNO', 'ORE'],
+      ['a@x.it', '2025/2026', 10],
+      ['a@x.it', '2026/2027', 20],
+      ['b@x.it', '2026/2027', 5]
+    ],
+    { STUDENTE: 'a@x.it', ANNO: '2026/2027' },
+    { ORE: 99 }
+  ]
+])(
+  'composite-PK %s: updateRowWhere overwrites only the matched row of a multi-row student',
+  (name, data, match, patch) => {
+    const { db } = libDb({ [name]: data });
+    const adapter = new SheetDbAdapter(db);
+
+    adapter.tables[name]!.updateRowWhere(match, { ...match, ...patch });
+
+    const rows = adapter.table(name).findAll();
+    expect(rows).toHaveLength(3);
+    const [h, ...body] = data as unknown[][];
+    const expected = body.map((r) => Object.fromEntries((h as string[]).map((c, i) => [c, r[i]])));
+    expected[1] = { ...expected[1], ...patch };
+    expect(rows).toEqual(expected);
+  }
+);

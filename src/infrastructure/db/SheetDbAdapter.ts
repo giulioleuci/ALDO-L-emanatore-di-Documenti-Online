@@ -1,13 +1,13 @@
 import type { IDatabase, IReadableTable, Row, IndexedLookup } from './Database';
 import { createSelect, type EqualityQueryBuilder } from './Database';
-import { TABLE, COL_CARENZE, COL_LOG_MAIL } from '../../config/schema';
+import { TABLE, COL_ASL, COL_CARENZE, COL_LOG_MAIL, COL_PIANI } from '../../config/schema';
 import { ConfigurationError } from '../../domain/errors/DomainError';
 
 /**
  * Adapter binding SheetDBLib's DatabaseService (L2) to ALDO's ports: the
  * IDatabase pipeline port (findAll/find/insert + transactions) and the
  * DomainRepositoryLib RepositoryDatabase seam (getByPK/getAllRows/insertRow/
- * updateRowById/updateRowWhere). Composite-PK tables (01: CARENZE, LOG_MAIL)
+ * updateRowById/updateRowWhere). Composite-PK tables (01: CARENZE, LOG_MAIL, PIANI, ASL)
  * get a synthetic `__PK` virtual column (defineVirtualColumn + setPrimaryKey),
  * so `updateRowById` targets the exact row without any library extension —
  * the library applies virtual columns while resolving key lookups.
@@ -19,7 +19,9 @@ const SEP = '::';
 /** Composite business keys per 01_SCHEMA_DATABASE.md (write paths need exact row identity). */
 const COMPOSITE_PK: Record<string, string[]> = {
   [TABLE.CARENZE]: [COL_CARENZE.STUDENTE, COL_CARENZE.PROGRESSIVO],
-  [TABLE.LOG_MAIL]: [COL_LOG_MAIL.PATTERN, COL_LOG_MAIL.DESTINATARI, COL_LOG_MAIL.DATA]
+  [TABLE.LOG_MAIL]: [COL_LOG_MAIL.PATTERN, COL_LOG_MAIL.DESTINATARI, COL_LOG_MAIL.DATA],
+  [TABLE.PIANI]: [COL_PIANI.STUDENTE, COL_PIANI.TIPO],
+  [TABLE.ASL]: [COL_ASL.STUDENTE, COL_ASL.ANNO]
 };
 
 /** Single-column PKs per 01 (tables not listed keep the library default). */

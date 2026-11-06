@@ -87,7 +87,7 @@ export function csvValues(raw: unknown): string[] {
 /**
  * True when `rowValue` matches `matchValue`. A single-valued `matchValue`
  * (no comma) is strict equality, unchanged from before. A multi-valued
- * `matchValue` (e.g. a `{{destinatario.contesto.classiCompetenza | join}}`
+ * `matchValue` (e.g. a `{{destinatario.classi.elencoDescrizione}}`
  * criterion covering several classes) matches on CSV containment — any one
  * of its values appearing in `rowValue`'s own CSV values — per 01
  * `SCHEMA_DATABASE`'s "CLASSI/UTENTI MUST use CONTAINS, never exact-match" rule.

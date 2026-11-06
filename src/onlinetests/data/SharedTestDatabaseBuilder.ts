@@ -1448,7 +1448,7 @@ export class SharedTestDatabaseBuilder {
         // notificato once the email actually sends (item 7) — without this,
         // piani_pers_inviati never gets any content and "already sent" plans
         // never exist in the mock DB. Must match on the FULL classiCompetenza
-        // list (join filter), not just focus.classe (the arbitrary first
+        // list (elencoDescrizione), not just focus.classe (the arbitrary first
         // class): a 1A+2B coordinatore's email renders/sends both classes'
         // plans (PianiPersClasseProvider aggregates classiCompetenza), so a
         // single-class criterion would silently leave 2B's rows unmarked.
@@ -1459,7 +1459,7 @@ export class SharedTestDatabaseBuilder {
             col: COL_LOG_DOCS.NOTIFICATO,
             criteri: {
               [COL_LOG_DOCS.TIPO]: 'PIANO_PERS',
-              [COL_LOG_DOCS.CLASSI]: '{{destinatario.contesto.classiCompetenza | join}}'
+              [COL_LOG_DOCS.CLASSI]: '{{destinatario.classi.elencoDescrizione}}'
             }
           }
         ]),

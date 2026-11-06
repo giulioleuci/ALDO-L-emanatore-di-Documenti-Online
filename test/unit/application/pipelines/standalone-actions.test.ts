@@ -300,12 +300,12 @@ describe('standaloneActions — CSV containment matching', () => {
         tipo: 'INSERISCI_TIMESTAMP',
         tab: 'LOG_DOCS',
         col: 'NOTIFICATO',
-        criteri: { TIPO: 'PIANO_PERS', CLASSI: '{{destinatario.contesto.classiCompetenza | join}}' }
+        criteri: { TIPO: 'PIANO_PERS', CLASSI: '{{destinatario.classi.elencoDescrizione}}' }
       }
     ]);
     const n = eseguiAzioni({
       azioni: actions,
-      cdu: { destinatario: { contesto: { classiCompetenza: ['1A', '2B'] } } },
+      cdu: { destinatario: { classi: { elencoDescrizione: '1A, 2B' } } },
       db,
       templates: new FakeTemplateEngine(), // real WorkspaceTemplateEngine string/filter processing (offline-safe)
       now: NOW,
@@ -411,12 +411,12 @@ describe('standaloneActions — CSV containment matching', () => {
         tipo: 'INSERISCI_TIMESTAMP',
         tab: 'LOG_DOCS',
         col: 'NOTIFICATO',
-        criteri: { CLASSI: '{{destinatario.contesto.classiCompetenza | join}}' }
+        criteri: { CLASSI: '{{destinatario.classi.elencoDescrizione}}' }
       }
     ]);
     eseguiAzioni({
       azioni: actions,
-      cdu: { destinatario: { contesto: { classiCompetenza: ['1A', '2B'] } } },
+      cdu: { destinatario: { classi: { elencoDescrizione: '1A, 2B' } } },
       db,
       templates: new FakeTemplateEngine(),
       now: NOW,

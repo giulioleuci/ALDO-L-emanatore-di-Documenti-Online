@@ -511,7 +511,7 @@ test('PIANI_PERS POST_PROCESSO criterion matches on the full classiCompetenza li
     criteri: Record<string, string>;
   }>;
   expect(postProcesso[0]!.criteri[COL_LOG_DOCS.CLASSI]).toBe(
-    '{{destinatario.contesto.classiCompetenza | join}}'
+    '{{destinatario.classi.elencoDescrizione}}'
   );
 });
 

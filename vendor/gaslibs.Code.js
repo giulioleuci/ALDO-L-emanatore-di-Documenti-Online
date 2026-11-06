@@ -43252,11 +43252,8 @@ class TableService {
 
 
 
-      const pkColLetter = this._getPkColumnLetter();
-      const pkRange = `'${this.sheetName}'!${pkColLetter}:${pkColLetter}`;
-      const pkColumnArray = this.spreadsheetService.getRanges(this.spreadsheetId, pkRange) || [];
+      const pkValues = this._readSheetPkValues();
       const realRowIndicesToDelete = [];
-      const pkValues = pkColumnArray.map(r => r[0]);
       for (const id of deleteIds) {
 
         const idx = pkValues.findIndex(val => val == id); 
@@ -43277,10 +43274,7 @@ class TableService {
       const physicalColumns = this.columns.filter(col => !this._virtualColumns[col]);
 
 
-      const pkColLetter = this._getPkColumnLetter();
-      const pkRange = `'${this.sheetName}'!${pkColLetter}:${pkColLetter}`;
-      const pkColumnArray = this.spreadsheetService.getRanges(this.spreadsheetId, pkRange) || [];
-      const pkValues = pkColumnArray.map(r => r ? r[0] : null);
+      const pkValues = this._readSheetPkValues();
       for (const [id, rowToUpdate] of this._updateQueue.entries()) {
         const idx = pkValues.findIndex(val => val == id);
         if (idx !== -1) {
@@ -43643,6 +43637,36 @@ class TableService {
       tempIndex = Math.floor((tempIndex - modulo) / TableService.ALPHABET_SIZE);
     }
     return column;
+  }
+
+
+
+
+
+
+
+
+  _readSheetPkValues() {
+    const virtualPk = this._virtualColumns[this._keyField];
+    if (virtualPk === undefined) {
+      const pkColLetter = this._getPkColumnLetter();
+      const pkRange = `'${this.sheetName}'!${pkColLetter}:${pkColLetter}`;
+      const pkColumnArray = this.spreadsheetService.getRanges(this.spreadsheetId, pkRange) || [];
+      return pkColumnArray.map(r => r ? r[0] : null);
+    }
+    const physical = this.columns.filter(col => !this._virtualColumns[col]);
+    const lastLetter = this._convertIndexToColumn(physical.length);
+    const data = this.spreadsheetService.getRanges(this.spreadsheetId, `'${this.sheetName}'!A:${lastLetter}`) || [];
+    return data.map((r, i) => {
+      if (i === 0 || !r) {
+        return null; 
+      }
+      const row = {};
+      physical.forEach((col, j) => {
+        row[col] = r[j] ?? '';
+      });
+      return virtualPk(row);
+    });
   }
 
 

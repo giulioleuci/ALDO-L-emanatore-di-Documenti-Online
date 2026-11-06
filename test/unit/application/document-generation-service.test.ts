@@ -122,6 +122,25 @@ describe('DocumentGenerationService.generateForClasse — error paths', () => {
     expect(deleteSpy).toHaveBeenCalledWith(drive.copies[0]!.fileId);
   });
 
+  test('commit failure rolls back, deletes the cloned file and leaves the DB usable for the next document', () => {
+    const { db, drive, service } = wire();
+    const realCommit = db.commit.bind(db);
+    jest.spyOn(db, 'commit').mockImplementationOnce(() => {
+      throw new Error('Transaction commit failed: boom');
+    });
+    const deleteSpy = jest.spyOn(drive, 'deleteFile');
+
+    expect(() => service.generateForClasse(ClasseId.of('5A'), 'CD1')).toThrow(
+      'Transaction commit failed: boom'
+    );
+    expect(deleteSpy).toHaveBeenCalledWith(drive.copies[0]!.fileId);
+    expect(db.rolledBack).toBe(1);
+    expect(db.table(TABLE.LOG_DOCS).findAll()).toEqual([]);
+
+    jest.spyOn(db, 'commit').mockImplementation(realCommit);
+    expect(() => service.generateForClasse(ClasseId.of('5A'), 'CD1')).not.toThrow();
+  });
+
   test('does not call drive.deleteFile when a critical step (SelectTemplate) fails before any file was created', () => {
     const tables = fixtureTables();
     // MODELLI without a templateId: ConfigurazioneDocumentoRepository.resolveTemplateId

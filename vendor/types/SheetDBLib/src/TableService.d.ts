@@ -312,6 +312,14 @@ export declare class TableService<Row extends object = RowRecord> {
      */
     _convertIndexToColumn(index: number): string;
     /**
+     * @function _readSheetPkValues
+     * @description PK value of every sheet row as it is NOW on the sheet (index 0 = header row).
+     * A virtual PK has no sheet column, so it is recomputed from the physical columns.
+     * @returns {Array}
+     * @private
+     */
+    _readSheetPkValues(): unknown[];
+    /**
      * @function _getPkColumnLetter
      * @description Resolves A1 letter for the mapped primary key.
      * @returns {string}

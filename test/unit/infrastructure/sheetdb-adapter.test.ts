@@ -305,3 +305,28 @@ test.each([
     expect(rows).toEqual(expected);
   }
 );
+
+test('PIANI composite key survives flush: the write lands on the exact sheet row, not on a nonexistent PK column', () => {
+  const raw = [
+    ['STUDENTE', 'TIPO', 'PARAMETRI', 'GENERATO'],
+    ['a@x.it', 'PDP', '', false],
+    ['a@x.it', 'PEI', '', false]
+  ];
+  const updates: unknown[] = [];
+  const ss = {
+    ...stubSpreadsheetService(),
+    // Only whole-table reads return data: a read of the virtual __PK "column" is empty.
+    getRanges: (_id: string, range: string) => (/!A:[A-Z]+$/.test(range) ? raw : [[], []]),
+    updateRanges: (_id: string, u: unknown) => updates.push(u)
+  };
+  const table = new TableService('PIANI', 'fake-ss', ss, logger, new UtilsService(), raw);
+  const adapter = new SheetDbAdapter({ tables: { PIANI: table } } as never);
+
+  adapter.tables['PIANI']!.updateRowWhere(
+    { STUDENTE: 'a@x.it', TIPO: 'PEI' },
+    { STUDENTE: 'a@x.it', TIPO: 'PEI', PARAMETRI: '', GENERATO: true }
+  );
+  table.flush();
+
+  expect(updates).toEqual([[{ range: 'PIANI!A3:D3', values: [['a@x.it', 'PEI', '', true]] }]]);
+});

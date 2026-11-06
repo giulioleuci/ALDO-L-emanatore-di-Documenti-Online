@@ -343,7 +343,15 @@ export class DocumentGenerationService {
       this.db.rollback();
       throw new PipelineError(critical);
     }
-    this.db.commit();
+    try {
+      this.db.commit();
+    } catch (e) {
+      // SheetDBLib leaves the transaction open after a failed commit: close it, and undo the clone (10 §8).
+      this.db.rollback();
+      const orphan = ctx.get<string>('newFileId');
+      if (orphan !== null) this.drive.deleteFile(orphan);
+      throw e;
+    }
 
     return this.resultFromContext(ctx, startedAt);
   }

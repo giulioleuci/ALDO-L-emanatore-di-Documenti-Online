@@ -379,6 +379,7 @@ export function fixtureTables(): Record<string, Row[]> {
         PROGRESSIVO: 1,
         CLASSE: '5A',
         DATA: '2026-02-15',
+        ID_RILEVAZIONE: '2025_26_FEBBRAIO',
         NOTIFICATO: '',
         ASSENZE: true,
         MATE: '4.5',
@@ -389,6 +390,7 @@ export function fixtureTables(): Record<string, Row[]> {
         PROGRESSIVO: 2,
         CLASSE: '5A',
         DATA: '2026-05-20',
+        ID_RILEVAZIONE: '2025_26_MAGGIO',
         NOTIFICATO: '2026-05-21T10:00:00.000Z',
         ASSENZE: false,
         MATE: '5'
@@ -398,6 +400,7 @@ export function fixtureTables(): Record<string, Row[]> {
         PROGRESSIVO: 1,
         CLASSE: '5A',
         DATA: '2025-12-01',
+        ID_RILEVAZIONE: '2025_26_DICEMBRE',
         NOTIFICATO: '',
         ASSENZE: false,
         FISI: '3'

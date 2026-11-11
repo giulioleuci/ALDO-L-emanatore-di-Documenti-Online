@@ -293,3 +293,16 @@ test('CURRICULUM_COVERAGE.check: flags a mandated subject missing its CLASSI col
     details: { indirizzo: 'LS', anno: '1' }
   });
 });
+
+test('duplicate student/campaign is reported while legacy empty campaigns remain valid', () => {
+  const check = findRowPredicate('CARENZE_CAMPAGNA_DUPLICATA');
+  const rows = [
+    { STUDENTE: 'a', ID_RILEVAZIONE: 'NOV' },
+    { STUDENTE: 'a', ID_RILEVAZIONE: 'NOV' },
+    { STUDENTE: 'a', ID_RILEVAZIONE: 'FEB' }
+  ];
+  const ctx = makeCtx({ CARENZE: rows });
+  expect(check(rows[0]!, ctx)).toEqual({ column: 'ID_RILEVAZIONE', value: 'NOV' });
+  expect(check(rows[2]!, ctx)).toBeNull();
+  expect(check({ STUDENTE: 'a' }, ctx)).toBeNull();
+});

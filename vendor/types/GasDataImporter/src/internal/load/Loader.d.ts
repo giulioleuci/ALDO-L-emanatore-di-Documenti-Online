@@ -25,7 +25,7 @@ declare class Loader<Row extends object = ImportRow> {
      * @param {Object} loadConfig persistence parameters.
      * @param {string} loadConfig.targetTable Destination table identifier.
      * @param {string} loadConfig.conflictResolution resolution strategy (INSERT_ONLY|UPDATE_ONLY|UPSERT|OVERWRITE).
-     * @param {string} [loadConfig.conflictKey] Attribute used for collision detection.
+     * @param {string|string[]} [loadConfig.conflictKey] Attribute or complete tuple used for collision detection. Composite values must be nonblank; string components are compared trimmed. INSERT_ONLY preserves existing rows and deduplicates incoming tuples.
      * @param {Object} [loadConfig.updateIfNewer] Optional timestamp comparison rules.
      * @returns {Object} Operational statistics.
      * @throws {LoadError} If database is inaccessible or strategy execution fails.
@@ -62,7 +62,7 @@ declare class Loader<Row extends object = ImportRow> {
      * @param {Object} table Target persistence table.
      * @param {Array<Object>} data Records to process (may be empty).
      * @param {string} strategy Resolution strategy (INSERT_ONLY|UPDATE_ONLY|UPSERT|OVERWRITE).
-     * @param {string} conflictKey Attribute used for collision detection.
+     * @param {string|string[]} conflictKey Attribute used for collision detection.
      * @param {Object} updateIfNewer Optional timestamp comparison rules.
      * @param {Function} overwriteHandler OVERWRITE implementation: `_overwrite`
      *   for a single-shot load or the first chunk of a chunked run, `_appendAll`
@@ -70,16 +70,16 @@ declare class Loader<Row extends object = ImportRow> {
      * @returns {Object} Operational statistics.
      * @throws {LoadError} If the strategy is unknown.
      */
-    _executeStrategy(table: ImportTable<Row>, data: Row[], strategy: string, conflictKey: string | undefined, updateIfNewer: UpdateIfNewer<Row>, overwriteHandler: (table: ImportTable<Row>, data: Row[], conflictKey?: string) => LoadResult): LoadResult;
+    _executeStrategy(table: ImportTable<Row>, data: Row[], strategy: string, conflictKey: string | string[] | undefined, updateIfNewer: UpdateIfNewer<Row>, overwriteHandler: (table: ImportTable<Row>, data: Row[], conflictKey?: string | string[]) => LoadResult): LoadResult;
     /**
      * Strategy to exclusively add new records while ignoring existing collisions.
      * @private
      * @param {Object} table target persistence table.
      * @param {Array<Object>} data Records to evaluate.
-     * @param {string} conflictKey Attribute for collision detection.
+     * @param {string|string[]} conflictKey Attribute for collision detection.
      * @returns {Object} statistics.
      */
-    _insertOnly(table: ImportTable<Row>, data: Row[], conflictKey: string | undefined): {
+    _insertOnly(table: ImportTable<Row>, data: Row[], conflictKey: string | string[] | undefined): {
         success: boolean;
         inserted: number;
         updated: number;
@@ -92,11 +92,11 @@ declare class Loader<Row extends object = ImportRow> {
      * @private
      * @param {Object} table target persistence table.
      * @param {Array<Object>} data Records to evaluate.
-     * @param {string} conflictKey Attribute for record matching.
+     * @param {string|string[]} conflictKey Attribute for record matching.
      * @param {Object} updateIfNewer Timestamp comparison configuration.
      * @returns {Object} statistics.
      */
-    _updateOnly(table: ImportTable<Row>, data: Row[], conflictKey: string | undefined, updateIfNewer: UpdateIfNewer<Row>): {
+    _updateOnly(table: ImportTable<Row>, data: Row[], conflictKey: string | string[] | undefined, updateIfNewer: UpdateIfNewer<Row>): {
         success: boolean;
         inserted: number;
         updated: number;
@@ -109,11 +109,11 @@ declare class Loader<Row extends object = ImportRow> {
      * @private
      * @param {Object} table target persistence table.
      * @param {Array<Object>} data Records to evaluate.
-     * @param {string} conflictKey Attribute for matching and detection.
+     * @param {string|string[]} conflictKey Attribute for matching and detection.
      * @param {Object} updateIfNewer Timestamp comparison configuration.
      * @returns {Object} statistics.
      */
-    _upsert(table: ImportTable<Row>, data: Row[], conflictKey: string | undefined, updateIfNewer: UpdateIfNewer<Row>): {
+    _upsert(table: ImportTable<Row>, data: Row[], conflictKey: string | string[] | undefined, updateIfNewer: UpdateIfNewer<Row>): {
         success: boolean;
         inserted: number;
         updated: number;
@@ -126,10 +126,10 @@ declare class Loader<Row extends object = ImportRow> {
      * @private
      * @param {Object} table target persistence table.
      * @param {Array<Object>} data Records to insert.
-     * @param {string} conflictKey Attribute for row identification.
+     * @param {string|string[]} conflictKey Attribute for row identification.
      * @returns {Object} statistics.
      */
-    _overwrite(table: ImportTable<Row>, data: Row[], conflictKey: string | undefined): {
+    _overwrite(table: ImportTable<Row>, data: Row[], conflictKey: string | string[] | undefined): {
         success: boolean;
         inserted: number;
         updated: number;
@@ -172,6 +172,7 @@ declare class Loader<Row extends object = ImportRow> {
      * @returns {boolean} True if the update should proceed.
      */
     _shouldUpdate(existing: Row, incoming: Row, timestampColumn: string | undefined): boolean;
+    _conflictValue(row: Row, conflictKey: string | string[] | undefined): string;
     /**
      * Enforces structural requirements for the load configuration block.
      * @private

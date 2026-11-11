@@ -18,7 +18,7 @@ export interface AldoImportConfig {
   range?: string;
   hasHeaders?: boolean;
   map?: Record<string, string>;
-  key: string;
+  key: string | string[];
   conflictResolution: 'IGNORE' | 'OVERWRITE' | 'TIMESTAMP';
   timestampColumn?: string;
 }
@@ -104,7 +104,8 @@ function buildSource(
  */
 export function toLibraryRecipe(conf: ConfigurazioneImport): ImportRecipe {
   const cfg = conf.getConfig() as Partial<AldoImportConfig>;
-  if (cfg.key === undefined || cfg.key.trim() === '') {
+  const keys = Array.isArray(cfg.key) ? cfg.key : [cfg.key];
+  if (!keys.length || keys.some((key) => typeof key !== 'string' || key.trim() === '')) {
     throw new ConfigurationError(`CONF_IMP ${conf.id ?? '?'}: CONFIG.key obbligatorio`);
   }
   const conflictResolution = cfg.conflictResolution;
@@ -114,10 +115,27 @@ export function toLibraryRecipe(conf: ConfigurazioneImport): ImportRecipe {
     );
   }
 
+  if (
+    conf.target === 'CARENZE' &&
+    (Array.isArray(cfg.key) || Object.values(cfg.map ?? {}).includes('ID_RILEVAZIONE'))
+  ) {
+    if (
+      keys.length !== 2 ||
+      !keys.includes('STUDENTE') ||
+      !keys.includes('ID_RILEVAZIONE') ||
+      conflictResolution !== 'IGNORE' ||
+      !Object.values(cfg.map ?? {}).includes('ID_RILEVAZIONE')
+    ) {
+      throw new ConfigurationError(
+        'CARENZE: campagne richiedono key [STUDENTE, ID_RILEVAZIONE], IGNORE e mapping ID_RILEVAZIONE'
+      );
+    }
+  }
+
   const load: ImportLoadConfig = {
     targetTable: conf.target,
     conflictResolution: CONFLICT_MAP[conflictResolution],
-    conflictKey: cfg.key
+    conflictKey: cfg.key!
   };
   if (conflictResolution === 'TIMESTAMP') {
     if (cfg.timestampColumn === undefined || cfg.timestampColumn.trim() === '') {

@@ -25,6 +25,7 @@ export type CarenzaData = Record<string, unknown>;
 export class Carenza extends AldoEntity {
   public readonly studente: string;
   public readonly progressivo: number;
+  public readonly idRilevazione: string;
   public readonly classe: string;
   public readonly data: string;
   private notificato: string;
@@ -34,6 +35,11 @@ export class Carenza extends AldoEntity {
   constructor(data: CarenzaData = {}) {
     super(data);
     this.raw = { ...data };
+    this.idRilevazione =
+      typeof data[COL_CARENZE.ID_RILEVAZIONE] === 'string'
+        ? (data[COL_CARENZE.ID_RILEVAZIONE] as string).trim()
+        : '';
+    this.raw[COL_CARENZE.ID_RILEVAZIONE] = this.idRilevazione;
     this.studente =
       typeof data[COL_CARENZE.STUDENTE] === 'string' ? (data[COL_CARENZE.STUDENTE] as string) : '';
     this.progressivo =
@@ -45,9 +51,9 @@ export class Carenza extends AldoEntity {
     this.data =
       typeof data[COL_CARENZE.DATA] === 'string' ? (data[COL_CARENZE.DATA] as string) : '';
     this.notificato =
-      typeof data[COL_CARENZE.NOTIFICATO] === 'string'
-        ? (data[COL_CARENZE.NOTIFICATO] as string)
-        : '';
+      data[COL_CARENZE.NOTIFICATO] === undefined || data[COL_CARENZE.NOTIFICATO] === null
+        ? ''
+        : String(data[COL_CARENZE.NOTIFICATO]);
     this.assenze = data[COL_CARENZE.ASSENZE] === true;
     this.id = this.studente && this.progressivo ? `${this.studente}::${this.progressivo}` : null;
   }
@@ -58,7 +64,7 @@ export class Carenza extends AldoEntity {
   }
 
   isNotificato(): boolean {
-    return this.notificato.trim().length > 0;
+    return this.notificato.length > 0;
   }
 
   getNotificato(): Date | null {

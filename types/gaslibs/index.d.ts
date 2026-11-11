@@ -1558,7 +1558,7 @@ declare global {
   interface ImportLoadConfig {
     targetTable: string;
     conflictResolution: 'INSERT_ONLY' | 'UPDATE_ONLY' | 'UPSERT' | 'OVERWRITE';
-    conflictKey?: string;
+    conflictKey?: string | string[];
     updateIfNewer?: { enabled: boolean; timestampColumn?: string };
   }
   interface ImportRecipe {

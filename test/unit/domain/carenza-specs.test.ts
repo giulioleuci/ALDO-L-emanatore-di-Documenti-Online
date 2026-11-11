@@ -68,3 +68,16 @@ describe('CarenzeNonNotificateSpec', () => {
     expect(new CarenzeNonNotificateSpec().toQueryObject()).toBeNull();
   });
 });
+
+test('campaign identity trims and round trips while missing legacy identity stays empty', () => {
+  const row = carenza({ ID_RILEVAZIONE: ' NOV ' });
+  expect(row.idRilevazione).toBe('NOV');
+  expect(row.toData()['ID_RILEVAZIONE']).toBe('NOV');
+  expect(carenza().idRilevazione).toBe('');
+});
+test.each([false, 0, 'false', '   ', '2026-11-20'])(
+  'any populated notification cell excludes the assessment: %s',
+  (NOTIFICATO) => {
+    expect(carenza({ NOTIFICATO }).isNotificato()).toBe(true);
+  }
+);

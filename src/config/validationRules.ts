@@ -218,6 +218,23 @@ export function regoleValidazione(): DatasetValidationRule[] {
       }
     },
 
+    {
+      id: 'CARENZE_CAMPAGNA_DUPLICATA',
+      type: 'rowPredicate',
+      table: TABLE.CARENZE,
+      check: (row, ctx) => {
+        const campaign = cell(row, COL_CARENZE.ID_RILEVAZIONE);
+        if (!campaign) return null;
+        const student = cell(row, COL_CARENZE.STUDENTE);
+        const matches = (ctx.datasets[TABLE.CARENZE] ?? []).filter(
+          (other) =>
+            cell(other, COL_CARENZE.STUDENTE) === student &&
+            cell(other, COL_CARENZE.ID_RILEVAZIONE) === campaign
+        );
+        return matches.length > 1 ? { column: COL_CARENZE.ID_RILEVAZIONE, value: campaign } : null;
+      }
+    },
+
     // --- 2. JSON fields ---
     json(TABLE.ALUNNI, COL_ALUNNI.CURRICULUM),
     json(TABLE.CLASSI, COL_CLASSI.RUOLI),

@@ -258,7 +258,11 @@ Insufficienze degli studenti. **Struttura a matrice**: ogni riga è una rilevazi
 | `*[MATERIA]*`       | String  | —          | MATERIE.ID   | —                                                                       | Colonne dinamiche: voto numerico o nota testuale per ogni materia                                                                         |
 | `*[SpecificitaId]*` | String  | —          | —            | —                                                                       | Colonne dinamiche: voto/nota per la specificità (es. `INTERPRETAZIONE.CHITARRA`). Presenti solo per le materie che prevedono specificità. |
 
+| `ID_RILEVAZIONE` | String | — | — | Unico insieme a STUDENTE | Campagna, es. `2026_27_NOVEMBRE`, comune a tutte le date dei consigli |
+
 **Chiave primaria composita:** `(STUDENTE, PROGRESSIVO)` — non esiste una colonna `ID`.
+
+La chiave funzionale è `(STUDENTE, ID_RILEVAZIONE)` nel database annuale. Le righe storiche senza campagna restano leggibili, ma devono essere completate prima degli invii per campagna. Appendere la colonna a destra senza spostare le materie. `DATA` conserva la data effettiva. Gli import per campagna usano `key: ["STUDENTE", "ID_RILEVAZIONE"]`, `conflictResolution: "IGNORE"` e mapping esplicito della campagna: le righe già presenti sono ignorate, preservando PROGRESSIVO e NOTIFICATO. Per correggere i voti modificare esplicitamente la riga esistente. La sorgente deve fornire PROGRESSIVO validi secondo MAX + 1. Qualsiasi valore non vuoto in NOTIFICATO esclude la riga; le righe pendenti hanno la cella realmente vuota.
 
 **Algoritmo PROGRESSIVO:** alla creazione di una nuova carenza, l'applicazione DEVE assegnare `PROGRESSIVO = MAX(PROGRESSIVO esistente per quello STUDENTE) + 1`. Il sistema NON gestisce conflitti tra scritture concorrenti sullo stesso studente: l'utente DEVE evitare operazioni parallele che potrebbero generare progressivi duplicati.
 

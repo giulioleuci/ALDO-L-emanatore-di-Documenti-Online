@@ -51111,10 +51111,16 @@ class ImportConfiguration {
         conflictResolution: load.conflictResolution
       });
     }
-
+    const key = load.conflictKey;
+    if (key !== undefined) {
+      const columns = Array.isArray(key) ? key : [key];
+      if (!columns.length || columns.some(column => typeof column !== 'string' || !column.trim())) {
+        throw new ConfigurationError_ConfigurationError('Invalid conflict key', 'INVALID_CONFLICT_KEY');
+      }
+    }
 
     if (['UPDATE_ONLY', 'UPSERT', 'OVERWRITE'].includes(load.conflictResolution)) {
-      if (!load.conflictKey || typeof load.conflictKey !== 'string') {
+      if (!load.conflictKey) {
         throw new ConfigurationError_ConfigurationError(`Conflict resolution strategy "${load.conflictResolution}" requires a conflictKey`, 'MISSING_CONFLICT_KEY', {
           conflictResolution: load.conflictResolution
         });
@@ -52589,6 +52595,11 @@ class Loader {
         total: 0
       };
     }
+    if (Array.isArray(conflictKey)) {
+      for (const row of data) {
+        this._conflictValue(row, conflictKey);
+      }
+    }
     switch (strategy) {
       case 'INSERT_ONLY':
         return this._insertOnly(table, data, conflictKey);
@@ -52617,18 +52628,21 @@ class Loader {
     try {
 
       const existingRows = table.getAllRows();
-      const existingKeys = new Set(existingRows.map(row => String(row[conflictKey])));
+      const existingKeys = new Set(existingRows.filter(row => !Array.isArray(conflictKey) || conflictKey.every(column => row[column] !== undefined && row[column] !== null && String(row[column]).trim() !== '')).map(row => this._conflictValue(row, conflictKey)));
 
 
       const rowsToInsert = [];
       let skipped = 0;
       for (const row of data) {
-        const keyValue = String(row[conflictKey]);
+        const keyValue = this._conflictValue(row, conflictKey);
         if (existingKeys.has(keyValue)) {
           skipped++;
           this.logger.debug(`[Loader] Skipping existing record: ${conflictKey}=${keyValue}`);
         } else {
           rowsToInsert.push(row);
+          if (conflictKey !== undefined) {
+            existingKeys.add(keyValue);
+          }
         }
       }
 
@@ -52670,14 +52684,14 @@ class Loader {
       const existingRows = table.getAllRows();
       const existingMap = new Map();
       for (const row of existingRows) {
-        existingMap.set(String(row[conflictKey]), row);
+        existingMap.set(this._conflictValue(row, conflictKey), row);
       }
       let updated = 0;
       let skipped = 0;
 
 
       for (const row of data) {
-        const keyValue = String(row[conflictKey]);
+        const keyValue = this._conflictValue(row, conflictKey);
         const existing = existingMap.get(keyValue);
         if (!existing) {
           skipped++;
@@ -52728,7 +52742,7 @@ class Loader {
       const existingRows = table.getAllRows();
       const existingMap = new Map();
       for (const row of existingRows) {
-        existingMap.set(String(row[conflictKey]), row);
+        existingMap.set(this._conflictValue(row, conflictKey), row);
       }
 
 
@@ -52736,7 +52750,7 @@ class Loader {
       const rowsToUpdate = [];
       let skipped = 0;
       for (const row of data) {
-        const keyValue = String(row[conflictKey]);
+        const keyValue = this._conflictValue(row, conflictKey);
         const existing = existingMap.get(keyValue);
         if (!existing) {
           rowsToInsert.push(row);
@@ -52917,6 +52931,16 @@ class Loader {
       return true; 
     }
   }
+  _conflictValue(row, conflictKey) {
+    if (!Array.isArray(conflictKey)) {
+      return String(row[conflictKey]);
+    }
+    const values = conflictKey.map(column => row[column]);
+    if (values.some(value => value === null || value === undefined || String(value).trim() === '')) {
+      throw new LoadError('Composite conflict key components must not be blank', 'INVALID_CONFLICT_KEY');
+    }
+    return JSON.stringify(values.map(value => typeof value === 'string' ? value.trim() : value));
+  }
 
 
 
@@ -52925,6 +52949,12 @@ class Loader {
 
 
   _validateLoadConfig(config) {
+    if (config && config.conflictKey !== undefined) {
+      const columns = Array.isArray(config.conflictKey) ? config.conflictKey : [config.conflictKey];
+      if (!columns.length || columns.some(column => typeof column !== 'string' || !column.trim())) {
+        throw new LoadError('Invalid conflict key', 'INVALID_CONFLICT_KEY');
+      }
+    }
     if (!config || typeof config !== 'object') {
       throw new LoadError('Load configuration must be an object', 'INVALID_CONFIG');
     }
@@ -52939,7 +52969,7 @@ class Loader {
 
 
     if (['UPDATE_ONLY', 'UPSERT', 'OVERWRITE'].includes(config.conflictResolution)) {
-      if (!config.conflictKey || typeof config.conflictKey !== 'string') {
+      if (!config.conflictKey) {
         throw new LoadError(`Conflict resolution strategy "${config.conflictResolution}" requires a conflictKey`, 'MISSING_CONFLICT_KEY', {
           conflictResolution: config.conflictResolution
         });

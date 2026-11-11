@@ -186,7 +186,12 @@ export class ImportService {
       jobId: `imp_${configId}`,
       postTransform: (mapped, configuration) => {
         const load = configuration.getLoad();
-        const keyColumns = load.conflictKey === undefined ? [] : [load.conflictKey];
+        const keyColumns =
+          load.conflictKey === undefined
+            ? []
+            : Array.isArray(load.conflictKey)
+              ? load.conflictKey
+              : [load.conflictKey];
         const metaColumns =
           load.updateIfNewer?.timestampColumn !== undefined
             ? [...META_COLUMNS, load.updateIfNewer.timestampColumn]

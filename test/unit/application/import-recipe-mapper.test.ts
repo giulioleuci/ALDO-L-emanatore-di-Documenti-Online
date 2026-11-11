@@ -303,3 +303,42 @@ describe('isGhostRecord (12 §3): after mapping, before conflict handling', () =
     expect(isGhostRecord(row, ['EMAIL'], [])).toBe(true);
   });
 });
+
+test('campaign import requires composite IGNORE and explicit campaign mapping', () => {
+  const config = {
+    searchStrategy: 'FILE_SINGOLO',
+    fileId: 'x',
+    key: ['STUDENTE', 'ID_RILEVAZIONE'],
+    conflictResolution: 'IGNORE',
+    map: { Campaign: 'ID_RILEVAZIONE' }
+  };
+  expect(toLibraryRecipe(conf(config, 'CARENZE')).load.conflictKey).toEqual(config.key);
+  expect(() =>
+    toLibraryRecipe(conf({ ...config, conflictResolution: 'OVERWRITE' }, 'CARENZE'))
+  ).toThrow(ConfigurationError);
+  expect(() => toLibraryRecipe(conf({ ...config, map: {} }, 'CARENZE'))).toThrow(
+    ConfigurationError
+  );
+  expect(() => toLibraryRecipe(conf({ ...config, key: [] }, 'CARENZE'))).toThrow(
+    ConfigurationError
+  );
+});
+
+test('mapped campaign cannot bypass insert-only policy through a scalar key', () => {
+  for (const conflictResolution of ['OVERWRITE', 'TIMESTAMP', 'IGNORE']) {
+    expect(() =>
+      toLibraryRecipe(
+        conf(
+          {
+            searchStrategy: 'FILE_SINGOLO',
+            fileId: 'source',
+            key: 'STUDENTE',
+            conflictResolution,
+            map: { Campaign: 'ID_RILEVAZIONE' }
+          },
+          'CARENZE'
+        )
+      )
+    ).toThrow(ConfigurationError);
+  }
+});

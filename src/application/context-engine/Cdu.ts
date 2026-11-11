@@ -802,6 +802,7 @@ export interface PianoFocusVM {
 }
 
 export interface CarenzaFocusVM {
+  idRilevazione: string;
   studente: PersonaRiferimentoVM;
   classe: ClasseRiferimentoVM;
   progressivo: number;

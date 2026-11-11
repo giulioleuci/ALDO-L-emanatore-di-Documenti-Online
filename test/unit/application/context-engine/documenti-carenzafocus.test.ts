@@ -2,6 +2,7 @@ import { ContextBuilder } from '../../../../src/application/context-engine/Conte
 import { ClasseProvider } from '../../../../src/application/context-engine/providers/ClasseProvider';
 import { AlunnoProvider } from '../../../../src/application/context-engine/providers/AlunnoProvider';
 import { DocumentiProvider } from '../../../../src/application/context-engine/providers/DocumentiProvider';
+import { CarenzeProvider } from '../../../../src/application/context-engine/providers/CarenzeProvider';
 import { CarenzaFocusProvider } from '../../../../src/application/context-engine/providers/CarenzaFocusProvider';
 import { makeOptions } from '../../../../src/application/context-engine/Recipe';
 import type { BuildParams, Recipe } from '../../../../src/application/context-engine/Recipe';
@@ -50,6 +51,7 @@ function build(
     new DocumentiProvider(new LogDocumentoRepository(db, new LazyRef(() => classi)), databases)
   );
   b.registerProvider('carenzaFocus', new CarenzaFocusProvider(alunni));
+  b.registerProvider('carenze', new CarenzeProvider(alunni, new MateriaRepository(db)));
   const full: BuildParams = {
     target,
     tipoTarget: 'alunno',
@@ -193,4 +195,80 @@ test('CarenzaFocusProvider: selected progressivo with assenze flag', () => {
     hasAssenze: true,
     note: ''
   });
+});
+
+function campaignTables() {
+  const tables = fixtureTables();
+  tables['CARENZE'] = [
+    {
+      STUDENTE: 'a1@school.it',
+      CLASSE: '5A',
+      PROGRESSIVO: 1,
+      DATA: '2026-11-16',
+      ID_RILEVAZIONE: '2026_27_NOVEMBRE',
+      MATE: 4,
+      NOTE: 'Novembre',
+      ASSENZE: true
+    },
+    {
+      STUDENTE: 'a1@school.it',
+      CLASSE: '5A',
+      PROGRESSIVO: 2,
+      DATA: '2027-02-08',
+      ID_RILEVAZIONE: '2026_27_FEBBRAIO',
+      MATE: 5,
+      NOTE: 'Febbraio',
+      ASSENZE: false
+    }
+  ];
+  return tables;
+}
+
+test('focused assessment contains only its own subjects and metadata regardless of provider order', () => {
+  for (const providers of [
+    ['class', 'student', 'carenze', 'carenzaFocus'],
+    ['class', 'student', 'carenzaFocus', 'carenze']
+  ]) {
+    const cdu = build('a1@school.it', providers, { carenzaProgressivo: 2 }, campaignTables());
+    expect(cdu.focus.alunno!.carenze.elenco).toEqual([
+      {
+        materiaSigla: 'MATE',
+        materiaNome: 'Matematica',
+        materiaNomeSintetico: 'Matematica',
+        voto: '5',
+        descrizione: 'Matematica: 5'
+      }
+    ]);
+    expect(cdu.focus.carenza).toMatchObject({
+      idRilevazione: '2026_27_FEBBRAIO',
+      progressivo: 2,
+      note: 'Febbraio',
+      hasAssenze: false
+    });
+  }
+});
+
+test('missing requested progressivo never falls back to latest', () => {
+  const cdu = build(
+    'a1@school.it',
+    ['class', 'student', 'carenzaFocus', 'carenze'],
+    { carenzaProgressivo: 99 },
+    campaignTables()
+  );
+  expect(cdu.focus.carenza).toBeUndefined();
+  expect(cdu.focus.alunno!.carenze.elenco).toEqual([]);
+});
+
+test('unscoped CDU retains all assessments and legacy campaign is empty', () => {
+  const cdu = build(
+    'a1@school.it',
+    ['class', 'student', 'carenzaFocus', 'carenze'],
+    {},
+    campaignTables()
+  );
+  expect(cdu.focus.alunno!.carenze.elenco.map(({ voto }) => voto)).toEqual(['5', '4']);
+  const legacyTables = fixtureTables();
+  for (const row of legacyTables['CARENZE'] ?? []) delete row['ID_RILEVAZIONE'];
+  const legacy = build('a1@school.it', ['class', 'student', 'carenzaFocus'], {}, legacyTables);
+  expect(legacy.focus.carenza).toMatchObject({ idRilevazione: '' });
 });

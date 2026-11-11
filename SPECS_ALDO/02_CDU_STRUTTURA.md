@@ -679,6 +679,7 @@ PianoFocusVM:
 
 ```yaml
 CarenzaFocusVM:
+  idRilevazione: string # Campagna (es. 2026_27_NOVEMBRE); vuota per righe legacy
   studente: PersonaRiferimentoVM # Studente cui appartiene la rilevazione
   classe: ClasseRiferimentoVM # Classe al momento della rilevazione
 
@@ -691,6 +692,12 @@ CarenzaFocusVM:
   note: string # Annotazioni del consiglio di classe
   hasNote: boolean # true se note contiene testo utile
 ```
+
+Quando è richiesto un `carenzaProgressivo`, `focus.alunno.carenze` contiene
+solo le materie di quella rilevazione dello studente. Note e assenze provengono
+dalla stessa riga. Se la riga richiesta manca, `focus.carenza` è assente e
+l'elenco delle carenze è vuoto: non si ripiega su un'altra rilevazione.
+Senza progressivo esplicito resta l'aggregazione completa delle rilevazioni.
 
 ### 4.5 `focus.docente`, `focus.materia` e `focus.cattedre`
 

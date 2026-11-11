@@ -574,8 +574,13 @@ Rendering:
 
 Il focus.carenza rappresenta metadati di una rilevazione; l'elenco delle
 materie è nel nodo carenze dello studente adatto alla recipe.
+Con un progressivo esplicito, tale elenco contiene solo la rilevazione
+selezionata; una rilevazione mancante produce un elenco vuoto e nessun focus.
+`focus.carenza.idRilevazione` identifica la campagna, anche quando le date dei
+consigli differiscono; è vuoto per le righe legacy senza identificatore.
 
 ```
+Campagna: {{focus.carenza.idRilevazione}}.
 Rilevazione n. {{focus.carenza.progressivo}} del {{focus.carenza.dataEstesa}}, relativa a {{focus.carenza.studente.nomeCompleto}} della classe {{focus.carenza.classe.nome}}.
 Assenze rilevanti: {{focus.carenza.hasAssenze | yesNo:'sì':'no'}}.
 Note: {{focus.carenza.note | default:'nessuna'}}.

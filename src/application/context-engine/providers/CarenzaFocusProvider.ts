@@ -22,6 +22,7 @@ export class CarenzaFocusProvider implements ContextProvider {
       studente: { nomeCompleto: alunno.nomeCompleto, email: alunno.email },
       classe: { nome: target.classe },
       progressivo: target.progressivo,
+      idRilevazione: target.idRilevazione,
       data: target.data,
       dataBreve: data.breve,
       dataEstesa: data.estesa,

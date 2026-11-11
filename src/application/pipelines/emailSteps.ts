@@ -35,7 +35,7 @@ import { recipe } from '../context-engine/Recipe';
 import { salutoPerTarget } from '../email/saluto';
 import { createBoxComposer, renderBoxes, type SourceScope } from '../email/boxes';
 import { eseguiAzioni, hasJsonValue, type PostProcessDb } from './standaloneActions';
-import { COL_CONF_MAIL, MATERIA_SOSTEGNO } from '../../config/schema';
+import { TABLE, COL_CARENZE, COL_CONF_MAIL, MATERIA_SOSTEGNO } from '../../config/schema';
 import { ProcessoInvio, StatoEmail, DuplicazioneDocumento } from '../../domain/value-objects/enums';
 import { ClasseId } from '../../domain/value-objects/ClasseId';
 import { Email } from '../../domain/value-objects/Email';
@@ -446,7 +446,10 @@ export class ValutaCondizioniInvioStep extends Step {
 
 /** Step 3 (11 §4): in-memory guard against re-sending a SUCCESS-logged logical target. */
 export class CheckAlreadySentStep extends Step {
-  constructor(logger: LoggerService) {
+  constructor(
+    logger: LoggerService,
+    private readonly db?: IDatabase
+  ) {
     super('CheckAlreadySent', logger, {
       shouldExecuteCondition: sendGate,
       requiredKeys: ['config', 'emailTarget', 'successfulLogicalTargetIds']
@@ -454,6 +457,36 @@ export class CheckAlreadySentStep extends Step {
   }
 
   protected _executeLogic(ctx: PipelineContext): void {
+    if (
+      String(cfg(ctx)[COL_CONF_MAIL.PROCESSO]).startsWith('PER_CARENZA_GENITORI') &&
+      this.db !== undefined
+    ) {
+      this.setResult(ctx, 'shouldSend', false);
+      const t = target(ctx);
+      const rows = this.db
+        .table(TABLE.CARENZE)
+        .findAll()
+        .filter((row) => row[COL_CARENZE.STUDENTE] === t.target);
+      const selected = rows.filter(
+        (row) => row[COL_CARENZE.PROGRESSIVO] === t.carenzaProgressivo
+      );
+      const row = selected[0];
+      const campaign = String(row?.[COL_CARENZE.ID_RILEVAZIONE] ?? '').trim();
+      const notified = row?.[COL_CARENZE.NOTIFICATO];
+      if (
+        selected.length !== 1 ||
+        campaign === '' ||
+        (notified !== undefined && notified !== null && String(notified) !== '') ||
+        rows.filter(
+          (candidate) => String(candidate[COL_CARENZE.ID_RILEVAZIONE] ?? '').trim() === campaign
+        ).length !== 1
+      ) {
+        this.setResult(ctx, 'shouldSend', false);
+        this.setResult(ctx, 'skipReason', 'Rilevazione assente, ambigua o già notificata');
+        return;
+      }
+      this.setResult(ctx, 'shouldSend', true);
+    }
     const duplicazione = String(
       cfg(ctx)[COL_CONF_MAIL.DUPLICAZIONE] ?? DuplicazioneDocumento.NEGATA
     );
@@ -866,6 +899,8 @@ export class PostProcessEmailStep extends Step {
     super('PostProcessEmail', logger, {
       shouldExecuteCondition: (ctx) =>
         sendGate(ctx) &&
+        (ctx.get('testEmail') === null ||
+          !String(cfg(ctx)[COL_CONF_MAIL.PROCESSO]).startsWith('PER_CARENZA_GENITORI')) &&
         (ctx.get<number>('sentCount') ?? 0) > 0 &&
         hasJsonValue(cfg(ctx)[COL_CONF_MAIL.POST_PROCESSO])
     });

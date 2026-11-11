@@ -3,7 +3,7 @@ import type { IGmailFacade } from '../../infrastructure/facades/GmailServiceFaca
 import type { IDriveFacade } from '../../infrastructure/facades/DriveServiceFacade';
 import type { ITemplateEngine } from '../../infrastructure/facades/TemplateEngineFacade';
 import type { IExpressionEngine } from '../../infrastructure/facades/ExpressionEngineFacade';
-import type { PostProcessDb } from '../pipelines/standaloneActions';
+import type { Azione, PostProcessDb } from '../pipelines/standaloneActions';
 import type { ContextBuilder } from '../context-engine/ContextBuilder';
 import { emailTargetId, type EmailTarget } from '../email/saluto';
 import type { ConfigurazioneEmail } from '../../domain/entities/ConfigurazioneEmail';
@@ -143,6 +143,7 @@ export class EmailNotificationService {
     const conf = this.deps.confMail.findById(patternId);
     if (conf === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
     conf.getAllegati();
+    this.validateCarenzaPostProcess(conf, row);
 
     let targets = this.enumerateTargets(conf);
     const onlyTargetIds = options.onlyTargetIds;
@@ -193,6 +194,7 @@ export class EmailNotificationService {
     const conf = this.deps.confMail.findById(patternId);
     if (conf === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
     conf.getAllegati();
+    this.validateCarenzaPostProcess(conf, row);
     const activeTestRecipient = testRecipient ?? this.testEmail;
     const successfulLogicalTargetIds = this.loadSuccessfulLogicalTargetIds(
       patternId,
@@ -234,6 +236,43 @@ export class EmailNotificationService {
     const conf = this.deps.confMail.findById(patternId);
     if (conf === null) throw new PipelineError(`CONF_MAIL ${patternId} non trovato`);
     return conf;
+  }
+
+  private validateCarenzaPostProcess(conf: ConfigurazioneEmail, row: Row): void {
+    if (!conf.processo.startsWith('PER_CARENZA_GENITORI')) return;
+    let actions: unknown;
+    try {
+      actions = JSON.parse(String(row[COL_CONF_MAIL.POST_PROCESSO] ?? ''));
+    } catch {
+      throw new PipelineError('CARENZE: POST_PROCESSO deve marcare la singola rilevazione');
+    }
+    if (
+      !Array.isArray(actions) ||
+      !actions.some(
+        (action: Azione | null) =>
+          action?.tipo === 'INSERISCI_TIMESTAMP' &&
+          action.tab === TABLE.CARENZE &&
+          action.col === 'NOTIFICATO' &&
+          action.criteri?.['STUDENTE'] === '{{focus.carenza.studente.email}}' &&
+          action.criteri?.['PROGRESSIVO'] === '{{focus.carenza.progressivo}}' &&
+          Object.keys(action.criteri).length === 2
+      )
+    )
+      throw new PipelineError(
+        'CARENZE: POST_PROCESSO richiede timestamp con STUDENTE e PROGRESSIVO'
+      );
+    if (
+      actions.some(
+        (action: Azione | null) =>
+          action?.tab === TABLE.CARENZE &&
+          (action.criteri?.['STUDENTE'] !== '{{focus.carenza.studente.email}}' ||
+            action.criteri?.['PROGRESSIVO'] !== '{{focus.carenza.progressivo}}')
+      )
+    ) {
+      throw new PipelineError(
+        'CARENZE: POST_PROCESSO contiene azioni non limitate alla rilevazione'
+      );
+    }
   }
 
   /** Materializes the durable SUCCESS identities once, before any delivery can start. */
@@ -319,7 +358,7 @@ export class EmailNotificationService {
         )
       )
       .addStep(new ValutaCondizioniInvioStep(this.logger, d.expressionEngine))
-      .addStep(new CheckAlreadySentStep(this.logger))
+      .addStep(new CheckAlreadySentStep(this.logger, d.db))
       .addStep(new RenderBoxesStep(this.logger, d.materie, d.templates, d.aggregatoreDati))
       .addStep(new ComposeEmailStep(this.logger, d.templates, d.drive))
       .addStep(new ResolveRecipientsStep(this.logger, d.docenti, d.classi, d.teachingAssignments))

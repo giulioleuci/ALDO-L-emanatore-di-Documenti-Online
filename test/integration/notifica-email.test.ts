@@ -99,3 +99,54 @@ test('send failure ⇒ LOG_MAIL ERROR, post-process skipped, batch continues (re
   ).toBe('');
   expect(String(carenze.find((r) => r['STUDENTE'] === 'a2@school.it')!['NOTIFICATO'])).toBe('');
 });
+
+test.each([
+  'PER_CARENZA_GENITORI',
+  'PER_CARENZA_GENITORI_E_ALUNNO',
+  'PER_CARENZA_GENITORI_E_COORD'
+])('campaign isolation and fresh rerun: %s', (processo) => {
+  const tables = fixtureTables();
+  const first = tables['CARENZE']!.find((row) => row['STUDENTE'] === 'a1@school.it')!;
+  first['ID_RILEVAZIONE'] = 'NOV';
+  first['DATA'] = '2026-11-16';
+  first['NOTE'] = 'solo novembre';
+  tables['ALUNNI']!.find((row) => row['EMAIL'] === 'a2@school.it')!['ATTIVO'] = true;
+  const second = tables['CARENZE']!.find((row) => row['STUDENTE'] === 'a2@school.it')!;
+  second['ID_RILEVAZIONE'] = 'NOV';
+  second['DATA'] = '2026-11-19';
+  tables['CARENZE']!.push({
+    ...first,
+    PROGRESSIVO: 20,
+    DATA: '2027-02-08',
+    ID_RILEVAZIONE: 'FEB',
+    MATE: 2,
+    FISI: '',
+    NOTE: 'solo febbraio',
+    ASSENZE: false,
+    NOTIFICATO: ''
+  });
+  const pattern = tables['CONF_MAIL']!.find((row) => row['ID'] === 'CARENZE_NOTIFICA')!;
+  pattern['PROCESSO'] = processo;
+  pattern['CONDIZIONE'] = '{{focus.carenza.idRilevazione}} == "NOV"';
+  const db = new FakeDatabase(tables);
+  const gmail = new FakeGmailFacade();
+  const make = () =>
+    composeEmailNotificationService(
+      db,
+      gmail,
+      new FakeTemplateEngine(),
+      NOW,
+      new FakeDriveFacade(),
+      new AldoTeachingAssignmentResolver(db)
+    );
+  expect(make().sendPattern('CARENZE_NOTIFICA').sent).toBe(2);
+  expect(gmail.sent[0]!.htmlBody).toContain('Voto 4.5');
+  expect(gmail.sent[0]!.htmlBody).not.toContain('solo febbraio');
+  expect(gmail.sent[0]!.htmlBody).not.toContain('Voto 2');
+  expect(
+    db
+      .table('CARENZE')
+      .find((row) => row['STUDENTE'] === 'a1@school.it' && row['PROGRESSIVO'] === 20)!['NOTIFICATO']
+  ).toBe('');
+  expect(make().sendPattern('CARENZE_NOTIFICA').sent).toBe(0);
+});

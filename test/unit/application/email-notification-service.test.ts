@@ -1566,3 +1566,108 @@ describe('EmailNotificationService — remaining uncovered branches (A17)', () =
     expect(result.errors).toEqual([]);
   });
 });
+
+describe('campaign notification safety', () => {
+  const stamp = JSON.stringify([
+    {
+      tipo: 'INSERISCI_TIMESTAMP',
+      tab: 'CARENZE',
+      col: 'NOTIFICATO',
+      criteri: {
+        STUDENTE: '{{focus.carenza.studente.email}}',
+        PROGRESSIVO: '{{focus.carenza.progressivo}}'
+      }
+    }
+  ]);
+  test('rejects missing or student-wide post-process before delivery', () => {
+    for (const post of [
+      null,
+      JSON.stringify([
+        {
+          tipo: 'INSERISCI_TIMESTAMP',
+          tab: 'CARENZE',
+          col: 'NOTIFICATO',
+          criteri: { STUDENTE: '{{focus.carenza.studente.email}}' }
+        }
+      ])
+    ]) {
+      const { service, gmail } = wire([
+        mailRow('CAMPAIGN', { PROCESSO: 'PER_CARENZA_GENITORI', POST_PROCESSO: post })
+      ]);
+      expect(() => service.sendPattern('CAMPAIGN')).toThrow(/POST_PROCESSO/);
+      expect(gmail.sent).toHaveLength(0);
+    }
+  });
+  test.each([
+    'PER_CARENZA_GENITORI',
+    'PER_CARENZA_GENITORI_E_ALUNNO',
+    'PER_CARENZA_GENITORI_E_COORD'
+  ])('resumed %s skips already notified rows even when duplicates allowed', (processo) => {
+    const { service, gmail, db } = wire([
+      mailRow('CAMPAIGN', { PROCESSO: processo, POST_PROCESSO: stamp, DUPLICAZIONE: 'PERMESSA' })
+    ]);
+    const target = service.enumerateTargets(conf(processo))[0]!;
+    const row = db
+      .table('CARENZE')
+      .find(
+        (r) => r['STUDENTE'] === target.target && r['PROGRESSIVO'] === target.carenzaProgressivo
+      )!;
+    db.tables['CARENZE']!.updateRowWhere(
+      { ...row },
+      { ...row, NOTIFICATO: '2026-11-11', ID_RILEVAZIONE: 'NOV' }
+    );
+    expect(service.sendToTarget('CAMPAIGN', target).skipped).toBe(true);
+    expect(gmail.sent).toHaveLength(0);
+  });
+});
+
+describe('campaign row guard', () => {
+  test.each(['missing', 'legacy', 'duplicate', 'FALSE', 'zero'])('fails closed for %s', (kind) => {
+    const stamp = JSON.stringify([
+      {
+        tipo: 'INSERISCI_TIMESTAMP',
+        tab: 'CARENZE',
+        col: 'NOTIFICATO',
+        criteri: {
+          STUDENTE: '{{focus.carenza.studente.email}}',
+          PROGRESSIVO: '{{focus.carenza.progressivo}}'
+        }
+      }
+    ]);
+    const { service, gmail, db } = wire([
+      mailRow('GUARD', {
+        PROCESSO: 'PER_CARENZA_GENITORI',
+        POST_PROCESSO: stamp,
+        DUPLICAZIONE: 'PERMESSA'
+      })
+    ]);
+    const target = service.enumerateTargets(conf('PER_CARENZA_GENITORI'))[0]!;
+    const row = db
+      .table('CARENZE')
+      .find(
+        (r) => r['STUDENTE'] === target.target && r['PROGRESSIVO'] === target.carenzaProgressivo
+      )!;
+    db.table('CARENZE').updateRowWhere(
+      { ...row },
+      {
+        ...row,
+        ID_RILEVAZIONE: kind === 'legacy' ? '' : 'NOV',
+        NOTIFICATO: kind === 'FALSE' ? false : kind === 'zero' ? 0 : ''
+      }
+    );
+    if (kind === 'missing') target.carenzaProgressivo = 999;
+    if (kind === 'duplicate')
+      db.table('CARENZE').insert({ ...row, PROGRESSIVO: 999, ID_RILEVAZIONE: 'NOV' });
+    expect(service.sendToTarget('GUARD', target).skipped).toBe(true);
+    expect(gmail.sent).toHaveLength(0);
+  });
+  test('test mode leaves production NOTIFICATO empty', () => {
+    const { service, db, gmail } = wire();
+    service.enableTestMode('tester@school.it');
+    expect(service.sendPattern('CARENZE_NOTIFICA').sent).toBeGreaterThan(0);
+    expect(gmail.sent.every((mail) => mail.to[0] === 'tester@school.it')).toBe(true);
+    expect(
+      db.table('CARENZE').find((row) => row['STUDENTE'] === 'a1@school.it')!['NOTIFICATO']
+    ).toBe('');
+  });
+});

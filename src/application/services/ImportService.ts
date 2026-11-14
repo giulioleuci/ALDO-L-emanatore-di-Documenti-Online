@@ -65,19 +65,6 @@ export const JOB_LABEL_IMPORTAZIONE_DATI = 'IMPORTAZIONE DATI';
  * `runImportChunk` with the same hook `runImport` supports, or filter ghost
  * rows client-side between the checkpoint yields. `menu_avvioImportazioni`
  * (the synchronous path) remains the default/primary launcher.
- *
- * **Known gap #2 — checkpoint-size budget:** `executeImportChunked` calls
- * `runImportChunk(recipe, checkpoint, { maxRows: 50 })` with an explicit,
- * conservative row budget rather than GLF's default (`maxRows: 500`). The
- * yielded `ImportCheckpoint.buffer` carries the chunk's transformed rows and
- * gets persisted by JobRunnerLib's own timeout-suspension path via a plain
- * `JSON.stringify` -> `setProperties`, with no size-based offload —
- * ScriptProperties caps a single value at ~9 KB. 500 rows of typical
- * ALUNNI-shaped data would badly exceed that and fail the checkpoint write
- * silently corrupting resumability; 50 keeps a serialized chunk comfortably
- * under the cap for the row shapes ALDO's CONF_IMP recipes use today. If a
- * future recipe has much wider rows, re-derive this budget from an estimate
- * of the serialized row size, don't just raise it back toward 500.
  */
 export class ImportService {
   constructor(
@@ -121,7 +108,7 @@ export class ImportService {
       nomeConfig: '',
       stato: StatoJob.SOSPESO_TEMPO,
       // Chunked import has no upfront total row count (streamed source) — best-effort like
-      // the rest of this path's known gaps (class docstring "Known gap #2/#3").
+      // the rest of this path's known gaps (class docstring "Known gap #1").
       totaleTask: c.inserted + c.updated + c.skipped,
       completatiOk: c.inserted + c.updated + c.skipped,
       falliti: 0,
@@ -276,10 +263,7 @@ export class ImportService {
    *
    * Ghost Record Detection is NOT applied in this path — see the class
    * docstring's "Known gap #1" note. `ghost` is always `0` in the returned
-   * `ImportResult`. Each chunk is bounded to `maxRows: 50` (class docstring's
-   * "Known gap #2") to keep the yielded `ImportCheckpoint.buffer` well under
-   * ScriptProperties' ~9 KB per-value cap when JobRunnerLib persists it on
-   * timeout suspension.
+   * `ImportResult`.
    */
   *executeImportChunked(
     configId: string,
@@ -301,7 +285,7 @@ export class ImportService {
 
     let checkpoint = resumeState ?? this.engine.startImport(recipe);
     while (!checkpoint.done) {
-      const step = this.engine.runImportChunk(recipe, checkpoint, { maxRows: 50 });
+      const step = this.engine.runImportChunk(recipe, checkpoint);
       checkpoint = step.checkpoint;
       if (!step.done) yield checkpoint;
     }

@@ -93,6 +93,8 @@ interface GeneratedDocument {
   status: string;
   durationMs: number;
   skipReason?: string;
+  /** Non-critical step failures: the document exists but is incomplete. */
+  warnings?: string[];
 }
 
 /**
@@ -367,6 +369,9 @@ export class DocumentBatchService {
         const outcome = DocumentBatchService.documentOutcome(result.status);
         if (result.skipReason !== undefined) {
           this.saltati[result.skipReason] = (this.saltati[result.skipReason] ?? 0) + 1;
+        }
+        if (result.warnings !== undefined) {
+          errori.push(`${id}: documento generato ma incompleto — ${result.warnings.join('; ')}`);
         }
         const detail = result.skipReason === undefined ? name : `${name} — ${result.skipReason}`;
         this.logger?.logSummary(outcome, result.durationMs, detail, {

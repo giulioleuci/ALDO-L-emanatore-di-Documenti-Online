@@ -71,10 +71,13 @@ function resolveCriteri(
   criteri: Record<string, string>,
   cdu: Record<string, unknown>,
   templates: ITemplateEngine
-): Record<string, string> {
+): Record<string, string> | null {
   const out: Record<string, string> = {};
   for (const [col, tpl] of Object.entries(criteri)) {
-    out[col] = templates.processString(tpl, cdu);
+    const value = templates.processString(tpl, cdu);
+    // A placeholder that resolves to nothing must match nothing — not every row whose cell is blank.
+    if (tpl.trim() !== '' && value.trim() === '') return null;
+    out[col] = value;
   }
   return out;
 }
@@ -208,6 +211,7 @@ export function eseguiAzioni(opts: EseguiAzioniOptions): number {
   let updated = 0;
   for (const azione of azioni) {
     const criteri = resolveCriteri(azione.criteri ?? {}, cdu, templates);
+    if (criteri === null) continue;
     switch (azione.tipo) {
       case 'INSERISCI_TIMESTAMP': {
         // Insert, not overwrite: only the first send stamps the column (e.g.

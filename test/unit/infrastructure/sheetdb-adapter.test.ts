@@ -328,5 +328,6 @@ test('PIANI composite key survives flush: the write lands on the exact sheet row
   );
   table.flush();
 
-  expect(updates).toEqual([[{ range: 'PIANI!A3:D3', values: [['a@x.it', 'PEI', '', true]] }]]);
+  // Only the changed cell is written: formulas in the other columns survive.
+  expect(updates).toEqual([[{ range: 'PIANI!D3:D3', values: [[true]] }]]);
 });

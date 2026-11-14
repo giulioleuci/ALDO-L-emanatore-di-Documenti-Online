@@ -228,6 +228,13 @@ export declare class TableService<Row extends object = RowRecord> {
     }): Row[];
     getAllRows(options: RowReadOptions): Partial<Row>[];
     /**
+     * @function _queueUpdate
+     * @description A row still waiting in the insert queue is not on the sheet yet, so an
+     * update for it would find no row at flush: replace the queued insert instead.
+     * @private
+     */
+    _queueUpdate(id: unknown, previousRow: RowRecord, updatedRow: RowRecord): void;
+    /**
      * @function _invalidateInternalCache
      * @description Selectively purges local data, indices, or original state.
      * @param {Object} [options={data: true, indices: true}] - Purge targets.

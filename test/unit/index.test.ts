@@ -55,7 +55,7 @@ describe('resumeJob', () => {
       container,
       expect.anything(),
       '',
-      30 * 60 * 1000
+      25 * 60 * 1000
     );
   });
 });

@@ -285,7 +285,12 @@ export class PrepareInfrastructureStep extends Step {
     const { folderId } = new AlberoCartelle(this.drive, this.db).findOrCreate(path, options);
     this.setResult(ctx, 'destFolderId', folderId);
     this.setResult(ctx, 'destFolderPath', path);
-    const progressivo = this.drive.countFilesInFolder(folderId) + 1;
+    // LOG_DOCS rows outlive a deleted file, the Drive count outlives a cleaned LOG_DOCS: take the larger.
+    const logged = this.db
+      .table(TABLE.LOG_DOCS)
+      .findAll()
+      .filter((row) => String(row[COL_LOG_DOCS.PATH] ?? '') === path).length;
+    const progressivo = Math.max(logged, this.drive.countFilesInFolder(folderId)) + 1;
     const cduObj = cdu(ctx);
     cduObj.meta.progressivo = progressivo;
   }

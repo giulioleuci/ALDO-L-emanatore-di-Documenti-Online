@@ -54,6 +54,13 @@ function wire(
   return { db, gmail, notification, service };
 }
 
+/** Quota (in recipients: TO + CC + supervisor BCC) that lets exactly the first CDC_OTTOBRE target through. */
+const ONE_TARGET_QUOTA = ((): number => {
+  const { notification } = wire();
+  const first = notification.enumerateTargets(notification.getConfigurazione('CDC_OTTOBRE'))[0]!;
+  return first.emails.length + (first.cc?.length ?? 0) + 1;
+})();
+
 const ONLINE_TEST_SAFE_EMAIL = 'sgsa-onlinetests@onlinetest.aldo.local';
 
 test('emits structured email batch/items', () => {
@@ -85,7 +92,7 @@ test('emits a content-first timed summary using the per-target email result', ()
     loadSuccessfulLogicalTargetIds: () => new Set<string>(),
     enumerateTargets: () => [target],
     getConfigurazione: () => ({}),
-    getGmailFacade: () => ({ getRemainingQuota: () => 1 }),
+    getGmailFacade: () => ({ getRemainingQuota: () => 99 }),
     sendToTarget: () => ({
       sent: 1,
       errors: [],
@@ -122,7 +129,7 @@ test('prints an end-of-job summary with total/succeeded/failed counts and the fa
     loadSuccessfulLogicalTargetIds: () => new Set<string>(),
     enumerateTargets: () => [target],
     getConfigurazione: () => ({}),
-    getGmailFacade: () => ({ getRemainingQuota: () => 1 }),
+    getGmailFacade: () => ({ getRemainingQuota: () => 99 }),
     sendToTarget: () => ({
       sent: 0,
       errors: ['SMTP rifiutato'],
@@ -164,7 +171,7 @@ test('skipped targets are reported per reason and excluded from successes and CO
       }
     ],
     getConfigurazione: () => ({}),
-    getGmailFacade: () => ({ getRemainingQuota: () => 1 }),
+    getGmailFacade: () => ({ getRemainingQuota: () => 99 }),
     sendToTarget: () => ({
       sent: 0,
       errors: [],
@@ -445,7 +452,7 @@ test('resume skips targets already processed even when enumeration shifts (audit
 
 test('a quota checkpoint carries the logical ids of every processed target', () => {
   const { service, gmail } = wire();
-  gmail.remainingQuota = 1;
+  gmail.remainingQuota = ONE_TARGET_QUOTA;
   const { checkpoints } = drain(
     service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 1, resumeState: null })
   );
@@ -459,6 +466,7 @@ test('a JobRunner resume state recovers pattern and safe recipient in a fresh co
   const properties = new FakePropertiesFacade();
   const first = wire(properties);
   first.notification.enableTestMode('master-owner@onlinetest.aldo.local');
+  // Test mode sends to the single safe recipient: one target costs one quota unit.
   first.gmail.remainingQuota = 1;
   const initialRun = fakeRunner();
   first.service.start(
@@ -594,7 +602,7 @@ test('registerJobHandlers registers under INVIO_EMAIL_BATCH', () => {
 
 test('caps a chunk to remaining Gmail quota, not just chunkSize (11 §14)', () => {
   const { gmail, service } = wire();
-  gmail.remainingQuota = 1;
+  gmail.remainingQuota = ONE_TARGET_QUOTA;
   // CDC_OTTOBRE enumerates 2 targets; chunkSize 2 but quota only allows 1.
   const { checkpoints, result } = drain(
     service.batchSendHandler({ patternId: 'CDC_OTTOBRE', chunkSize: 2, resumeState: null })
@@ -623,7 +631,7 @@ test('zero remaining quota suspends cleanly without sending (no resume-trigger c
 test('LOG_JOB (NEW_TABLE_LOG_JOB.md): quota suspension appends a SOSPESO_QUOTA row directly (not backfilled)', () => {
   const { logJob, entries } = fakeLogJob();
   const { gmail, service } = wire(undefined, undefined, undefined, logJob);
-  gmail.remainingQuota = 1;
+  gmail.remainingQuota = ONE_TARGET_QUOTA;
   drain(
     service.batchSendHandler({
       patternId: 'CDC_OTTOBRE',
@@ -649,7 +657,7 @@ test('LOG_JOB (NEW_TABLE_LOG_JOB.md): quota suspension appends a SOSPESO_QUOTA r
 test('LOG_JOB: resuming a quota-suspended checkpoint completes without re-logging or backfilling SOSPESO_TEMPO', () => {
   const { logJob, entries } = fakeLogJob();
   const { gmail, service } = wire(undefined, undefined, undefined, logJob);
-  gmail.remainingQuota = 1;
+  gmail.remainingQuota = ONE_TARGET_QUOTA;
   drain(
     service.batchSendHandler({
       patternId: 'CDC_OTTOBRE',
@@ -723,7 +731,7 @@ test('LOG_JOB: resuming a raw JobRunnerLib timeout checkpoint (no viaQuotaSuspen
 test('Finding 1: quota suspend persists a resume checkpoint that start() seeds on the next call, so restart does not resend', () => {
   const properties = new FakePropertiesFacade();
   const { gmail, service } = wire(properties);
-  gmail.remainingQuota = 1;
+  gmail.remainingQuota = ONE_TARGET_QUOTA;
 
   // CDC_OTTOBRE enumerates 2 targets; chunkSize 2 but quota only allows 1, so
   // this run sends to the first target then suspends for quota.
@@ -757,7 +765,7 @@ test('Finding 1: a run that reaches the end of the target list clears the persis
   const { gmail, service } = wire(properties);
 
   // First: suspend for quota, persisting a checkpoint (mirrors the previous test).
-  gmail.remainingQuota = 1;
+  gmail.remainingQuota = ONE_TARGET_QUOTA;
   drain(
     service.batchSendHandler({
       patternId: 'CDC_OTTOBRE',
@@ -798,7 +806,7 @@ test('Finding 1: a run that reaches the end of the target list clears the persis
 test('Finding 1: forceRestart discards the persisted checkpoint instead of seeding it', () => {
   const properties = new FakePropertiesFacade();
   const { gmail, service } = wire(properties);
-  gmail.remainingQuota = 1;
+  gmail.remainingQuota = ONE_TARGET_QUOTA;
   drain(
     service.batchSendHandler({
       patternId: 'CDC_OTTOBRE',
@@ -816,4 +824,14 @@ test('Finding 1: forceRestart discards the persisted checkpoint instead of seedi
     eseguitoDa: ''
   });
   expect(calls[0]!.params).not.toHaveProperty('resumeState');
+});
+
+test('quota is counted in recipients: a target needing more than what is left suspends before sending', () => {
+  const { gmail, service } = wire();
+  gmail.remainingQuota = ONE_TARGET_QUOTA - 1;
+  const { result } = drain(
+    service.batchSendHandler({ patternId: 'CDC_OTTOBRE', resumeState: null })
+  );
+  expect(gmail.sent).toHaveLength(0);
+  expect(result.success).toBe(false);
 });

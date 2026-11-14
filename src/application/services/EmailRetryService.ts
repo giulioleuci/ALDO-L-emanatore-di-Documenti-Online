@@ -6,7 +6,8 @@ import type { EmailNotificationService } from './EmailNotificationService';
 import { JOB_LABEL_INVIO_EMAIL } from './EmailBatchService';
 import type { ILogJobRepository } from '../../domain/repositories/ILogJobRepository';
 import type { IActiveUserFacade } from '../../infrastructure/facades/ActiveUserFacade';
-import { StatoJob } from '../../domain/value-objects/enums';
+import { StatoEmail, StatoJob } from '../../domain/value-objects/enums';
+import { Email } from '../../domain/value-objects/Email';
 
 interface EmailRetryOptions {
   /** Give up after this many failed attempts for the same pattern/logical target (default 3, 11 §16). */
@@ -106,60 +107,25 @@ export class EmailRetryService {
     return this.priorDurationMs + (Date.now() - this.containerStartedAt);
   }
 
-  private semantic(
-    method: string,
-    args: unknown[],
-    fallback: string,
-    level: 'info' | 'warn' | 'error' = 'info'
-  ): void {
-    const candidate = (this.logger as unknown as Record<string, unknown>)[method];
-    if (typeof candidate === 'function') {
-      candidate.apply(this.logger, args);
-      return;
-    }
-    const basic = [level, 'info', 'warn', 'error']
-      .map((name) => (this.logger as unknown as Record<string, unknown>)[name])
-      .find((value) => typeof value === 'function');
-    if (typeof basic === 'function') basic.call(this.logger, fallback);
-  }
-
   retryFailed(): RetryResult {
     const groups = this.groupFailed();
-    this.semantic(
-      'logJobStart',
-      ['retry_email', 'EMAIL_RETRY'],
-      'EmailRetry: starting retry_email (EMAIL_RETRY)'
-    );
-    this.semantic('logBatchStart', [groups.length], `EmailRetry: ${groups.length} groups`);
+    this.logger.logJobStart('retry_email', 'EMAIL_RETRY');
+    this.logger.logBatchStart(groups.length);
     let result: RetryResult = { retried: 0, permanent: 0 };
     try {
       for (let index = 0; index < groups.length; index++) {
         const [key, group] = groups[index]!;
         const safeKey = PiiRedactor.redact(key);
-        this.semantic(
-          'logItemStart',
-          [index + 1, groups.length, 'Gruppo', safeKey, 'RETRY'],
-          `EmailRetry: group ${index + 1}/${groups.length} ${safeKey}`
-        );
+        this.logger.logItemStart(index + 1, groups.length, 'Gruppo', safeKey, 'RETRY');
         result = this.mergeResult(result, this.processGroup(group));
       }
       const details = `${result.retried} retried, ${result.permanent} permanent`;
-      this.semantic(
-        'logJobEnd',
-        ['retry_email', result.permanent === 0, details],
-        `EmailRetry: completed retry_email (${details})`,
-        result.permanent === 0 ? 'info' : 'error'
-      );
+      this.logger.logJobEnd('retry_email', result.permanent === 0, details);
       return result;
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
       const safeReason = PiiRedactor.redact(reason);
-      this.semantic(
-        'logJobEnd',
-        ['retry_email', false, safeReason],
-        `EmailRetry: retry_email failed (${safeReason})`,
-        'error'
-      );
+      this.logger.logJobEnd('retry_email', false, safeReason);
       throw error;
     }
   }
@@ -186,7 +152,7 @@ export class EmailRetryService {
     this.esecuzioneIniziata = new Date(this.containerStartedAt).toISOString();
     const jobId = String(params.jobId ?? resume?.jobId ?? 'retry_email');
     const groups = this.groupFailed();
-    this.semantic('logBatchStart', [groups.length], `EmailRetry: ${groups.length} groups`);
+    this.logger.logBatchStart(groups.length);
 
     if (resume !== null && this.runCount >= 2) {
       this.backfillSospesoTempo(jobId, groups.length, resume);
@@ -204,10 +170,12 @@ export class EmailRetryService {
     try {
       for (const [key, group] of pending) {
         const safeKey = PiiRedactor.redact(key);
-        this.semantic(
-          'logItemStart',
-          [processedKeys.length + 1, groups.length, 'Gruppo', safeKey, 'RETRY'],
-          `EmailRetry: group ${processedKeys.length + 1}/${groups.length} ${safeKey}`
+        this.logger.logItemStart(
+          processedKeys.length + 1,
+          groups.length,
+          'Gruppo',
+          safeKey,
+          'RETRY'
         );
         const retriedBefore = result.retried;
         result = this.mergeResult(result, this.processGroup(group));
@@ -359,12 +327,24 @@ export class EmailRetryService {
     const run = this.emailService.sendPattern(
       first.pattern,
       logicalTargetId === null
-        ? { onlyRecipients: first.getDestinatari() }
-        : { onlyTargetIds: [logicalTargetId] }
+        ? { onlyRecipients: first.getDestinatari(), reuseTargets: true }
+        : { onlyTargetIds: [logicalTargetId], reuseTargets: true }
     );
     if (run.sent > 0 && run.errors.length === 0) {
       for (const record of group) this.logMail.marcaSuccesso(record);
       return { retried: 1, permanent: 0 };
+    }
+    if (run.errors.length === 0) {
+      // Nothing was attempted (target gone or condition now false): count it as an attempt,
+      // otherwise the group never reaches maxTentativi and is retried forever.
+      this.logMail.registraInvio(
+        first.pattern,
+        first.getDestinatari().map((email) => Email.of(email)),
+        StatoEmail.ERROR,
+        '',
+        first.getAllegati(),
+        'Nuovo tentativo non eseguibile: target non più presente o condizione non soddisfatta'
+      );
     }
     this.logger.warn(
       PiiRedactor.redact(

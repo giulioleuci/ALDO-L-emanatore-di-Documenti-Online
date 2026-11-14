@@ -1031,6 +1031,13 @@ declare global {
     /** True if this range and `other` share at least one instant. */
     overlaps(other: DateRange): boolean;
   }
+  /** Tiered job-state storage: inline ScriptProperties value, or a Drive file above the size threshold. */
+  class QueuePersistenceHandler {
+    constructor(jobName: string, properties: LibPropertiesService);
+    saveResumeState(state: unknown): void;
+    loadResumeState(): unknown;
+    clearResumeState(): void;
+  }
   class JobDefinitionRegistry {
     constructor(logger: LoggerService);
     register(name: string, definition: Record<string, unknown>): void;

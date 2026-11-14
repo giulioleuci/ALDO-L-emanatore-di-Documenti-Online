@@ -94,7 +94,8 @@ class SheetTableAdapter implements IReadableTable {
     return this.table === undefined ? [] : this.table.getAllRows(options).map(stripVirtual);
   }
   find(predicate: (row: Row) => boolean): Row | null {
-    return this.findAll().find(predicate) ?? null;
+    const hit = this.table?.getAllRows().find((row) => predicate(row as Row));
+    return hit === undefined ? null : stripVirtual(hit);
   }
   insert(row: Row): void {
     this.required().insertRow(row);

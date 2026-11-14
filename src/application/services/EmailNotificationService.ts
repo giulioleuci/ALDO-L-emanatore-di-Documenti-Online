@@ -81,6 +81,8 @@ interface SendPatternOptions {
   onlyRecipients?: string[];
   /** Restrict the run to stable pre-routing logical target ids (new retry seam). */
   onlyTargetIds?: string[];
+  /** Reuse this pattern's target list from an earlier call (the retry job calls once per failed group). */
+  reuseTargets?: boolean;
 }
 
 export interface SendPatternResult {
@@ -113,6 +115,7 @@ export class EmailNotificationService {
   private testEmail: string | null = null;
   private readonly projector = new CollectionProjector({ logger: new LoggerService() });
   private cachedPipeline: Pipeline | undefined;
+  private readonly enumeratedTargets = new Map<string, EmailTarget[]>();
   private cachedSuccessfulLogicalTargetIds:
     { patternId: string; jobId: string; ids: Set<string> } | undefined;
 
@@ -145,10 +148,21 @@ export class EmailNotificationService {
     conf.getAllegati();
     this.validateCarenzaPostProcess(conf, row);
 
-    let targets = this.enumerateTargets(conf);
+    let targets =
+      (options.reuseTargets === true ? this.enumeratedTargets.get(patternId) : undefined) ??
+      this.enumerateTargets(conf);
+    this.enumeratedTargets.set(patternId, targets);
     const onlyTargetIds = options.onlyTargetIds;
     if (onlyTargetIds !== undefined) {
-      targets = targets.filter((target) => onlyTargetIds.includes(emailTargetId(target)));
+      // LOG_MAIL rows written before split targets got their own id carry the id without the titolare.
+      targets = targets.filter((target) => {
+        const legacy: EmailTarget = { ...target };
+        delete legacy.titolareEmail;
+        return (
+          onlyTargetIds.includes(emailTargetId(target)) ||
+          onlyTargetIds.includes(emailTargetId(legacy))
+        );
+      });
     } else {
       const only = options.onlyRecipients;
       if (only !== undefined) {

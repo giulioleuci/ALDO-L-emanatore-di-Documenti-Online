@@ -2943,3 +2943,18 @@ describe('CheckAlreadySentStep', () => {
     expect(logDetails(result)).toBe('Duplicates allowed');
   });
 });
+
+test('emailTargetId: a split target (substitute for a titolare) differs from the same person own target', () => {
+  const own = {
+    tipo: 'docente' as const,
+    tipoTarget: 'classe' as const,
+    target: '5A',
+    docenteEmail: 'verdi@school.it',
+    emails: ['verdi@school.it'],
+    classiCompetenza: ['5A']
+  };
+  expect(emailTargetId(own)).toBe('docente:verdi@school.it');
+  expect(emailTargetId({ ...own, titolareEmail: 'bianchi@school.it' })).toBe(
+    'docente:verdi@school.it@bianchi@school.it'
+  );
+});

@@ -50,7 +50,10 @@ export function emailTargetId(target: EmailTarget): string {
   const logicalRecipient = target.docenteEmail ?? target.target;
   const progressivo =
     target.carenzaProgressivo === undefined ? '' : `:${target.carenzaProgressivo}`;
-  return `${target.tipo}:${logicalRecipient}${progressivo}`;
+  // A split target (substitute for `titolareEmail`) carries different content than the same
+  // person's own target, so it needs its own id or the second email is skipped as already sent.
+  const titolare = target.titolareEmail === undefined ? '' : `@${target.titolareEmail}`;
+  return `${target.tipo}:${logicalRecipient}${titolare}${progressivo}`;
 }
 
 /**

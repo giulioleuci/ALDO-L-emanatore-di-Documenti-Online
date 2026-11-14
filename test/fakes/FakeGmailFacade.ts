@@ -19,6 +19,7 @@ export class FakeGmailFacade implements IGmailFacade {
       return { success: false, error: `simulated failure for ${broken}` };
     }
     this.sent.push(opts);
+    this.remainingQuota -= opts.to.length + (opts.cc?.length ?? 0) + (opts.bcc?.length ?? 0);
     return { success: true };
   }
 

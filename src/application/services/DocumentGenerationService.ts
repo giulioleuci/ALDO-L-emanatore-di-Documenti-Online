@@ -85,6 +85,8 @@ interface DocumentGenerationResult {
   durationMs: number;
   /** Set only when status is SKIPPED: "Duplicato" (CheckDuplicates) or "CONDIZIONE non soddisfatta". */
   skipReason?: string;
+  /** Non-critical step failures (e.g. ApplyPermissions): the document exists but is incomplete. */
+  warnings?: string[];
 }
 
 /**
@@ -359,12 +361,14 @@ export class DocumentGenerationService {
   private resultFromContext(ctx: PipelineContext, startedAt: number): DocumentGenerationResult {
     const fileId = ctx.get<string>('newFileId');
     const status = ctx.get<string>('documentStatus') ?? (fileId === null ? 'SKIPPED' : 'GENERATO');
+    const warnings = ctx.get<string[]>('warnings') ?? [];
     return {
       fileId,
       fileName: ctx.get<string>('nomeFile'),
       fileLink: ctx.get<string>('newFileLink'),
       status,
       durationMs: Math.max(0, Date.now() - startedAt),
+      ...(warnings.length > 0 ? { warnings } : {}),
       ...(status === 'SKIPPED'
         ? {
             skipReason: ctx.get('skipReason') === null ? 'CONDIZIONE non soddisfatta' : 'Duplicato'
@@ -418,7 +422,14 @@ export class DocumentGenerationService {
       );
 
     pipeline.onError((step, ctx, error) => {
-      if (!CRITICAL_STEPS.has(step.getName())) return;
+      if (!CRITICAL_STEPS.has(step.getName())) {
+        // The document is kept, but the caller must hear about it (e.g. permissions not applied).
+        ctx.set('warnings', [
+          ...(ctx.get<string[]>('warnings') ?? []),
+          `${step.getName()}: ${error.message}`
+        ]);
+        return;
+      }
       const orphan = ctx.get<string>('newFileId');
       if (orphan !== null) this.drive.deleteFile(orphan); // rollback of the clone (10 §8)
       ctx.set('criticalError', `${step.getName()}: ${error.message}`);

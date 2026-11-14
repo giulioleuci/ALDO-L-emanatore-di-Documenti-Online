@@ -1,4 +1,9 @@
 import type { DatabaseOptions, WriteOptions, RowRecord, DatabaseUtilities, GoogleLogger, GoogleCache, GoogleRetryExecutor, RowValidator } from './types.js';
+/**
+ * @file SheetDBLib/src/DatabaseService.js
+ * @description Main database service for managing Google Spreadsheet-based databases.
+ * @version 2.0 - Refactored using Facade/Delegation pattern.
+ */
 import { SpreadsheetService } from '@GoogleApiWrapper';
 import { TableService } from './TableService.js';
 import { AdvancedQueryBuilder } from './query/AdvancedQueryBuilder.js';
@@ -15,7 +20,6 @@ export declare class DatabaseService {
     _loaded: boolean;
     _transaction: {
         startTime: number;
-        savedStates: Record<string, object[] | null> | null;
         operations: unknown[];
     } | null;
     _inTransaction: boolean;

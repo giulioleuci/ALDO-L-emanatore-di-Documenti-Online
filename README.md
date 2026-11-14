@@ -266,6 +266,7 @@ progetto Apps Script bound.
 
 - **Target GAS V8**, non Node: solo codice sincrono, niente API specifiche di Node o del browser non supportate. I sorgenti usano TypeScript moderno ma vengono transpilati (Babel → Chrome 80) e patchati per GAS da `scripts/build-and-prepare.cjs`.
 - I servizi nativi GAS (`DriveApp`, `SpreadsheetApp`, `DocumentApp`, `PropertiesService`, `CacheService`, `UrlFetchApp`, `Utilities`, `Session`, `ScriptApp`, `LockService`, `MailApp`) sono toccabili **solo** dentro `GoogleApiWrapper` (L2 di GasLibraryFactory); tutto il resto passa da un wrapper service. Vincolo imposto da ESLint (`no-restricted-globals`).
+- **Una sola esecuzione alla volta.** Il sistema non è progettato per esecuzioni concorrenti: non avviare un job (o un'azione da menu) mentre un altro è in corso o in attesa di ripresa automatica. `SheetDBLib` carica ogni tabella in memoria all'inizio dell'esecuzione e riscrive le righe intere al salvataggio, senza lock tra esecuzioni: due esecuzioni sovrapposte possono sovrascriversi a vicenda le celle.
 - `dist/*` non va mai modificato a mano: è generato dalla build.
 - Il grafo di dipendenza delle librerie è a livelli (L0→L4), senza dipendenze circolari.
 - Nuovi servizi/repository/facade vengono cablati in `src/config/Bootstrap.ts` e risolti tramite `ServiceContainer`, mai istanziati ad hoc nel codice applicativo.

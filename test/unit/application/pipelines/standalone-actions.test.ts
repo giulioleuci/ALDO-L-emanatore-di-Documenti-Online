@@ -366,6 +366,7 @@ describe('standaloneActions — CSV containment matching', () => {
     const tables = fixtureTables();
     tables['LOG_DOCS'] = [
       { ID: '1', TIPO: 'PIANO_PERS', CLASSI: '3C', STATO: 'GENERATO' },
+      { ID: '9', TIPO: 'PIANO_PERS', CLASSI: '', STATO: 'GENERATO' },
       { ID: '2', TIPO: 'PIANO_PERS', CLASSI: '4A', STATO: 'GENERATO' }
     ];
     const db = new FakeDatabase(tables);

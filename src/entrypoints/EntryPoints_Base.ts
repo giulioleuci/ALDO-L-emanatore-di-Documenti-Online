@@ -33,8 +33,12 @@ declare function riprendiJobSospeso(
   maxDurationMs?: number
 ): unknown;
 
-/** Maximum duration of each JobRunnerLib execution: 30 minutes. */
-const MAX_JOB_EXECUTION_TIME_MS = 30 * 60 * 1000;
+/**
+ * Time budget of each JobRunnerLib execution. Must stay BELOW the account's hard GAS limit
+ * (30 minutes here), with room for the slowest single target: the runner checks the clock only
+ * between targets, and a script killed by GAS saves no checkpoint and schedules no resume.
+ */
+const MAX_JOB_EXECUTION_TIME_MS = 25 * 60 * 1000;
 
 /** Lightweight deployment smoke check. */
 function aldoPing(): string {

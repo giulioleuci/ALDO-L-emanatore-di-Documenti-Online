@@ -154,6 +154,20 @@ test('retry policy uses the configured attempt limit before sending again', () =
   ).toHaveLength(2);
 });
 
+test('a retry that can no longer send anything counts as a failed attempt', () => {
+  // UNKNOWN_TARGET matches no enumerated target: nothing is sent, so without a new
+  // ERROR row the group would never reach maxTentativi.
+  const row = {
+    ...failedRow('2026-06-30T10:00:00.000Z'),
+    ALLEGATI: JSON.stringify({ logicalTargetId: 'genitori:UNKNOWN_TARGET' })
+  };
+  const { db, gmail, retry } = wire([row]);
+
+  expect(retry.retryFailed()).toEqual({ retried: 0, permanent: 0 });
+  expect(gmail.sent).toHaveLength(0);
+  expect(db.tables['LOG_MAIL']!.getAllRows().filter((r) => r['STATO'] === 'ERROR')).toHaveLength(2);
+});
+
 test('successful records are ignored', () => {
   const { gmail, retry } = wire([
     {
@@ -172,7 +186,14 @@ test('successful records are ignored', () => {
 
 test('retryFailed redacts the recipient email in the warn log on a failed re-send', () => {
   const warnMock = jest.fn();
-  const logger = { warn: warnMock, error: jest.fn() } as unknown as LoggerService;
+  const logger = {
+    warn: warnMock,
+    error: jest.fn(),
+    logJobStart: jest.fn(),
+    logBatchStart: jest.fn(),
+    logItemStart: jest.fn(),
+    logJobEnd: jest.fn()
+  } as unknown as LoggerService;
   const { gmail, retry } = wire([failedRow('2026-06-30T10:00:00.000Z')], logger);
   // Force the resend itself to fail so the retry falls into the warn branch.
   gmail.failFor.add('genitore1@x.it');
@@ -184,7 +205,14 @@ test('retryFailed redacts the recipient email in the warn log on a failed re-sen
 
 test('registraPermanente redacts the recipient email in the error log on permanent failure', () => {
   const errorMock = jest.fn();
-  const logger = { warn: jest.fn(), error: errorMock } as unknown as LoggerService;
+  const logger = {
+    warn: jest.fn(),
+    error: errorMock,
+    logJobStart: jest.fn(),
+    logBatchStart: jest.fn(),
+    logItemStart: jest.fn(),
+    logJobEnd: jest.fn()
+  } as unknown as LoggerService;
   const rows = [
     failedRow('2026-06-28T10:00:00.000Z'),
     failedRow('2026-06-29T10:00:00.000Z'),

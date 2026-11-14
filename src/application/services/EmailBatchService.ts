@@ -9,8 +9,8 @@ import { dettagliSaltati, totaleSaltati, type Saltati } from './saltati';
 /** Job type under which the batch send handler is registered in JobRunnerLib. */
 export const JOB_TYPE_INVIO_EMAIL = 'INVIO_EMAIL_BATCH';
 
-/** Gmail quota guard: at most this many recipients per checkpoint chunk (11 §14). */
-const EMAIL_CHUNK_SIZE = 100;
+/** Targets between two checkpoints: 1 lets the runner check its time budget after every email (11 §14). */
+const EMAIL_CHUNK_SIZE = 1;
 
 /** Human-readable job type shown in the end-of-job report (see `logJobReport`). */
 export const JOB_LABEL_INVIO_EMAIL = 'INVIO EMAIL';
@@ -150,7 +150,11 @@ export class EmailBatchService {
 
   /** Reads the pattern-scoped quota-suspend checkpoint, if any (see class docstring). */
   private loadPersistedResume(patternId: string): EmailBatchResumeState | null {
-    const raw = this.properties?.get(EmailBatchService.resumeKey(patternId));
+    const key = EmailBatchService.resumeKey(patternId);
+    if (this.properties?.getLarge !== undefined) {
+      return (this.properties.getLarge(key) ?? null) as EmailBatchResumeState | null;
+    }
+    const raw = this.properties?.get(key);
     if (raw === undefined || raw === null || raw === '') return null;
     try {
       return JSON.parse(raw) as EmailBatchResumeState;
@@ -161,12 +165,17 @@ export class EmailBatchService {
 
   /** Persists the pattern-scoped quota-suspend checkpoint (see class docstring). */
   private savePersistedResume(patternId: string, state: EmailBatchResumeState): void {
-    this.properties?.set(EmailBatchService.resumeKey(patternId), JSON.stringify(state));
+    // The lists grow ~80 bytes per target: past ~110 targets a plain property write would fail.
+    const key = EmailBatchService.resumeKey(patternId);
+    if (this.properties?.setLarge !== undefined) this.properties.setLarge(key, state);
+    else this.properties?.set(key, JSON.stringify(state));
   }
 
   /** Clears the pattern-scoped quota-suspend checkpoint once a run reaches the end of the target list. */
   private clearPersistedResume(patternId: string): void {
-    this.properties?.delete(EmailBatchService.resumeKey(patternId));
+    const key = EmailBatchService.resumeKey(patternId);
+    if (this.properties?.deleteLarge !== undefined) this.properties.deleteLarge(key);
+    else this.properties?.delete(key);
   }
 
   private loadPersistedTestRecipient(patternId: string): string | undefined {
@@ -225,10 +234,10 @@ export class EmailBatchService {
       totaleTask: totale,
       completatiOk: Math.max(
         0,
-        resume.processed.length - resume.errors.length - totaleSaltati(resume.saltati)
+        resume.processed.length - resume.failedTargets.length - totaleSaltati(resume.saltati)
       ),
-      falliti: resume.errors.length,
-      listaFallimenti: resume.errors,
+      falliti: resume.failedTargets.length,
+      listaFallimenti: resume.failedTargets,
       durataSec,
       inizio: resume.esecuzioneIniziata,
       fine,
@@ -323,7 +332,10 @@ export class EmailBatchService {
     const jobId = String(params.jobId ?? resume?.jobId ?? patternId);
 
     try {
-      const chunkSize = Number(params.chunkSize ?? resume?.chunkSize ?? EMAIL_CHUNK_SIZE);
+      const chunkSize = Math.max(
+        1,
+        Number(params.chunkSize ?? resume?.chunkSize ?? EMAIL_CHUNK_SIZE)
+      );
       const testRecipient = resume?.testRecipient ?? this.loadPersistedTestRecipient(patternId);
       const config = this.email.getConfigurazione(patternId);
       this.nomeConfig = config.oggetto;
@@ -352,9 +364,12 @@ export class EmailBatchService {
         this.backfillSospesoTempo(patternId, jobId, totale, resume);
       }
 
-      while (i < targets.length) {
-        const remainingQuota = this.email.getGmailFacade().getRemainingQuota();
-        if (remainingQuota <= 0) {
+      for (; i < targets.length; i++) {
+        const target = targets[i]!;
+        // Gmail's quota counts recipients, not messages: TO + CC + the supervisor BCC.
+        const needed =
+          testRecipient === undefined ? target.emails.length + (target.cc?.length ?? 0) + 1 : 1;
+        if (this.email.getGmailFacade().getRemainingQuota() < needed) {
           const checkpoint = this.suspendForQuota(
             patternId,
             jobId,
@@ -371,71 +386,39 @@ export class EmailBatchService {
           yield checkpoint;
           return { success: false, totale, processed, sent, errors, failedTargets };
         }
-        // `quotaCapped` alone only means "quota was tight enough to shrink this chunk below
-        // chunkSize" — it's also true when a naturally undersized last chunk happens to finish
-        // off `targets`. It's the `i < targets.length` check below (after the chunk is consumed)
-        // that turns this into a real signal: only when targets remain does a capped chunk mean
-        // "quota genuinely ran out mid-batch, suspend"; otherwise the loop just ends normally.
-        const quotaCapped = remainingQuota < chunkSize;
-        const effectiveChunk = Math.min(chunkSize, remainingQuota);
-        const fine = Math.min(i + effectiveChunk, targets.length);
-        for (; i < fine; i++) {
-          const target = targets[i]!;
-          const targetHeader = target.emails.join(',') || target.target;
-          this.logger?.logItemStart(doneIds.size + i + 1, totale, 'Target', targetHeader, 'EMAIL');
-          const esito = this.email.sendToTarget(patternId, target, jobId, testRecipient);
-          sent += esito.sent;
-          errors.push(...esito.errors);
-          const recipients = esito.recipients.length > 0 ? esito.recipients : target.emails;
-          const subject = esito.subject === '' ? patternId : esito.subject;
-          const outcome =
-            esito.sent > 0
-              ? '✅ Email sent'
-              : esito.skipped
-                ? '✔️ Email skipped'
-                : '❌ Email failed';
-          if (esito.sent === 0 && !esito.skipped) failedTargets.push(target.target);
-          if (esito.skipReason !== undefined) {
-            this.saltati[esito.skipReason] = (this.saltati[esito.skipReason] ?? 0) + 1;
-          }
-          const detail =
-            `${subject} -> ${recipients.join(',')}` +
-            (esito.skipReason === undefined ? '' : ` — ${esito.skipReason}`);
-          this.logger?.logSummary(outcome, esito.durationMs, detail, {
-            depth: 1,
-            isLast: true,
-            ancestorHasNext: [i + 1 < targets.length]
-          });
-          processed.push(target.target);
-          processedIds.push(emailTargetId(target));
+        const targetHeader = target.emails.join(',') || target.target;
+        this.logger?.logItemStart(doneIds.size + i + 1, totale, 'Target', targetHeader, 'EMAIL');
+        const esito = this.email.sendToTarget(patternId, target, jobId, testRecipient);
+        sent += esito.sent;
+        errors.push(...esito.errors);
+        const recipients = esito.recipients.length > 0 ? esito.recipients : target.emails;
+        const subject = esito.subject === '' ? patternId : esito.subject;
+        const outcome =
+          esito.sent > 0 ? '✅ Email sent' : esito.skipped ? '✔️ Email skipped' : '❌ Email failed';
+        if (esito.sent === 0 && !esito.skipped) failedTargets.push(target.target);
+        if (esito.skipReason !== undefined) {
+          this.saltati[esito.skipReason] = (this.saltati[esito.skipReason] ?? 0) + 1;
         }
-        const percentage = ((doneIds.size + i) / totale) * 100;
+        const detail =
+          `${subject} -> ${recipients.join(',')}` +
+          (esito.skipReason === undefined ? '' : ` — ${esito.skipReason}`);
+        this.logger?.logSummary(outcome, esito.durationMs, detail, {
+          depth: 1,
+          isLast: true,
+          ancestorHasNext: [i + 1 < targets.length]
+        });
+        processed.push(target.target);
+        processedIds.push(emailTargetId(target));
 
-        if (quotaCapped && i < targets.length) {
-          const checkpoint = this.suspendForQuota(
-            patternId,
-            jobId,
-            chunkSize,
-            testRecipient,
-            doneIds.size + i,
-            totale,
-            processed,
-            processedIds,
-            sent,
-            errors,
-            failedTargets
-          );
-          yield checkpoint;
-          return { success: false, totale, processed, sent, errors, failedTargets };
-        }
-
+        // The runner can only pause at a yield: checkpoint every `chunkSize` targets and at the end.
+        if ((i + 1) % chunkSize !== 0 && i + 1 < targets.length) continue;
         yield {
           patternId,
           jobId,
           chunkSize,
           ...(testRecipient === undefined ? {} : { testRecipient }),
-          percentage,
-          nextIndex: doneIds.size + i,
+          percentage: ((doneIds.size + i + 1) / totale) * 100,
+          nextIndex: doneIds.size + i + 1,
           processed: processed.slice(),
           processedIds: processedIds.slice(),
           sent,

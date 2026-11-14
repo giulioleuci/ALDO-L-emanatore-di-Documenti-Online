@@ -11311,6 +11311,14 @@ class TextStyleMapper {
 
 
 
+  static toNativeGlyph(listType) {
+    return listType === 'number' ? DocumentApp.GlyphType.NUMBER : DocumentApp.GlyphType.BULLET;
+  }
+
+
+
+
+
 
   static _rgbColorToHex(rgbColor) {
     const toHex = component => {
@@ -21183,7 +21191,6 @@ class DocumentProcessorTagScanner {
   }
   _analyzeListLoops(textMatches, context) {
     const operations = [];
-    const regexParser = /{{#((?:bullet|number)_list):([^}]+)}}([^]*?){{\/\1}}/gs;
     const searchPattern = /{{#(?:bullet|number)_list:/;
     const seenIndices = new Set();
     for (const textMatch of textMatches) {
@@ -21198,23 +21205,41 @@ class DocumentProcessorTagScanner {
       if (fullText.length > this.facade.MAX_TEMPLATE_MATCH_SIZE) {
         throw new Error(`Template text size (${fullText.length}) exceeds maximum allowed (${this.facade.MAX_TEMPLATE_MATCH_SIZE})`);
       }
-      regexParser.lastIndex = 0;
-      const match = regexParser.exec(fullText);
-      if (match) {
-        const [fullMatch, command, dataSource, itemTemplate] = match;
-        const listType = command.startsWith('bullet') ? 'bullet' : 'number';
-        const fullExpression = dataSource.trim();
-        const {
-          path,
-          filters
-        } = this.facade._parseExpression(fullExpression);
-        const dummyToken = ['name', path];
-        let dataArray = this.facade.mustache._lookupValue(dummyToken, new _MustacheContext(context));
-        if (Array.isArray(dataArray)) {
-          dataArray = this.facade._applyFilters(dataArray, filters);
-          if (dataArray.length > this.facade.MAX_ITERATIONS) {
-            throw new Error(`List expansion count (${dataArray.length}) exceeds maximum allowed (${this.facade.MAX_ITERATIONS})`);
-          }
+      const node = this._parseListBlock(fullText, fullText.search(searchPattern));
+      if (!node) {
+        continue;
+      }
+      const rootContext = new _MustacheContext(context);
+      const dataArray = this._resolveListData(node.expr, rootContext);
+      if (!dataArray) {
+        continue;
+      }
+      const runs = textMatch.runs || [];
+      const {
+        itemTemplate,
+        sourceRuns
+      } = this._listItemTemplate(fullText, node, runs);
+      const fullMatch = fullText.slice(node.start, node.end);
+      const hasSurroundingText = fullText.slice(0, node.start).trim() !== '' || fullText.slice(node.end).trim() !== '';
+      operations.push({
+        type: 'listLoop',
+        index: textMatch.elementIndex,
+        paragraphIndex: textMatch.elementIndex,
+        listType: node.listType,
+        dataArray,
+        itemTemplate,
+        fullMatch,
+        sourceRuns,
+        ...(node.children.length > 0 && {
+          children: this._buildListChildren(node, dataArray, fullText, runs, rootContext)
+        }),
+        ...(hasSurroundingText && {
+          surround: this._renderListSurround(fullText, node.start, fullMatch.length, context, runs)
+        })
+      });
+    }
+    return operations;
+  }
 
 
 
@@ -21223,29 +21248,197 @@ class DocumentProcessorTagScanner {
 
 
 
-          const itemTemplateOffsetInMatch = fullMatch.indexOf(itemTemplate.trim());
-          const itemTemplateStart = match.index + itemTemplateOffsetInMatch;
-          const itemTemplateEnd = itemTemplateStart + itemTemplate.trim().length;
-          const sourceRuns = (textMatch.runs || []).filter(r => r.end > itemTemplateStart && r.start < itemTemplateEnd).map(r => ({
-            text: r.text,
-            start: Math.max(r.start, itemTemplateStart) - itemTemplateStart,
-            end: Math.min(r.end, itemTemplateEnd) - itemTemplateStart,
-            style: r.style
-          }));
-          operations.push({
-            type: 'listLoop',
-            index: textMatch.elementIndex,
-            paragraphIndex: textMatch.elementIndex,
-            listType: listType,
-            dataArray: dataArray,
-            itemTemplate: itemTemplate.trim(),
-            fullMatch: fullMatch,
-            sourceRuns: sourceRuns
-          });
+
+
+
+  _parseListBlock(text, start) {
+    const tag = /{{#((?:bullet|number)_list):([^}]+)}}|{{\/((?:bullet|number)_list)}}/g;
+    tag.lastIndex = start;
+    const stack = [];
+    for (let m = tag.exec(text); m; m = tag.exec(text)) {
+      if (m[1]) {
+        var _stack;
+        const node = {
+          tagName: m[1],
+          listType: m[1].startsWith('bullet') ? 'bullet' : 'number',
+          expr: m[2].trim(),
+          start: m.index,
+          bodyStart: m.index + m[0].length,
+          bodyEnd: 0,
+          end: 0,
+          children: []
+        };
+        (_stack = stack[stack.length - 1]) === null || _stack === void 0 || _stack.children.push(node);
+        stack.push(node);
+      } else if (stack.length > 0 && stack[stack.length - 1].tagName === m[3]) {
+        const node = stack.pop();
+        node.bodyEnd = m.index;
+        node.end = m.index + m[0].length;
+        if (stack.length === 0) {
+          return node;
         }
       }
     }
-    return operations;
+    return null;
+  }
+
+
+
+
+
+
+
+  _resolveListData(expr, context) {
+    const {
+      path,
+      filters
+    } = this.facade._parseExpression(expr);
+    const value = this.facade.mustache._lookupValue(['name', path], context);
+    if (!Array.isArray(value)) {
+      return null;
+    }
+    const filtered = this.facade._applyFilters(value, filters);
+    if (filtered.length > this.facade.MAX_ITERATIONS) {
+      throw new Error(`List expansion count (${filtered.length}) exceeds maximum allowed (${this.facade.MAX_ITERATIONS})`);
+    }
+    return filtered;
+  }
+
+
+
+
+
+
+
+
+  _listItemTemplate(text, node, runs) {
+    const pieces = [];
+    let pos = node.bodyStart;
+    for (const child of node.children) {
+      pieces.push([pos, child.start]);
+      pos = child.end;
+    }
+    pieces.push([pos, node.bodyEnd]);
+    const raw = pieces.map(([a, b]) => text.slice(a, b)).join('');
+    const lead = raw.length - raw.trimStart().length;
+    const itemTemplate = raw.trim();
+    const sourceRuns = [];
+    let out = 0;
+    for (const [a, b] of pieces) {
+      for (const r of runs) {
+        if (r.end > a && r.start < b) {
+          const start = Math.max(Math.max(r.start, a) - a + out - lead, 0);
+          const end = Math.min(Math.min(r.end, b) - a + out - lead, itemTemplate.length);
+          if (end > start) {
+            sourceRuns.push({
+              text: r.text,
+              start,
+              end,
+              style: r.style
+            });
+          }
+        }
+      }
+      out += b - a;
+    }
+    return {
+      itemTemplate,
+      sourceRuns
+    };
+  }
+
+
+
+
+
+
+
+
+
+  _buildListChildren(node, dataArray, text, runs, context) {
+    return dataArray.map(item => {
+      const itemContext = new _MustacheContext(item, context);
+      const lists = [];
+      for (const child of node.children) {
+        const data = this._resolveListData(child.expr, itemContext);
+        if (!data) {
+          continue;
+        }
+        const {
+          itemTemplate,
+          sourceRuns
+        } = this._listItemTemplate(text, child, runs);
+        lists.push({
+          listType: child.listType,
+          dataArray: data,
+          itemTemplate,
+          sourceRuns,
+          ...(child.children.length > 0 && {
+            children: this._buildListChildren(child, data, text, runs, itemContext)
+          })
+        });
+      }
+      return lists;
+    });
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  _renderListSurround(fullText, start, length, context, runs) {
+    const MARK = '';
+    const template = fullText.slice(0, start) + MARK.repeat(length) + fullText.slice(start + length);
+    const styleAt = offset => {
+      var _runs$find;
+      return (_runs$find = runs.find(r => offset >= r.start && offset < r.end)) === null || _runs$find === void 0 ? void 0 : _runs$find.style;
+    };
+    const clean = s => s.split('￼').join('');
+    const before = [];
+    const after = [];
+    let hasList = false;
+    for (const seg of this.facade.mustache.renderSegments(template, context)) {
+      const rendered = clean(seg.rendered != null ? String(seg.rendered) : '');
+      const markAt = hasList ? -1 : rendered.indexOf(MARK);
+      if (markAt === -1) {
+        (hasList ? after : before).push({
+          rendered: rendered.split(MARK).join(''),
+          style: styleAt(seg.rawStart) || {}
+        });
+        continue;
+      }
+      hasList = true;
+      let markEnd = markAt;
+      while (rendered[markEnd] === MARK) {
+        markEnd++;
+      }
+      before.push({
+        rendered: rendered.slice(0, markAt),
+        style: styleAt(seg.rawStart) || {}
+      });
+      after.push({
+        rendered: rendered.slice(markEnd).split(MARK).join(''),
+        style: styleAt(seg.rawStart + markEnd) || {}
+      });
+    }
+    return {
+      before,
+      after,
+      hasList
+    };
   }
 
 
@@ -22080,6 +22273,7 @@ class DocumentProcessorInjector {
 
   _executeListLoopOperation(documentId, op) {
     try {
+      var _op$children;
       this.facade.logger.debug(`Executing list loop: ${op.dataArray.length} items at paragraph ${op.paragraphIndex}`);
       const doc = this.facade.documentService.openStandard(documentId);
       const body = doc.getBody();
@@ -22113,19 +22307,55 @@ class DocumentProcessorInjector {
 
 
       const isListItem = typeof templateParagraph.getType === 'function' && templateParagraph.getType().toString() === 'LIST_ITEM';
-      for (let i = op.dataArray.length - 1; i >= 0; i--) {
-        const dataItem = op.dataArray[i];
+      const surround = op.surround;
+      if (surround && !surround.hasList) {
+
+        this._retextParagraph(templateParagraph, surround.before);
+        return;
+      }
+      const hasText = (segs = []) => segs.some(s => s.rendered.trim() !== '');
+      const hasBefore = !!surround && hasText(surround.before);
+      const insertCopyAt = segments => {
         const copiedParagraph = templateParagraph.copy();
         if (isListItem) {
           body.insertListItem(templateChildIndex + 1, copiedParagraph);
         } else {
           body.insertParagraph(templateChildIndex + 1, copiedParagraph);
         }
-        const insertedParagraph = body.getChild(templateChildIndex + 1);
-        const segments = this._buildStyledSegments(op.itemTemplate, dataItem, sourceRuns);
-        this._retextParagraph(insertedParagraph, segments);
+        const inserted = body.getChild(templateChildIndex + 1);
+        this._retextParagraph(inserted, segments);
+        return inserted;
+      };
+
+
+      if (surround && hasText(surround.after)) {
+        insertCopyAt(surround.after);
       }
-      body.removeChild(templateParagraph);
+
+      const needsLevel = hasBefore || !!((_op$children = op.children) !== null && _op$children !== void 0 && _op$children.some(lists => lists.length > 0));
+      const baseLevel = isListItem && needsLevel ? templateParagraph.getNestingLevel() : 0;
+
+
+      const insertList = (list, level, styled) => {
+        for (let i = list.dataArray.length - 1; i >= 0; i--) {
+          var _list$children;
+          const subLists = ((_list$children = list.children) === null || _list$children === void 0 ? void 0 : _list$children[i]) || [];
+          for (let k = subLists.length - 1; k >= 0; k--) {
+            insertList(subLists[k], level + 1, true);
+          }
+          const item = insertCopyAt(this._buildStyledSegments(list.itemTemplate, list.dataArray[i], list.sourceRuns || []));
+          if (styled && isListItem) {
+            item.setNestingLevel(Math.min(level, 8));
+            item.setGlyphType(TextStyleMapper.toNativeGlyph(list.listType));
+          }
+        }
+      };
+      insertList(op, baseLevel + (hasBefore ? 1 : 0), hasBefore);
+      if (hasBefore) {
+        this._retextParagraph(templateParagraph, surround.before);
+      } else {
+        body.removeChild(templateParagraph);
+      }
       this.facade.logger.debug(`List loop completed: inserted ${op.dataArray.length} items`);
     } catch (error) {
       this.facade.logger.error(`Failed to execute list loop: ${error.message}`);

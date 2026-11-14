@@ -56,6 +56,8 @@ test('ClasseProvider: flat identity + flags for a standard terminal class (02 §
   });
   expect(c.isClassePrima).toBe(false);
   expect(c.isTriennio).toBe(true);
+  expect(c.isPrimoTriennio).toBe(false);
+  expect(c.isDaSecondaAQuarta).toBe(false);
   expect(c.isPrimoBiennio).toBe(false);
   expect(c.isTerminale).toBe(true);
   expect(c.isArticolata).toBe(false);

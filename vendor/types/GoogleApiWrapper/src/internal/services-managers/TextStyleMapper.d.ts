@@ -11,6 +11,11 @@ export declare class TextStyleMapper {
      */
     static toNativeAttributes(textStyle: GoogleAppsScript.Docs.Schema.TextStyle | null | undefined): Record<string, string | number | boolean>;
     /**
+     * @param {string} listType 'number' for a numbered list, anything else for bullets.
+     * @returns {GoogleAppsScript.Document.GlyphType} Native glyph for ListItem.setGlyphType().
+     */
+    static toNativeGlyph(listType: string): GoogleAppsScript.Document.GlyphType.BULLET | GoogleAppsScript.Document.GlyphType.NUMBER;
+    /**
      * @param {Object} rgbColor {red?, green?, blue?} floats in [0,1]; missing channels default to 0.
      * @returns {string} '#rrggbb' hex color.
      * @private

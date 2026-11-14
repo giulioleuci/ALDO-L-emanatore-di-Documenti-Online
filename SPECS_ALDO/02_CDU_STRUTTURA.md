@@ -194,6 +194,8 @@ ClasseFocusVM:
 
   isClassePrima: boolean # true se anno = 1
   isTriennio: boolean # anno di corso >= 3
+  isPrimoTriennio: boolean # anno di corso <= 3 (classi prime, seconde e terze)
+  isDaSecondaAQuarta: boolean # anno di corso compreso tra 2 e 4
   isPrimoBiennio: boolean # true se anno di corso = 1 oppure 2
   isSecondoBiennio: boolean # anno di corso = 3 oppure 4
   isTerminale: boolean # da colonna CLASSE.TERMINALE

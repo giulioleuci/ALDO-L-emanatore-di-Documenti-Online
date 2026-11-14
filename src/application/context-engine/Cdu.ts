@@ -756,6 +756,8 @@ export interface ClasseFocusVM extends ClasseSintesiVM {
   indirizzo: IndirizzoVM;
   isClassePrima: boolean;
   isTriennio: boolean;
+  isPrimoTriennio: boolean;
+  isDaSecondaAQuarta: boolean;
   isPrimoBiennio: boolean;
   isSecondoBiennio: boolean;
   isTerminale: boolean;

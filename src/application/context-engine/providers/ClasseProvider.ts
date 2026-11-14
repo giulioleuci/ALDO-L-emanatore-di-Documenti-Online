@@ -71,6 +71,8 @@ export class ClasseProvider implements ContextProvider {
       indirizzo: indirizzoVm(classe, this.classi),
       isClassePrima: classe.anno.isPrima(),
       isTriennio: anno >= 3,
+      isPrimoTriennio: anno <= 3,
+      isDaSecondaAQuarta: anno >= 2 && anno <= 4,
       isPrimoBiennio: classe.anno.isPrimoBiennio(),
       isSecondoBiennio: anno === 3 || anno === 4,
       isTerminale: classe.anno.isTerminale(),

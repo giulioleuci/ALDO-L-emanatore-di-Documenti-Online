@@ -72,6 +72,23 @@ export interface DeleteRow {
     tableIndex: number;
     rowIndex: number;
 }
+export interface ListLoopSurround {
+    /** Rendered paragraph text before the list block (whole paragraph when `hasList` is false). */
+    before: StyledSegment[];
+    /** Rendered paragraph text after the list block. */
+    after: StyledSegment[];
+    /** False when an enclosing inline section discarded the list block: the paragraph is just retexted. */
+    hasList: boolean;
+}
+/** A list nested inside each item of its parent list (recursive). */
+export interface ListLoopChild {
+    listType: string;
+    dataArray: unknown[];
+    itemTemplate: string;
+    sourceRuns: TextRun[];
+    /** Sub-lists per item, aligned with `dataArray`. */
+    children?: ListLoopChild[][];
+}
 export interface ListLoop {
     type: 'listLoop';
     index: number;
@@ -81,6 +98,10 @@ export interface ListLoop {
     itemTemplate: string;
     fullMatch: string;
     sourceRuns?: TextRun[];
+    /** Sub-lists per item, aligned with `dataArray`; set only when the block nests other list blocks. */
+    children?: ListLoopChild[][];
+    /** Set only when the paragraph holds text besides the `{{#bullet_list:...}}` block. */
+    surround?: ListLoopSurround;
 }
 export interface ConditionalDelete {
     type: 'conditionalDelete';
@@ -155,6 +176,9 @@ export interface ProcessorElement {
     copy?: () => ProcessorElement;
     clear?: () => unknown;
     editAsText?: () => ProcessorText;
+    getNestingLevel?(): number;
+    setNestingLevel?(level: number): unknown;
+    setGlyphType?(glyph: unknown): unknown;
 }
 export interface ProcessorBody extends ProcessorElement {
     findText(pattern: string): {

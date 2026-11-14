@@ -11311,6 +11311,21 @@ class TextStyleMapper {
 
 
 
+  static toNativeResetAttributes() {
+    const A = DocumentApp.Attribute;
+    return {
+      [A.BOLD]: false,
+      [A.ITALIC]: false,
+      [A.UNDERLINE]: false,
+      [A.STRIKETHROUGH]: false,
+      [A.BACKGROUND_COLOR]: null
+    };
+  }
+
+
+
+
+
   static toNativeGlyph(listType) {
     return listType === 'number' ? DocumentApp.GlyphType.NUMBER : DocumentApp.GlyphType.BULLET;
   }
@@ -21876,6 +21891,13 @@ class DocumentProcessorValueResolver {
 
 
 const OBJECT_CHAR = '￼';
+
+
+
+
+
+
+const TEXT_STYLE_RESET_FIELDS = ['bold', 'italic', 'underline', 'strikethrough', 'smallCaps', 'backgroundColor', 'foregroundColor', 'baselineOffset', 'fontSize', 'weightedFontFamily', 'link'];
 class DocumentProcessorInjector {
   constructor(facade) {
     this.facade = facade;
@@ -21921,6 +21943,25 @@ class DocumentProcessorInjector {
   _styleAt(offset, sourceRuns) {
     const run = sourceRuns.find(r => offset >= r.start && offset < r.end);
     return run ? run.style : {};
+  }
+
+
+
+
+
+
+  _textStyleRequest(startIndex, endIndex, style) {
+    const fields = [...new Set([...TEXT_STYLE_RESET_FIELDS, ...Object.keys(style)])];
+    return {
+      updateTextStyle: {
+        range: {
+          startIndex,
+          endIndex
+        },
+        textStyle: style,
+        fields: fields.join(',')
+      }
+    };
   }
 
 
@@ -22136,20 +22177,7 @@ class DocumentProcessorInjector {
           rendered = rendered.slice(0, remaining);
         }
         if (rendered.length > 0) {
-          const style = this._styleAt(segment.rawStart, op.sourceRuns || []);
-          const fields = Object.keys(style);
-          if (fields.length > 0) {
-            requests.push({
-              updateTextStyle: {
-                range: {
-                  startIndex: cursor,
-                  endIndex: cursor + rendered.length
-                },
-                textStyle: style,
-                fields: fields.join(',')
-              }
-            });
-          }
+          requests.push(this._textStyleRequest(cursor, cursor + rendered.length, this._styleAt(segment.rawStart, op.sourceRuns || [])));
         }
         cursor += rendered.length;
         consumed += rendered.length;
@@ -22202,20 +22230,7 @@ class DocumentProcessorInjector {
             text
           }
         });
-        const style = this._styleAt(seg.rawStart, op.sourceRuns || []);
-        const fields = Object.keys(style);
-        if (fields.length > 0) {
-          requests.push({
-            updateTextStyle: {
-              range: {
-                startIndex,
-                endIndex: startIndex + text.length
-              },
-              textStyle: style,
-              fields: fields.join(',')
-            }
-          });
-        }
+        requests.push(this._textStyleRequest(startIndex, startIndex + text.length, this._styleAt(seg.rawStart, op.sourceRuns || [])));
       }
     }
     return requests;
@@ -22401,10 +22416,12 @@ class DocumentProcessorInjector {
         continue;
       }
       textElement.appendText(rendered);
-      const attrs = TextStyleMapper.toNativeAttributes(segment.style);
-      if (Object.keys(attrs).length > 0) {
-        textElement.setAttributes(offset, offset + rendered.length - 1, attrs);
-      }
+
+
+      textElement.setAttributes(offset, offset + rendered.length - 1, {
+        ...TextStyleMapper.toNativeResetAttributes(),
+        ...TextStyleMapper.toNativeAttributes(segment.style)
+      });
       offset += rendered.length;
     }
   }

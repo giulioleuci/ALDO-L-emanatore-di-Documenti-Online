@@ -11,6 +11,13 @@ export declare class TextStyleMapper {
      */
     static toNativeAttributes(textStyle: GoogleAppsScript.Docs.Schema.TextStyle | null | undefined): Record<string, string | number | boolean>;
     /**
+     * @returns {Object} Native attributes that clear bold/italic/underline/strikethrough/highlight,
+     * to apply under `toNativeAttributes()` so text never keeps formatting inherited from its neighbour.
+     */
+    static toNativeResetAttributes(): {
+        [x: number]: boolean | null;
+    };
+    /**
      * @param {string} listType 'number' for a numbered list, anything else for bullets.
      * @returns {GoogleAppsScript.Document.GlyphType} Native glyph for ListItem.setGlyphType().
      */

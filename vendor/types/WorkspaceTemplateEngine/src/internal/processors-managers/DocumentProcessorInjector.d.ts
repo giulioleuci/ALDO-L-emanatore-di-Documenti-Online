@@ -28,6 +28,21 @@ export declare class DocumentProcessorInjector {
      */
     _styleAt(offset: number, sourceRuns: TextRun[]): GoogleAppsScript.Docs.Schema.TextStyle;
     /**
+     * @description `updateTextStyle` request that applies `style` and clears every other reset field,
+     * so the span never keeps formatting inherited from the text before it (see TEXT_STYLE_RESET_FIELDS).
+     * @private
+     */
+    _textStyleRequest(startIndex: number, endIndex: number, style: GoogleAppsScript.Docs.Schema.TextStyle): {
+        updateTextStyle: {
+            range: {
+                startIndex: number;
+                endIndex: number;
+            };
+            textStyle: GoogleAppsScript.Docs.Schema.TextStyle;
+            fields: string;
+        };
+    };
+    /**
      * @description Rebases a set of captured source runs onto a new coordinate
      * origin, dropping/truncating any run that falls entirely before the shift
      * point. Used to correct `sourceRuns` (captured relative to a raw,

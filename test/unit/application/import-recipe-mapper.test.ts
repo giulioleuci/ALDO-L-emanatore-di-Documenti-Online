@@ -1,4 +1,8 @@
-import { toLibraryRecipe, isGhostRecord } from '../../../src/application/import/ImportRecipeMapper';
+import {
+  toLibraryRecipe,
+  isGhostRecord,
+  isGhostCarenza
+} from '../../../src/application/import/ImportRecipeMapper';
 import { ConfigurazioneImport } from '../../../src/domain/entities/ConfigurazioneImport';
 import { ConfigurationError } from '../../../src/domain/errors/DomainError';
 
@@ -301,6 +305,29 @@ describe('isGhostRecord (12 §3): after mapping, before conflict handling', () =
   test('una colonna utente _ non salva una riga fantasma', () => {
     const row = { EMAIL: '', NOME: '', _NOTE_MIE: 'appunto' };
     expect(isGhostRecord(row, ['EMAIL'], [])).toBe(true);
+  });
+});
+
+describe('isGhostCarenza: solo materie compilate o ASSENZE=true rendono reale la riga', () => {
+  const base = {
+    STUDENTE: 'a@x.it',
+    ID_RILEVAZIONE: 'C',
+    PROGRESSIVO: 1,
+    CLASSE: '1A',
+    DATA: '2026-11-16',
+    NOTE: 'n'
+  };
+
+  test('nessuna materia e ASSENZE false/vuoto -> fantasma anche con CLASSE/DATA/NOTE', () => {
+    expect(isGhostCarenza({ ...base, ASSENZE: false, MATE: '', ITA: null, _N: 3 })).toBe(true);
+  });
+
+  test('una materia compilata -> reale', () => {
+    expect(isGhostCarenza({ ...base, ASSENZE: false, MATE: 4 })).toBe(false);
+  });
+
+  test('ASSENZE true senza materie -> reale', () => {
+    expect(isGhostCarenza({ ...base, ASSENZE: true, MATE: '' })).toBe(false);
   });
 });
 

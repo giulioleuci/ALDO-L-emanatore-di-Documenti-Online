@@ -1,5 +1,5 @@
 import type { IConfigurazioneImportRepository } from '../../domain/repositories/IConfigurazioneImportRepository';
-import { toLibraryRecipe, isGhostRecord } from '../import/ImportRecipeMapper';
+import { toLibraryRecipe, isGhostRecord, isGhostCarenza } from '../import/ImportRecipeMapper';
 import { PipelineError } from '../../domain/errors/DomainError';
 import type { ILogJobRepository } from '../../domain/repositories/ILogJobRepository';
 import type { IActiveUserFacade } from '../../infrastructure/facades/ActiveUserFacade';
@@ -183,7 +183,12 @@ export class ImportService {
           load.updateIfNewer?.timestampColumn !== undefined
             ? [...META_COLUMNS, load.updateIfNewer.timestampColumn]
             : META_COLUMNS;
-        const toLoad = mapped.filter((row) => !isGhostRecord(row, keyColumns, metaColumns));
+        const toLoad = mapped.filter(
+          (row) =>
+            !(conf.target === 'CARENZE'
+              ? isGhostCarenza(row)
+              : isGhostRecord(row, keyColumns, metaColumns))
+        );
         ghostCount = mapped.length - toLoad.length;
         return toLoad;
       }

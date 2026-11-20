@@ -4,6 +4,8 @@ Eseguire un solo import o invio alla volta. Prima della migrazione salvare una c
 
 Aggiungere in fondo la colonna testuale `ID_RILEVAZIONE`; assegnare alle righe storiche la campagna effettiva senza dedurla automaticamente dal mese. Ad esempio `2026_27_NOVEMBRE` comprende consigli del 16 e 19 novembre. Non cambiare DATA, PROGRESSIVO o NOTIFICATO. Verificare l'unicità di STUDENTE e ID_RILEVAZIONE. Le righe senza campagna restano leggibili ma non vengono inviate.
 
+Negli import verso CARENZE una riga sorgente è importata solo se almeno una colonna materia è valorizzata o ASSENZE è TRUE; altrimenti è scartata come fantasma, anche con CLASSE, DATA, PROGRESSIVO o NOTE compilati. Per una configurazione completa di CONF_DOC/CONF_IMP/CONF_MAIL e del template vedere RIGHE_CONF.md.
+
 Nella sorgente importare esplicitamente ID_RILEVAZIONE e PROGRESSIVO valido (massimo precedente per studente + 1). Configurare `key: ["STUDENTE", "ID_RILEVAZIONE"]` e `conflictResolution: "IGNORE"`. Il reimport salta le righe esistenti, anche se non notificate; correggere i voti modificando deliberatamente la riga esistente.
 
 In CONF_MAIL, per ciascuno dei tre processi PER_CARENZA_GENITORI, combinare la condizione esistente con:

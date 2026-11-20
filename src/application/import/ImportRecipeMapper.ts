@@ -1,5 +1,6 @@
 import type { ConfigurazioneImport } from '../../domain/entities/ConfigurazioneImport';
 import { ConfigurationError } from '../../domain/errors/DomainError';
+import { COL_CARENZE } from '../../config/schema';
 
 /** ALDO's CONF_IMP.CONFIG vocabulary (01 §CONF_IMP, 12 §3). */
 export interface AldoImportConfig {
@@ -162,6 +163,19 @@ export function toLibraryRecipe(conf: ConfigurazioneImport): ImportRecipe {
  * user-reserved `_`-prefixed columns (01 §Colonne riservate all'utente) is
  * null or an empty string. Applied after mapping, before conflict handling.
  */
+/**
+ * CARENZE ghost rule (01 §CARENZE): a row is real iff at least one subject
+ * column (any column outside COL_CARENZE and `_`-prefixed ones) is populated
+ * or ASSENZE is `true`. CLASSE/DATA/PROGRESSIVO/NOTE never rescue a row.
+ */
+export function isGhostCarenza(row: Record<string, unknown>): boolean {
+  if (row[COL_CARENZE.ASSENZE] === true) return false;
+  const fixed = new Set<string>(Object.values(COL_CARENZE));
+  return Object.entries(row)
+    .filter(([col]) => !fixed.has(col) && !col.startsWith('_'))
+    .every(([, value]) => value === null || value === undefined || value === '');
+}
+
 export function isGhostRecord(
   row: Record<string, unknown>,
   keyColumns: string[],

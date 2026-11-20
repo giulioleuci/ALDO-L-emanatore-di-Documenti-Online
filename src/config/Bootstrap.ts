@@ -10,6 +10,8 @@ import { DocumentGenerationService } from '../application/services/DocumentGener
 import { DocumentBatchService } from '../application/services/DocumentBatchService';
 import { EmailNotificationService } from '../application/services/EmailNotificationService';
 import { EmailBatchService } from '../application/services/EmailBatchService';
+import { targetsPiani } from '../application/services/axisTargets';
+import type { IAlunnoRepository } from '../domain/repositories/IAlunnoRepository';
 import { EmailRetryService } from '../application/services/EmailRetryService';
 import { ImportService, type ImportResult } from '../application/services/ImportService';
 import { RisolutoreRuoliService } from '../application/services/RisolutoreRuoliService';
@@ -434,11 +436,58 @@ export function avviaInvioNotificheDataDriven(
   runner: JobRunnerService,
   maxDurationMs?: number,
   testRecipient?: string,
-  chunkSize?: number
+  chunkSize?: number,
+  classiFiltro?: string[]
 ): unknown {
   return c
     .get<EmailBatchService>('emailBatchService')
-    .start(runner, `mail_${patternId}`, patternId, false, maxDurationMs, testRecipient, chunkSize);
+    .start(
+      runner,
+      `mail_${patternId}`,
+      patternId,
+      false,
+      maxDurationMs,
+      testRecipient,
+      chunkSize,
+      classiFiltro
+    );
+}
+
+/**
+ * Pipeline: generates the pending PIANI documents, then mails DOC_PERSONALIZZATI_COORDINATORI
+ * only to the coordinators of the classes of the plans generated in THIS run. Returns null when
+ * generation suspended/failed (the email must wait: rerun after the resume).
+ */
+export function avviaGeneraEInviaPianiDataDriven(
+  c: ServiceContainer,
+  runner: JobRunnerService,
+  maxDurationMs: number
+): unknown {
+  const inizio = Date.now();
+  const alunni = c.get<IAlunnoRepository>('alunni');
+  const daGenerare = targetsPiani(alunni, true);
+  const esito = avviaGenerazioneDataDriven(c, 'PIANI_PERSONALIZZATI', runner, maxDurationMs);
+  if (esito === null || esito === undefined) return null;
+  const classi = new Set<string>();
+  for (const { studente, tipo } of daGenerare) {
+    const alunno = alunni.findById(studente);
+    if (alunno !== null && alunni.getPiani(alunno).some((p) => p.tipo === tipo && p.generato)) {
+      classi.add(alunno.classeId.value);
+    }
+  }
+  if (classi.size === 0) return esito; // nothing generated now: no coordinator to mail
+  // ponytail: email run gets the leftover of the shared GAS execution budget; the 60s floor
+  // lets the runner suspend after one target and resume via trigger.
+  const residuo = Math.max(60 * 1000, maxDurationMs - (Date.now() - inizio));
+  return avviaInvioNotificheDataDriven(
+    c,
+    'DOC_PERSONALIZZATI_COORDINATORI',
+    runner,
+    residuo,
+    undefined,
+    undefined,
+    [...classi]
+  );
 }
 
 /** Data-driven launcher (15 §4): scheduled retry of failed LOG_MAIL sends (11 §16). */

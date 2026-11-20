@@ -100,6 +100,10 @@ async function main() {
     {
       js: path.join(distDir, 'EntryPoints_User_4_Import.js'),
       gs: path.join(distDir, 'EntryPoints_User_4_Import.gs')
+    },
+    {
+      js: path.join(distDir, 'EntryPoints_User_5_Pipeline.js'),
+      gs: path.join(distDir, 'EntryPoints_User_5_Pipeline.gs')
     }
   ];
 
@@ -721,7 +725,8 @@ gas-source-map.json
       ['EntryPoints_User_1_Doc.gs', []],
       ['EntryPoints_User_2_Email.gs', []],
       ['EntryPoints_User_3_Azioni.gs', []],
-      ['EntryPoints_User_4_Import.gs', []]
+      ['EntryPoints_User_4_Import.gs', []],
+      ['EntryPoints_User_5_Pipeline.gs', ['GeneraEInviaPianiPersonalizzati']]
     ];
     if (codeJsContent.includes('/**')) {
       fail(

@@ -121,6 +121,11 @@ module.exports = (env) => {
           'entrypoints-user-import',
           './src/entrypoints/EntryPoints_User_4_Import.ts',
           'EntryPoints_User_4_Import.js'
+        ),
+        makeEntrypointsConfig(
+          'entrypoints-user-pipeline',
+          './src/entrypoints/EntryPoints_User_5_Pipeline.ts',
+          'EntryPoints_User_5_Pipeline.js'
         )
       ]
     : [makeEntrypointsConfig('entrypoints', './src/entrypoints/EntryPoints.ts', 'EntryPoints.js')];

@@ -5,3 +5,4 @@ import './EntryPoints_User_1_Doc';
 import './EntryPoints_User_2_Email';
 import './EntryPoints_User_3_Azioni';
 import './EntryPoints_User_4_Import';
+import './EntryPoints_User_5_Pipeline';

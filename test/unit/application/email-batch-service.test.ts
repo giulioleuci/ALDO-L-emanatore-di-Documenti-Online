@@ -835,3 +835,42 @@ test('quota is counted in recipients: a target needing more than what is left su
   expect(gmail.sent).toHaveLength(0);
   expect(result.success).toBe(false);
 });
+
+test('classiFiltro keeps only targets of the given classes, across a resume', () => {
+  const mk = (classe: string) => ({
+    tipo: 'docente' as const,
+    tipoTarget: 'classe' as const,
+    target: classe,
+    emails: [`coord-${classe}@example.edu`],
+    classiCompetenza: [classe]
+  });
+  const inviati: string[] = [];
+  const notification = {
+    loadSuccessfulLogicalTargetIds: () => new Set<string>(),
+    enumerateTargets: () => [mk('1A'), mk('2B'), mk('3C')],
+    getConfigurazione: () => ({}),
+    getGmailFacade: () => ({ getRemainingQuota: () => 99 }),
+    sendToTarget: (_p: string, target: { target: string }) => {
+      inviati.push(target.target);
+      return { sent: 1, errors: [], skipped: false, recipients: [], subject: 's', durationMs: 1 };
+    }
+  };
+  const service = new EmailBatchService(notification as unknown as EmailNotificationService);
+
+  const gen = service.batchSendHandler({
+    patternId: 'X',
+    chunkSize: 1,
+    classiFiltro: ['2B', '3C'],
+    resumeState: null
+  });
+  const first = gen.next().value as { classiFiltro?: string[] };
+  expect(first.classiFiltro).toEqual(['2B', '3C']);
+  // resume without params: the filter must come back from the checkpoint
+  drain(
+    service.batchSendHandler({
+      patternId: 'X',
+      resumeState: first
+    })
+  );
+  expect(inviati).toEqual(['2B', '3C']);
+});

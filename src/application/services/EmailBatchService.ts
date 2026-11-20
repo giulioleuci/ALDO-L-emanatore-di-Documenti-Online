@@ -23,6 +23,8 @@ interface EmailBatchResumeState {
   chunkSize?: number;
   /** Test-only delivery pin retained with the batch identity on a trigger resume. */
   testRecipient?: string;
+  /** Pre-filter: only targets whose `classiCompetenza` intersects these class ids; retained across resumes. */
+  classiFiltro?: string[];
   /** Contatore di avanzamento (target completati in totale), non un punto di ripresa: vedi `processedIds`. */
   nextIndex: number;
   processed: string[];
@@ -257,6 +259,7 @@ export class EmailBatchService {
     jobId: string,
     chunkSize: number,
     testRecipient: string | undefined,
+    classiFiltro: string[] | undefined,
     nextIndex: number,
     total: number,
     processed: string[],
@@ -273,6 +276,7 @@ export class EmailBatchService {
       jobId,
       chunkSize,
       ...(testRecipient === undefined ? {} : { testRecipient }),
+      ...(classiFiltro === undefined ? {} : { classiFiltro }),
       nextIndex,
       processed: processed.slice(),
       processedIds: processedIds.slice(),
@@ -319,6 +323,7 @@ export class EmailBatchService {
       chunkSize?: number;
       jobId?: string;
       eseguitoDa?: string;
+      classiFiltro?: string[];
     }
   ): Generator<EmailBatchCheckpoint, EmailBatchResult, void> {
     const resume = (params.resumeState ?? null) as EmailBatchResumeState | null;
@@ -345,10 +350,16 @@ export class EmailBatchService {
         jobId,
         testRecipient
       );
+      const classiFiltro = params.classiFiltro ?? resume?.classiFiltro;
       const enumerati = this.email.enumerateTargets(config);
       const targets = enumerati.filter((target) => {
         const id = emailTargetId(target);
-        return !doneIds.has(id) && !successfulIds.has(id);
+        return (
+          !doneIds.has(id) &&
+          !successfulIds.has(id) &&
+          (classiFiltro === undefined ||
+            target.classiCompetenza.some((classe) => classiFiltro.includes(classe)))
+        );
       });
       const totale = doneIds.size + targets.length;
 
@@ -375,6 +386,7 @@ export class EmailBatchService {
             jobId,
             chunkSize,
             testRecipient,
+            classiFiltro,
             doneIds.size + i,
             totale,
             processed,
@@ -417,6 +429,7 @@ export class EmailBatchService {
           jobId,
           chunkSize,
           ...(testRecipient === undefined ? {} : { testRecipient }),
+          ...(classiFiltro === undefined ? {} : { classiFiltro }),
           percentage: ((doneIds.size + i + 1) / totale) * 100,
           nextIndex: doneIds.size + i + 1,
           processed: processed.slice(),
@@ -501,7 +514,8 @@ export class EmailBatchService {
     forceRestart = false,
     maxDurationMs?: number,
     testRecipient?: string,
-    chunkSize?: number
+    chunkSize?: number,
+    classiFiltro?: string[]
   ): unknown {
     if (forceRestart) {
       this.clearPersistedResume(patternId);
@@ -518,6 +532,7 @@ export class EmailBatchService {
         jobId: jobName,
         eseguitoDa: this.activeUser?.getEmail() ?? '',
         ...(chunkSize === undefined ? {} : { chunkSize }),
+        ...(classiFiltro === undefined ? {} : { classiFiltro }),
         ...(resumeState === null ? {} : { resumeState })
       },
       (queue) => this.registerJobHandlers(queue),

@@ -6,6 +6,7 @@ import {
   creaJobRunner,
   avviaGenerazioneDataDriven,
   avviaInvioNotificheDataDriven,
+  avviaGeneraEInviaPianiDataDriven,
   avviaRetryEmailDataDriven,
   avviaImportazioneDataDriven,
   avviaImportazioneChunkedDataDriven,
@@ -31,6 +32,7 @@ import { GasUiFacade } from './infrastructure/facades/UiFacade';
 (globalThis as any).creaJobRunner = creaJobRunner;
 (globalThis as any).avviaGenerazioneDataDriven = avviaGenerazioneDataDriven;
 (globalThis as any).avviaInvioNotificheDataDriven = avviaInvioNotificheDataDriven;
+(globalThis as any).avviaGeneraEInviaPianiDataDriven = avviaGeneraEInviaPianiDataDriven;
 (globalThis as any).avviaRetryEmailDataDriven = avviaRetryEmailDataDriven;
 (globalThis as any).avviaImportazioneDataDriven = avviaImportazioneDataDriven;
 (globalThis as any).avviaImportazioneChunkedDataDriven = avviaImportazioneChunkedDataDriven;

@@ -1,10 +1,14 @@
 import { DocumentoConTabelleImportateGeneratorStrategy } from '../../../src/application/strategies/DocumentoConTabelleImportateGeneratorStrategy';
 import { FakeTemplateEngine } from '../../fakes/FakeTemplateEngine';
 import type {
+  DocTablePlaceholder,
   IDocumentTableFacade,
   TablePlaceholder
 } from '../../../src/infrastructure/facades/DocumentTableFacade';
 import type { Cdu } from '../../../src/application/context-engine/Cdu';
+import { LogDocumento } from '../../../src/domain/entities/LogDocumento';
+import type { ConfigurazioneDocumento } from '../../../src/domain/entities/ConfigurazioneDocumento';
+import type { ILogDocumentoRepository } from '../../../src/domain/repositories/ILogDocumentoRepository';
 
 class FakeDocumentTableFacade implements IDocumentTableFacade {
   removed: Array<{ fileId: string; marker: string }> = [];
@@ -18,8 +22,15 @@ class FakeDocumentTableFacade implements IDocumentTableFacade {
   callOrder: string[] = [];
   constructor(
     private readonly placeholders: TablePlaceholder[],
-    public documentText = ''
+    public documentText = '',
+    private readonly docPlaceholders: DocTablePlaceholder[] = []
   ) {}
+  findDocTablePlaceholders(): DocTablePlaceholder[] {
+    return this.docPlaceholders;
+  }
+  readDocTable(sourceDocId: string, ref: string): string[][] {
+    return [['H'], [`${sourceDocId}:${ref}`]];
+  }
   findTablePlaceholders(): TablePlaceholder[] {
     return this.placeholders;
   }
@@ -199,6 +210,7 @@ describe('DocumentoConTabelleImportateGeneratorStrategy (10 §9)', () => {
     const calls: string[] = [];
     const tables = {
       findTablePlaceholders: () => [{ marker: '{{TABELLA:s1}}', sheetFileId: 's1' }],
+      findDocTablePlaceholders: () => [],
       insertTableAtMarker: () => calls.push('insert'),
       removeText: () => calls.push('remove'),
       flush: () => calls.push('flush')
@@ -260,5 +272,66 @@ describe('DocumentoConTabelleImportateGeneratorStrategy (10 §9)', () => {
       'Tabelle importate per la classe {{focus.classe.anagrafica.nome}}\n\n'
     );
     expect(tables.documentText).toBe('Tabelle importate per la classe 1A\n\n');
+  });
+
+  describe('{{TABELLA_DOC:...}} (tables copied from the class source Doc)', () => {
+    const log = (id: string, idGen: string, data: string) =>
+      new LogDocumento({ ID: id, ID_GEN: idGen, DATA_CREAZ: data, CLASSI: '5A' });
+    const logDocs = (docs: LogDocumento[]) =>
+      ({ findByClasse: () => docs }) as unknown as ILogDocumentoRepository;
+    const config = {
+      getParametri: () => ({ tabelleDaDoc: 'PIANO_LAVORO' })
+    } as never as ConfigurazioneDocumento;
+    const cduWithClasse = () =>
+      ({ ...fakeCdu('5A'), tech: { entita: { classe: { nome: '5A' } } } }) as unknown as Cdu;
+    const build = (docs: LogDocumento[], refs: string[]) => {
+      const tables = new FakeDocumentTableFacade(
+        [],
+        '',
+        refs.map((ref) => ({ marker: `{{TABELLA_DOC:${ref}}}`, ref }))
+      );
+      const strategy = new DocumentoConTabelleImportateGeneratorStrategy(
+        new FakeTemplateEngine(),
+        new FakeSpreadsheetService([], {}),
+        tables,
+        undefined,
+        logDocs(docs)
+      );
+      return { tables, strategy };
+    };
+
+    test('inserts the tables of the most recent source Doc of the class, by index and by label', () => {
+      const { tables, strategy } = build(
+        [
+          log('old', 'PIANO_LAVORO', '2026-01-01'),
+          log('new', 'PIANO_LAVORO', '2026-05-01'),
+          log('x', 'ALTRO', '2026-09-01')
+        ],
+        ['2', 'Programma svolto']
+      );
+
+      strategy.render('doc1', cduWithClasse(), config);
+
+      expect(tables.insertedAtMarker.map((i) => i.data[1])).toEqual([
+        ['new:2'],
+        ['new:Programma svolto']
+      ]);
+      expect(tables.callOrder).toEqual([
+        'insert:{{TABELLA_DOC:2}}',
+        'insert:{{TABELLA_DOC:Programma svolto}}',
+        'flush',
+        'remove:{{TABELLA_DOC:2}}',
+        'remove:{{TABELLA_DOC:Programma svolto}}'
+      ]);
+    });
+
+    test('no source Doc for the class: markers are removed, nothing inserted', () => {
+      const { tables, strategy } = build([], ['1']);
+
+      strategy.render('doc1', cduWithClasse(), config);
+
+      expect(tables.insertedAtMarker).toEqual([]);
+      expect(tables.removed).toEqual([{ fileId: 'doc1', marker: '{{TABELLA_DOC:1}}' }]);
+    });
   });
 });

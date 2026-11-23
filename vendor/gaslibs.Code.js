@@ -13541,29 +13541,65 @@ class DocumentTableManager {
       if (tableIndex >= tables.length) {
         throw new Error(`Table index ${tableIndex} out of bounds (found ${tables.length} tables)`);
       }
-      const table = tables[tableIndex];
-      const numRows = table.getNumRows();
-      const data = [];
-      for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
-        const row = table.getRow(rowIndex);
-        const numCells = row.getNumCells();
-        const rowData = [];
-        for (let cellIndex = 0; cellIndex < numCells; cellIndex++) {
-          rowData.push(row.getCell(cellIndex).getText());
-        }
-        data.push(rowData);
-      }
-      this._logger.debug(`Retrieved table ${tableIndex} with ${numRows} rows`);
-      return {
-        tableIndex,
-        numRows,
-        numColumns: data[0] ? data[0].length : 0,
-        data
-      };
+      return this._readTable(tables[tableIndex], tableIndex);
     } catch (error) {
       this._logger.error(`Failed to get table data: ${error.message}`);
       throw error;
     }
+  }
+
+
+
+
+
+
+
+
+
+  getTableDataByLabel(documentId, label) {
+    try {
+      const body = this.facade.openStandard(documentId).getBody();
+      const wanted = label.trim().toLowerCase();
+      let lastText = '';
+      let tableIndex = 0;
+      for (let i = 0; i < body.getNumChildren(); i++) {
+        const child = body.getChild(i);
+        const type = child.getType().toString();
+        if (type === 'PARAGRAPH') {
+          const text = child.asParagraph().getText().trim();
+          if (text !== '') lastText = text.toLowerCase();
+        } else if (type === 'TABLE') {
+          if (lastText === wanted) return this._readTable(child.asTable(), tableIndex);
+          tableIndex++;
+          lastText = '';
+        }
+      }
+      throw new Error(`No table labelled "${label}" in document ${documentId}`);
+    } catch (error) {
+      this._logger.error(`Failed to get table data by label: ${error.message}`);
+      throw error;
+    }
+  }
+
+
+  _readTable(table, tableIndex) {
+    const numRows = table.getNumRows();
+    const data = [];
+    for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
+      const row = table.getRow(rowIndex);
+      const rowData = [];
+      for (let cellIndex = 0; cellIndex < row.getNumCells(); cellIndex++) {
+        rowData.push(row.getCell(cellIndex).getText());
+      }
+      data.push(rowData);
+    }
+    this._logger.debug(`Retrieved table ${tableIndex} with ${numRows} rows`);
+    return {
+      tableIndex,
+      numRows,
+      numColumns: data[0] ? data[0].length : 0,
+      data
+    };
   }
   getTableRow(documentId, tableIndex, rowIndex) {
     try {
@@ -15425,7 +15461,7 @@ class DocumentService extends GoogleService {
 
     Delegation.delegateMethods(this, [{
       manager: this._tableManager,
-      methods: ['getDocumentTables', 'getTableStructure', 'getTableData', 'getTableRow', 'getTableColumn', 'insertTableRow', 'appendTableRow', 'deleteTableRow', 'updateTableCell', 'updateTableRow', 'updateTableColumn', 'copyTableRow', 'copyTableColumn', 'setCellRunStyles', 'deleteTableColumn', 'insertTableColumn', 'appendTableColumn', 'setColumnWidth', 'getColumnWidth', 'setRowBackgroundColor', 'setRowMinimumHeight', 'getRowMinimumHeight', 'clearTableRow', 'setCellBackgroundColor', 'getCellBackgroundColor', 'setCellPadding', 'getCellPadding', 'setCellVerticalAlignment', 'getCellVerticalAlignment', 'getCellDetails', 'getTableMetadata', 'setRowTextAlignment', 'setRowBold', '_createTableWithStandardAPI', 'insertTableAtMarker']
+      methods: ['getDocumentTables', 'getTableStructure', 'getTableData', 'getTableDataByLabel', 'getTableRow', 'getTableColumn', 'insertTableRow', 'appendTableRow', 'deleteTableRow', 'updateTableCell', 'updateTableRow', 'updateTableColumn', 'copyTableRow', 'copyTableColumn', 'setCellRunStyles', 'deleteTableColumn', 'insertTableColumn', 'appendTableColumn', 'setColumnWidth', 'getColumnWidth', 'setRowBackgroundColor', 'setRowMinimumHeight', 'getRowMinimumHeight', 'clearTableRow', 'setCellBackgroundColor', 'getCellBackgroundColor', 'setCellPadding', 'getCellPadding', 'setCellVerticalAlignment', 'getCellVerticalAlignment', 'getCellDetails', 'getTableMetadata', 'setRowTextAlignment', 'setRowBold', '_createTableWithStandardAPI', 'insertTableAtMarker']
     }, {
       manager: this._contentExtractor,
       methods: ['getRawDocumentStructure', 'getDocumentBody', 'scanDocumentStructure']

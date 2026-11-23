@@ -49,6 +49,27 @@ export declare class DocumentTableManager {
         numColumns: number;
         data: string[][];
     };
+    /**
+     * @description Retrieves a table's cell text selected by its label: the text of the nearest
+     * non-empty paragraph preceding the table (trimmed, case-insensitive exact match). First match wins.
+     * @param {string} documentId Target document identifier.
+     * @param {string} label Text of the paragraph that introduces the table.
+     * @returns {Object} Table data {tableIndex, numRows, numColumns, data: unknown[][]}.
+     * @throws {Error} If no table is preceded by `label`.
+     */
+    getTableDataByLabel(documentId: string, label: string): {
+        tableIndex: number;
+        numRows: number;
+        numColumns: number;
+        data: string[][];
+    };
+    /** @private Reads every cell's text of a native Table. */
+    _readTable(table: GoogleAppsScript.Document.Table, tableIndex: number): {
+        tableIndex: number;
+        numRows: number;
+        numColumns: number;
+        data: string[][];
+    };
     getTableRow(documentId: string, tableIndex: number, rowIndex: number): {
         rowIndex: number;
         cells: string[];

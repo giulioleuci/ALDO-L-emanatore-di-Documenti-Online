@@ -242,7 +242,8 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
           deps.templates,
           deps.spreadsheets,
           new DocumentTableFacade(deps.documents),
-          logger
+          logger,
+          container.get<LogDocumentoRepository>('logDocumenti')
         );
       }
     }

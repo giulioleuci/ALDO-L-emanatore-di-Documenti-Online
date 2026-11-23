@@ -52,7 +52,7 @@ export class DocumentStrategyFactory {
       return this.foglioGenerico;
     }
     if (config.generatore === GeneratoreAxis.PIANO_PERSONALIZZATO) return this.docPersonalizzato;
-    if (parametri.tabelleImportate === true) {
+    if (parametri.tabelleImportate === true || parametri.tabelleDaDoc !== undefined) {
       if (this.docTabelle === undefined) {
         throw new PipelineError(
           'DOCUMENTO_CON_TABELLE_IMPORTATE non disponibile in questo ambiente'

@@ -20,6 +20,15 @@ class FakeDocumentService {
   builders: Record<string, FakeDocumentBuilder> = {};
   standardDocs: Record<string, { saveAndClose?: () => void }> = {};
   scanResult: DocumentScanResult = { tables: [], textMatches: [] };
+  tableCalls: Array<[string, string | number]> = [];
+  getTableData(id: string, index: number) {
+    this.tableCalls.push([id, index]);
+    return { data: [['a', 1, null]] };
+  }
+  getTableDataByLabel(id: string, label: string) {
+    this.tableCalls.push([id, label]);
+    return { data: [['b']] };
+  }
   insertTableAtMarkerCalls: Array<{
     documentId: string;
     markerText: string;
@@ -138,5 +147,25 @@ describe('DocumentTableFacade (10 §9)', () => {
     documents.document('doc1').result = { success: false, error: 'boom' };
 
     expect(() => facade.removeText('doc1', '{{TABELLA:x}}')).toThrow(/boom/);
+  });
+
+  test('findDocTablePlaceholders extracts refs; readDocTable routes digits to index, text to label', () => {
+    const docs = new FakeDocumentService();
+    docs.scanResult = {
+      tables: [],
+      textMatches: [{ text: 'a {{TABELLA_DOC:2}} b {{TABELLA_DOC: Programma svolto }}' }]
+    } as unknown as DocumentScanResult;
+    const facade = new DocumentTableFacade(docs as never);
+
+    expect(facade.findDocTablePlaceholders('d')).toEqual([
+      { marker: '{{TABELLA_DOC:2}}', ref: '2' },
+      { marker: '{{TABELLA_DOC: Programma svolto }}', ref: 'Programma svolto' }
+    ]);
+    expect(facade.readDocTable('src', '2')).toEqual([['a', '1', '']]);
+    expect(facade.readDocTable('src', 'Programma svolto')).toEqual([['b']]);
+    expect(docs.tableCalls).toEqual([
+      ['src', 2],
+      ['src', 'Programma svolto']
+    ]);
   });
 });

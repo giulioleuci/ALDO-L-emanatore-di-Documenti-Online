@@ -4,7 +4,18 @@ export interface TablePlaceholder {
   sheetFileId: string;
 }
 
+export interface DocTablePlaceholder {
+  /** The literal `{{TABELLA_DOC:<indice|etichetta>}}` text. */
+  marker: string;
+  /** Zero-based table index (digits) or the label of the paragraph introducing the table. */
+  ref: string;
+}
+
 export interface IDocumentTableFacade {
+  /** Scans the doc for `{{TABELLA_DOC:<indice|etichetta>}}` markers (tables copied from another Doc). */
+  findDocTablePlaceholders(fileId: string): DocTablePlaceholder[];
+  /** Reads one table of `sourceDocId`: by zero-based index when `ref` is all digits, else by label. */
+  readDocTable(sourceDocId: string, ref: string): string[][];
   /** Scans the doc for `{{TABELLA:<sheetFileId>}}` markers (10 §9). */
   findTablePlaceholders(fileId: string): TablePlaceholder[];
   /** Strips the literal marker text before generic `{{...}}` substitution runs, so it isn't mistaken for a CDU path. */
@@ -30,6 +41,7 @@ export interface IDocumentTableFacade {
 }
 
 const TABELLA_PATTERN = /\{\{TABELLA:([^}]+)\}\}/g;
+const TABELLA_DOC_PATTERN = /\{\{TABELLA_DOC:([^}]+)\}\}/g;
 
 /**
  * Real DocumentService-backed facade (10 §9, 08 §3.4). Positional insertion
@@ -50,6 +62,24 @@ export class DocumentTableFacade implements IDocumentTableFacade {
       }
     }
     return out;
+  }
+
+  findDocTablePlaceholders(fileId: string): DocTablePlaceholder[] {
+    const scan = this.documents.scanDocumentStructure(fileId, ['{{TABELLA_DOC:']);
+    const out: DocTablePlaceholder[] = [];
+    for (const match of scan.textMatches) {
+      for (const m of match.text.matchAll(TABELLA_DOC_PATTERN)) {
+        out.push({ marker: m[0], ref: m[1]!.trim() });
+      }
+    }
+    return out;
+  }
+
+  readDocTable(sourceDocId: string, ref: string): string[][] {
+    const result = /^\d+$/.test(ref)
+      ? this.documents.getTableData(sourceDocId, Number(ref))
+      : this.documents.getTableDataByLabel(sourceDocId, ref);
+    return result.data.map((row) => row.map((cell) => String((cell ?? '') as string | number)));
   }
 
   removeText(fileId: string, marker: string): void {

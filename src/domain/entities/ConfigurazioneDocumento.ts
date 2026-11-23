@@ -16,6 +16,8 @@ interface DocumentoParametriFlags {
   aggiungiMaterie?: boolean;
   aggiungiMaterieConPermessi?: boolean;
   tabelleImportate?: boolean;
+  /** `LOG_DOCS.ID_GEN` of the class's source Doc whose tables `{{TABELLA_DOC:...}}` markers copy (e.g. `PIANO_LAVORO`). */
+  tabelleDaDoc?: string;
   overwrite?: boolean;
 }
 
@@ -100,7 +102,10 @@ export class ConfigurazioneDocumento extends AldoEntity {
     const parametri = this.getParametri() as DocumentoParametriFlags;
     const aggiungiMaterie = Boolean(parametri.aggiungiMaterie);
     const aggiungiMaterieConPermessi = Boolean(parametri.aggiungiMaterieConPermessi);
-    if (this.formato === FormatoOutput.GSHEET && parametri.tabelleImportate === true) {
+    if (
+      this.formato === FormatoOutput.GSHEET &&
+      (parametri.tabelleImportate === true || parametri.tabelleDaDoc !== undefined)
+    ) {
       throw new ConfigurationError(
         "L'importazione tabelle è supportata unicamente su formato GDOC"
       );

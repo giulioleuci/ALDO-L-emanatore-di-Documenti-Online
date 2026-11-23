@@ -18,7 +18,6 @@ interface DocumentoParametriFlags {
   tabelleImportate?: boolean;
   /** `LOG_DOCS.ID_GEN` of the class's source Doc whose tables `{{TABELLA_DOC:...}}` markers copy (e.g. `PIANO_LAVORO`). */
   tabelleDaDoc?: string;
-  overwrite?: boolean;
 }
 
 export type ConfigurazioneDocumentoData = {

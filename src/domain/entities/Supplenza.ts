@@ -1,7 +1,5 @@
 import { PeriodoSupplenza } from '../value-objects/PeriodoSupplenza';
 import { CsvScope } from '../value-objects/CsvScope';
-import type { ClasseId } from '../value-objects/ClasseId';
-import type { MateriaId } from '../value-objects/MateriaId';
 import { COL_SUPPLENZE } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
@@ -68,20 +66,6 @@ export class Supplenza extends AldoEntity {
 
   isAttivaData(data: Date): boolean {
     return this.getPeriodo().contiene(data);
-  }
-
-  /** True if CLASSI = "*" or its CSV contains the class (ref 04 §14). */
-  applicaAClasse(classe: ClasseId): boolean {
-    return this.classi.applica(classe.value);
-  }
-
-  /** True if MATERIE = "*" or its CSV contains the subject (ref 04 §14). */
-  applicaAMateria(materia: MateriaId): boolean {
-    return this.materie.applica(materia.value);
-  }
-
-  applicaAContesto(classe: ClasseId, materia: MateriaId): boolean {
-    return this.applicaAClasse(classe) && this.applicaAMateria(materia);
   }
 
   getClassiScope(): CsvScope {

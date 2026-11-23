@@ -296,17 +296,6 @@ describe('StoricoAlunniService (13 §3, ANALYSIS_HISTORIC_ENRICH_EXTENSION §2-5
   });
 });
 
-// --- StoricoDocumentiService ---
-
-test('StoricoDocumentiService finds prior-year documents matching UTENTI + ID_GEN (13 §4)', () => {
-  const service = new StoricoDocumentiService(
-    fakeProvider([annoStorico('2025-2026', annoPrecedente())])
-  );
-  const docs = service.perAlunno('a1@school.it', 'CD_PDP', 1);
-  expect(docs).toEqual([{ anno: '2025-2026', nome: '', link: '' }]);
-  expect(service.perAlunno('a1@school.it', 'NOPE', 1)).toEqual([]);
-});
-
 test('StoricoDocumentiService.perAlunnoConTipo returns every prior-year document with distinct family, subtype and generator fields', () => {
   const anni = [annoStorico('2025-2026', annoPrecedente())];
   const service = new StoricoDocumentiService(fakeProvider(anni));

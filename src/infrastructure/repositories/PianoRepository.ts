@@ -1,5 +1,5 @@
 import { Piano } from '../../domain/entities/Piano';
-import { PianiPerAlunnoSpec, PianiPerTipoSpec } from '../../domain/specifications/PianoSpecs';
+import { PianiPerAlunnoSpec } from '../../domain/specifications/PianoSpecs';
 import type { IPianoRepository } from '../../domain/repositories/IPianoRepository';
 import { Email } from '../../domain/value-objects/Email';
 import { EntityNotFoundError } from '../../domain/errors/DomainError';
@@ -23,11 +23,6 @@ export class PianoRepository extends Repository<Piano> implements IPianoReposito
     return this.find(spec);
   }
 
-  findByTipo(tipo: TipoPiano): Piano[] {
-    const spec = new PianiPerTipoSpec(tipo);
-    return this.find(spec);
-  }
-
   /**
    * Sets GENERATO=TRUE on the (STUDENTE, TIPO) row. Deliberately NOT
    * Repository.save(): that calls database.save(), which throws inside the
@@ -41,15 +36,6 @@ export class PianoRepository extends Repository<Piano> implements IPianoReposito
     this.database.tables[TABLE.PIANI]!.updateRowWhere(
       { [COL_PIANI.STUDENTE]: studente, [COL_PIANI.TIPO]: tipo },
       { ...piano.toData(), [COL_PIANI.GENERATO]: true }
-    );
-  }
-
-  /** Emails of students having at least one BES plan (feeds AlunniBESSpec). */
-  getStudentiConBESEmails(): Set<string> {
-    return new Set(
-      this.findAll()
-        .filter((p) => p.isBES())
-        .map((p) => p.studente)
     );
   }
 }

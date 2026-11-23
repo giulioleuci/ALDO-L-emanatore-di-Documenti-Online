@@ -15,7 +15,6 @@ import type { IAlunnoRepository } from '../domain/repositories/IAlunnoRepository
 import { EmailRetryService } from '../application/services/EmailRetryService';
 import { ImportService, type ImportResult } from '../application/services/ImportService';
 import { RisolutoreRuoliService } from '../application/services/RisolutoreRuoliService';
-import { ReportService } from '../application/services/ReportService';
 import { AggregatoreDati } from '../application/services/AggregatoreDati';
 import { AlberoCartelle } from '../infrastructure/services/AlberoCartelle';
 import { DocumentoGenericoGeneratorStrategy } from '../application/strategies/DocumentoGenericoGeneratorStrategy';
@@ -367,7 +366,6 @@ export function buildAldoContainer(deps: BootstrapDeps): ServiceContainer {
         )
     );
   }
-  c.register('reportService', () => new ReportService(deps.db));
   if (deps.report !== undefined) {
     const report = deps.report;
     c.register(

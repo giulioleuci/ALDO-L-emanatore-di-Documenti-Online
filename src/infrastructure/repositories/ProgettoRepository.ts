@@ -1,10 +1,6 @@
 import { Progetto } from '../../domain/entities/Progetto';
-import {
-  ProgettiPerClasseSpec,
-  ProgettiPerTipoSpec
-} from '../../domain/specifications/ProgettoSpecs';
+import { ProgettiPerClasseSpec } from '../../domain/specifications/ProgettoSpecs';
 import type { Classe } from '../../domain/entities/Classe';
-import type { TipoProgetto } from '../../domain/value-objects/enums';
 import { TABLE, COL_PROGETTI } from '../../config/schema';
 
 /**
@@ -22,12 +18,6 @@ export class ProgettoRepository extends Repository<Progetto> {
   /** Projects assigned to a class (ref 06 §13). */
   findByClasse(classe: Classe): Progetto[] {
     const spec = new ProgettiPerClasseSpec(classe.classeId);
-    return this.find(spec);
-  }
-
-  /** Projects of a given type (ref 06 §13). */
-  findByTipo(tipo: TipoProgetto): Progetto[] {
-    const spec = new ProgettiPerTipoSpec(tipo);
     return this.find(spec);
   }
 }

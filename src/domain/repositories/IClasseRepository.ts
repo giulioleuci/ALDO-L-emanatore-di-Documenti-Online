@@ -41,7 +41,7 @@ export interface IClasseRepository {
 
   // --- Indirizzo / studenti (ref 06 §3) ---
   getIndirizzo(classe: Classe): Indirizzo;
-  /** Studenti della classe; `soloAttivi` è true per default — passare `false` solo dove i ritirati servono davvero (es. ReportService). */
+  /** Studenti della classe; `soloAttivi` è true per default — passare `false` solo dove i ritirati servono davvero. */
   getStudenti(classe: Classe, soloAttivi?: boolean): Alunno[];
 
   // --- Articolazione (ref 05, 06 §3) ---

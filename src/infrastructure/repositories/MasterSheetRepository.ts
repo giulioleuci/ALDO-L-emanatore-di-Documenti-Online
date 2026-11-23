@@ -28,11 +28,6 @@ export class MasterSheetRepository
     return this.listCache;
   }
 
-  /** Config for a specific school year (YYYY-YYYY), or null (ref 06 §0). */
-  findConfigPerAnno(anno: string): MasterConfig | null {
-    return this.all().find((m) => m.annoScolasticoRaw === anno) ?? null;
-  }
-
   /** Current-year config: the first (top) row of the descending-ordered sheet (ref 06 §0). */
   findConfigAnnoCorrente(): MasterConfig {
     const first = this.all()[0];
@@ -44,9 +39,5 @@ export class MasterSheetRepository
   /** Up to `limit` historical years — the rows after the first (ref 06 §0). */
   findAnniStorici(limit: number): MasterConfig[] {
     return this.all().slice(1, 1 + Math.max(0, limit));
-  }
-
-  getSpreadsheetId(config: MasterConfig): string {
-    return config.idSpreadsheet;
   }
 }

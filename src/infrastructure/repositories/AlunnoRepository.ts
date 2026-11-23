@@ -46,18 +46,6 @@ export class AlunnoRepository extends Repository<Alunno> implements IAlunnoRepos
     return this.findAll().filter((a) => a.isAttivo());
   }
 
-  findAttiviInClasse(classeId: ClasseId): Alunno[] {
-    return this.findByClasse(classeId).filter((a) => a.isAttivo());
-  }
-
-  /** Students with at least one BES plan (ref 06 §1). Delegates to PianoRepository. */
-  findConBES(): Alunno[] {
-    const besEmails = this.piani.getStudentiConBESEmails();
-    return this.findAll()
-      .filter((a) => besEmails.has(a.email.value))
-      .sort((x, y) => this.byCognomeNome(x, y));
-  }
-
   // --- Aggregate navigation (ref 06 §1) ---
 
   /** Shortfalls of the student, optionally filtered by school year. */

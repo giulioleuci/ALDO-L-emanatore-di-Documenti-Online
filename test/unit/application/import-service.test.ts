@@ -257,38 +257,6 @@ test('executeImport passes a stable imp_<configId> jobId to runImport (15 §9)',
   expect(capturedOptions?.jobId).toBe('imp_IMPORT_ALUNNI');
 });
 
-test('executeAllActiveImports emits one lifecycle with structured import items', () => {
-  const database = db([
-    confImpRow({ ID: 'IMPORT_ALUNNI' }),
-    confImpRow({ ID: 'IMPORT_DOCENTI', TARGET: 'DOCENTI' })
-  ]);
-  const { engine } = fakeEngine([], (data) => ({
-    success: true,
-    inserted: data.length,
-    updated: 0,
-    skipped: 0,
-    deleted: 0,
-    total: data.length
-  }));
-  const lines: string[] = [];
-  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
-  const service = new ImportService(
-    engine,
-    new ConfigurazioneImportRepository(database),
-    new LoggerService()
-  );
-
-  const result = service.executeAllActiveImports();
-
-  expect(result).toHaveLength(2);
-  const output = lines.join('\n');
-  expect(output).toContain('🚀 [INIT] AVVIO JOB: import_all (Tipo: IMPORT_BATCH)');
-  expect(output).toContain('📥 [IMPORT 1/2]');
-  expect(output).toContain('📥 [IMPORT 2/2]');
-  expect(output.match(/AVVIO JOB:/g)).toHaveLength(1);
-  expect(output).toContain("🏁 [COMPLETED] Job 'import_all' completed successfully");
-});
-
 test('executeImportChunked yields one checkpoint per stage transition and resolves ImportResult', () => {
   const database = db([confImpRow()]);
   let calls = 0;
@@ -563,36 +531,6 @@ test('top-level import configId overrides a conflicting resume configId', () => 
   expect(result.value).toMatchObject({ inseriti: 1 });
 });
 
-test('executeAllActiveImports runs each active job independently; one failure does not abort the batch', () => {
-  const database = db([
-    confImpRow({ ID: 'OK', TARGET: 'ALUNNI' }),
-    confImpRow({
-      ID: 'BAD',
-      TARGET: 'ALUNNI',
-      CONFIG: JSON.stringify({
-        searchStrategy: 'CERCA_DOCUMENTI',
-        key: 'ID',
-        conflictResolution: 'IGNORE'
-      })
-    }),
-    confImpRow({ ID: 'INACTIVE', ATTIVO: false })
-  ]);
-  const { engine } = fakeEngine([{ A: 'a1@x.it', B: 'ROSSI', C: '' }], (data) => ({
-    success: true,
-    inserted: data.length,
-    updated: 0,
-    skipped: 0,
-    deleted: 0,
-    total: data.length
-  }));
-  const service = new ImportService(engine, new ConfigurazioneImportRepository(database));
-  const results = service.executeAllActiveImports();
-
-  expect(results.map((r) => r.configId)).toEqual(['OK', 'BAD']); // only ATTIVO=true jobs
-  expect(results[0]!.result.inseriti).toBe(1);
-  expect(results[1]!.result.errori[0]).toContain('CERCA_DOCUMENTI');
-});
-
 test('executeImport prints an end-of-job report with jobType IMPORTAZIONE DATI and no failures', () => {
   const lines: string[] = [];
   jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
@@ -617,43 +555,4 @@ test('executeImport prints an end-of-job report with jobType IMPORTAZIONE DATI a
   expect(output).toContain('📊✅ [RIEPILOGO JOB] IMPORTAZIONE DATI');
   expect(output).toContain('  Esecuzioni (run): 1');
   expect(output).toContain('  Falliti: 0');
-});
-
-test('executeAllActiveImports prints an end-of-job report totalling every active CONF_IMP with failure detail', () => {
-  const lines: string[] = [];
-  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
-  const database = db([
-    confImpRow({ ID: 'OK', TARGET: 'ALUNNI' }),
-    confImpRow({
-      ID: 'BAD',
-      TARGET: 'ALUNNI',
-      CONFIG: JSON.stringify({
-        searchStrategy: 'CERCA_DOCUMENTI',
-        key: 'ID',
-        conflictResolution: 'IGNORE'
-      })
-    })
-  ]);
-  const { engine } = fakeEngine([{ A: 'a1@x.it', B: 'ROSSI', C: '' }], (data) => ({
-    success: true,
-    inserted: data.length,
-    updated: 0,
-    skipped: 0,
-    deleted: 0,
-    total: data.length
-  }));
-  const service = new ImportService(
-    engine,
-    new ConfigurazioneImportRepository(database),
-    new LoggerService()
-  );
-
-  service.executeAllActiveImports();
-
-  const output = lines.join('\n');
-  expect(output).toContain('📊❌ [RIEPILOGO JOB] IMPORTAZIONE DATI');
-  expect(output).toContain('  Task totali: 2');
-  expect(output).toContain('  Falliti: 1');
-  expect(output).toContain('    - BAD: ');
-  expect(output).toContain('CERCA_DOCUMENTI');
 });

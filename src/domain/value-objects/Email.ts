@@ -11,7 +11,4 @@ export class Email {
     }
     return new Email(raw.trim());
   }
-  equals(other: Email): boolean {
-    return this.value === other.value;
-  }
 }

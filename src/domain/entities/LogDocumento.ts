@@ -97,23 +97,6 @@ export class LogDocumento extends AldoEntity {
   getUtenti(): string[] {
     return csv(this.raw[COL_LOG_DOCS.UTENTI]);
   }
-  getMaterie(): string[] {
-    return csv(this.raw[COL_LOG_DOCS.MATERIE]);
-  }
-
-  /** Updates STATO (transition validation is the service's job, ref 04 §18). Marks dirty. */
-  cambiaStato(nuovoStato: StatoDocumento): void {
-    this.stato = nuovoStato;
-    this.raw[COL_LOG_DOCS.STATO] = nuovoStato;
-    this.markDirty(COL_LOG_DOCS.STATO);
-  }
-
-  /** Stamps NOTIFICATO with the current timestamp (ref 04 §18). Marks dirty. */
-  notifica(): void {
-    this.notificato = new Date().toISOString();
-    this.raw[COL_LOG_DOCS.NOTIFICATO] = this.notificato;
-    this.markDirty(COL_LOG_DOCS.NOTIFICATO);
-  }
 
   override toData(): EntityData {
     return {

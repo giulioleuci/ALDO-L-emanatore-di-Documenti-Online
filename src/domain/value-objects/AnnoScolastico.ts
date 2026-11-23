@@ -28,8 +28,4 @@ export class AnnoScolastico {
   getAnnoFine(): number {
     return Number(ANNO_RE.exec(this.value)![2]);
   }
-
-  equals(other: AnnoScolastico): boolean {
-    return this.value === other.value;
-  }
 }

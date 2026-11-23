@@ -3,7 +3,6 @@ import { Progetto } from '../../../src/domain/entities/Progetto';
 import { Classe } from '../../../src/domain/entities/Classe';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
-import { TipoProgetto } from '../../../src/domain/value-objects/enums';
 
 function repo(): ProgettoRepository {
   return new ProgettoRepository(new FakeDatabase(fixtureTables()));
@@ -30,10 +29,4 @@ test('findByClasse returns all class projects', () => {
       .map((p) => p.nome)
       .sort()
   ).toEqual(['Open day', 'Stage aziendale']);
-});
-
-test('findByTipo filters by project type', () => {
-  const asl = repo().findByTipo(TipoProgetto.ASL);
-  expect(asl.map((p) => p.nome)).toEqual(['Stage aziendale']);
-  expect(asl[0]!.isASL()).toBe(true);
 });

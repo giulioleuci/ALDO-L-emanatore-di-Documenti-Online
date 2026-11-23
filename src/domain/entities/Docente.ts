@@ -1,5 +1,4 @@
 import { Email } from '../value-objects/Email';
-import { DipartimentoId } from '../value-objects/DipartimentoId';
 import { Genere, appellativo } from '../value-objects/enums';
 import { COL_DOCENTI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
@@ -40,11 +39,6 @@ export class Docente extends AldoEntity {
 
   get email(): Email {
     return Email.of(this.id ?? '');
-  }
-
-  /** DipartimentoId of the teacher's department (ref 04 §2). */
-  get dipartimentoId(): DipartimentoId {
-    return DipartimentoId.of(this.dipart);
   }
 
   /** "Prof." for M, "Prof.ssa" for F (ref 04 §2). */

@@ -2,7 +2,6 @@ import { Alunno } from '../../../src/domain/entities/Alunno';
 import { Carenza } from '../../../src/domain/entities/Carenza';
 import { Classe } from '../../../src/domain/entities/Classe';
 import { Docente } from '../../../src/domain/entities/Docente';
-import { Indirizzo } from '../../../src/domain/entities/Indirizzo';
 import { MovimentoAlunno } from '../../../src/domain/entities/MovimentoAlunno';
 import { OreASL } from '../../../src/domain/entities/OreASL';
 import { Piano } from '../../../src/domain/entities/Piano';
@@ -14,41 +13,16 @@ import {
   CarenzePerAlunnoSpec,
   CarenzePerClasseSpec
 } from '../../../src/domain/specifications/CarenzaSpecs';
-import {
-  ClassiAttiveSpec,
-  ClassiPerIndirizzoSpec
-} from '../../../src/domain/specifications/ClasseSpecs';
-import {
-  DocentiITPSpec,
-  DocentiPerDipartimentoSpec
-} from '../../../src/domain/specifications/DocenteSpecs';
-import { IndirizziPerTipoSpec } from '../../../src/domain/specifications/IndirizziPerTipoSpec';
-import {
-  MovimentiPerAlunnoSpec,
-  MovimentiPerTipoSpec
-} from '../../../src/domain/specifications/MovimentoAlunnoSpecs';
-import {
-  OreASLPerAlunnoSpec,
-  OreASLPerAnnoSpec
-} from '../../../src/domain/specifications/OreASLSpecs';
-import {
-  PianiPerAlunnoSpec,
-  PianiPerTipoSpec
-} from '../../../src/domain/specifications/PianoSpecs';
-import {
-  ProgettiPerClasseSpec,
-  ProgettiPerTipoSpec
-} from '../../../src/domain/specifications/ProgettoSpecs';
-import {
-  VariazioniPerNuovoTitolareSpec,
-  VariazioniPerTitolareSpec
-} from '../../../src/domain/specifications/VariazioneCattedraSpecs';
-import { AnnoScolastico } from '../../../src/domain/value-objects/AnnoScolastico';
+import { ClassiAttiveSpec } from '../../../src/domain/specifications/ClasseSpecs';
+import { DocentiPerDipartimentoSpec } from '../../../src/domain/specifications/DocenteSpecs';
+import { MovimentiPerAlunnoSpec } from '../../../src/domain/specifications/MovimentoAlunnoSpecs';
+import { OreASLPerAlunnoSpec } from '../../../src/domain/specifications/OreASLSpecs';
+import { PianiPerAlunnoSpec } from '../../../src/domain/specifications/PianoSpecs';
+import { ProgettiPerClasseSpec } from '../../../src/domain/specifications/ProgettoSpecs';
+import { VariazioniPerTitolareSpec } from '../../../src/domain/specifications/VariazioneCattedraSpecs';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { DipartimentoId } from '../../../src/domain/value-objects/DipartimentoId';
 import { Email } from '../../../src/domain/value-objects/Email';
-import { IndirizzoId } from '../../../src/domain/value-objects/IndirizzoId';
-import { TipoMovimento, TipoPiano, TipoProgetto } from '../../../src/domain/value-objects/enums';
 
 type Row = Record<string, unknown>;
 type PushdownCase = [string, Specification<unknown>, Row[], (row: Row) => unknown];
@@ -63,9 +37,6 @@ export function assertSpecificationContractTypecheck(): void {
 
 const hydrateAlunno = (row: Row) => Alunno.fromData(row);
 const hydrateCarenza = (row: Row) => Carenza.fromData(row);
-const hydrateClasse = (row: Row) => Classe.fromData(row);
-const hydrateDocente = (row: Row) => Docente.fromData(row);
-const hydrateIndirizzo = (row: Row) => Indirizzo.fromData(row);
 const hydrateMovimento = (row: Row) => MovimentoAlunno.fromData(row);
 const hydrateOreASL = (row: Row) => OreASL.fromData(row);
 const hydratePiano = (row: Row) => Piano.fromData(row);
@@ -113,30 +84,9 @@ const SPEC_PUSHDOWN: PushdownCase[] = [
     }
   ],
   [
-    'ClassiPerIndirizzoSpec',
-    new ClassiPerIndirizzoSpec(IndirizzoId.of('LICEO')),
-    [
-      { ID: '3A', ANNO: 3, INDIRIZZO: 'LICEO' },
-      { ID: '3B', ANNO: '3', INDIRIZZO: 'TECNICO' }
-    ],
-    hydrateClasse
-  ],
-  [
-    'DocentiITPSpec',
-    new DocentiITPSpec(),
-    [{ ITP: true }, { ITP: false }, { ITP: 'true' }, {}],
-    hydrateDocente
-  ],
-  [
     'MovimentiPerAlunnoSpec',
     new MovimentiPerAlunnoSpec(Email.of('a@x.it')),
     [{ STUDENTE: 'a@x.it' }, { STUDENTE: 'b@x.it' }, { STUDENTE: 1 }],
-    hydrateMovimento
-  ],
-  [
-    'MovimentiPerTipoSpec',
-    new MovimentiPerTipoSpec(TipoMovimento.IN),
-    [{ TIPO: 'IN' }, { TIPO: 'OUT' }],
     hydrateMovimento
   ],
   [
@@ -146,21 +96,9 @@ const SPEC_PUSHDOWN: PushdownCase[] = [
     hydrateOreASL
   ],
   [
-    'OreASLPerAnnoSpec',
-    new OreASLPerAnnoSpec(AnnoScolastico.of('2025-2026')),
-    [{ ANNO: '2025-2026' }, { ANNO: '2024-2025' }, { ANNO: 2025 }],
-    hydrateOreASL
-  ],
-  [
     'PianiPerAlunnoSpec',
     new PianiPerAlunnoSpec(Email.of('a@x.it')),
     [{ STUDENTE: 'a@x.it' }, { STUDENTE: 'b@x.it' }, { STUDENTE: 1 }],
-    hydratePiano
-  ],
-  [
-    'PianiPerTipoSpec',
-    new PianiPerTipoSpec(TipoPiano.PEI),
-    [{ TIPO: 'PEI' }, { TIPO: 'PFP' }],
     hydratePiano
   ],
   [
@@ -168,18 +106,6 @@ const SPEC_PUSHDOWN: PushdownCase[] = [
     new ProgettiPerClasseSpec(ClasseId.of('3A')),
     [{ CLASSE: '3A' }, { CLASSE: '3B' }, { CLASSE: 3 }],
     hydrateProgetto
-  ],
-  [
-    'ProgettiPerTipoSpec',
-    new ProgettiPerTipoSpec(TipoProgetto.ASL),
-    [{ TIPO: 'ASL' }, { TIPO: 'ALTRO' }],
-    hydrateProgetto
-  ],
-  [
-    'VariazioniPerNuovoTitolareSpec',
-    new VariazioniPerNuovoTitolareSpec(Email.of('a@x.it')),
-    [{ NUOVO_TITOLARE: 'a@x.it' }, { NUOVO_TITOLARE: 'b@x.it' }],
-    hydrateVariazione
   ],
   [
     'VariazioniPerTitolareSpec',
@@ -200,14 +126,6 @@ it.each(SPEC_PUSHDOWN)('%s: pushdown e in-memory concordano', (_name, spec, rows
   expect(queryMatches).toContain(false);
   expect(assertSpecificationContract(spec, rows, hydrate).divergenti).toEqual([]);
 });
-
-it.each([['IndirizziPerTipoSpec', new IndirizziPerTipoSpec(''), {}, hydrateIndirizzo]])(
-  '%s resta in memoria quando la colonna assente usa il valore predefinito',
-  (_name, spec, row, hydrate) => {
-    expect(spec.toQueryObject()).toBeNull();
-    expect(spec.isSatisfiedBy(hydrate(row))).toBe(true);
-  }
-);
 
 test('DocentiPerDipartimentoSpec resta in memoria per preservare la normalizzazione del VO', () => {
   const spec = new DocentiPerDipartimentoSpec(DipartimentoId.of('LETTERE'));

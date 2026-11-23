@@ -1,11 +1,7 @@
 import { MovimentoAlunno } from '../../domain/entities/MovimentoAlunno';
-import {
-  MovimentiPerAlunnoSpec,
-  MovimentiPerTipoSpec
-} from '../../domain/specifications/MovimentoAlunnoSpecs';
+import { MovimentiPerAlunnoSpec } from '../../domain/specifications/MovimentoAlunnoSpecs';
 import type { IMovimentoAlunnoRepository } from '../../domain/repositories/IMovimentoAlunnoRepository';
 import type { Alunno } from '../../domain/entities/Alunno';
-import type { TipoMovimento } from '../../domain/value-objects/enums';
 import { TABLE, COL_MOV_ALUNNI } from '../../config/schema';
 
 /**
@@ -33,11 +29,5 @@ export class MovimentoAlunnoRepository
     return this.findAll()
       .filter((movimento) => movimento.data <= dataInclusiva)
       .sort((a, b) => b.data.localeCompare(a.data));
-  }
-
-  /** Movements of a given type (ref 06 §15). */
-  findByTipo(tipo: TipoMovimento): MovimentoAlunno[] {
-    const spec = new MovimentiPerTipoSpec(tipo);
-    return this.find(spec);
   }
 }

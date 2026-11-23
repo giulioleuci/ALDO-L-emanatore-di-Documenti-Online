@@ -90,20 +90,6 @@ export class LogJob extends AldoEntity {
     this.id = this.idJob ? `${this.idJob}::${this.esecuzione}` : null;
   }
 
-  getListaFallimenti(): string[] {
-    if (this.listaFallimentiRaw === null) return [];
-    try {
-      const parsed: unknown = JSON.parse(this.listaFallimentiRaw);
-      return Array.isArray(parsed) ? (parsed as string[]) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  isSospeso(): boolean {
-    return this.stato === StatoJob.SOSPESO_QUOTA || this.stato === StatoJob.SOSPESO_TEMPO;
-  }
-
   override toData(): EntityData {
     return {
       [COL_LOG_JOB.ID_JOB]: this.idJob,

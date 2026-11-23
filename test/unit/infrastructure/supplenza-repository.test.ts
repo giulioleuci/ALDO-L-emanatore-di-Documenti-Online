@@ -1,11 +1,8 @@
 import { SupplenzaRepository } from '../../../src/infrastructure/repositories/SupplenzaRepository';
 import { Supplenza } from '../../../src/domain/entities/Supplenza';
-import { VariazioneCattedra } from '../../../src/domain/entities/VariazioneCattedra';
 import { Docente } from '../../../src/domain/entities/Docente';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
-import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
-import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
 import { EntityNotFoundError, ValidationError } from '../../../src/domain/errors/DomainError';
 import { TABLE } from '../../../src/config/schema';
 
@@ -17,23 +14,6 @@ function repoAndDb(): { r: SupplenzaRepository; db: FakeDatabase } {
   return { r: new SupplenzaRepository(db), db };
 }
 const rossi = Docente.fromData({ EMAIL: 'rossi@school.it' });
-
-test('Supplenza: composite identity, period, context predicates (04 §14)', () => {
-  const s = Supplenza.fromData({
-    TITOLARE: 'rossi@school.it',
-    SUPPLENTE: 'bianchi@school.it',
-    DAL: '2025-11-01',
-    AL: '2025-11-30',
-    CLASSI: '5A,4B',
-    MATERIE: '*'
-  });
-  expect(s.id).toBe('rossi@school.it::bianchi@school.it::2025-11-01::5A,4B::*');
-  expect(s.isAttivaData(new Date('2025-11-15'))).toBe(true);
-  expect(s.applicaAClasse(ClasseId.of('5A'))).toBe(true);
-  expect(s.applicaAClasse(ClasseId.of('3C'))).toBe(false);
-  expect(s.applicaAMateria(MateriaId.of('ITA'))).toBe(true); // wildcard
-  expect(s.applicaAContesto(ClasseId.of('4B'), MateriaId.of('MATE'))).toBe(true);
-});
 
 test('findByTitolare / findBySupplente / findAttive', () => {
   const r = repo();
@@ -167,20 +147,4 @@ describe('SupplenzaRepository — indexed-lookup fallback, overlap, and hydratio
       )
     ).toThrow(ValidationError);
   });
-});
-
-test('Supplenza/VariazioneCattedra: accept GG/MM/AA day-first strings', () => {
-  const s = Supplenza.fromData({
-    TITOLARE: 'rossi@school.it',
-    SUPPLENTE: 'bianchi@school.it',
-    DAL: '10/10/26',
-    AL: '15/10/26',
-    CLASSI: '*',
-    MATERIE: '*'
-  });
-  expect(s.isAttivaData(new Date('2026-10-12'))).toBe(true);
-  expect(s.isAttivaData(new Date('2026-10-16'))).toBe(false);
-  const v = VariazioneCattedra.fromData({ TITOLARE: 'rossi@school.it', DAL: '15/10/26' });
-  expect(v.isDecorsaA(new Date('2026-10-20'))).toBe(true);
-  expect(v.isDecorsaA(new Date('2026-10-14'))).toBe(false);
 });

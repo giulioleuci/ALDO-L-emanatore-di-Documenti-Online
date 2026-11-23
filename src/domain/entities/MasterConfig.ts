@@ -1,4 +1,3 @@
-import { AnnoScolastico } from '../value-objects/AnnoScolastico';
 import { COL_MASTER } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
@@ -49,10 +48,6 @@ export class MasterConfig extends AldoEntity {
         : '';
     this.testMode = data[COL_MASTER.TEST_MODE] === true;
     this.id = this.annoScolasticoRaw || null;
-  }
-
-  get annoScolastico(): AnnoScolastico {
-    return AnnoScolastico.of(this.annoScolasticoRaw);
   }
 
   /** True when a BCC supervisor address is configured (ref 01 §0, 11 Step 4). */

@@ -1,7 +1,5 @@
 import { RuoloSpeciale } from '../../domain/entities/RuoloSpeciale';
 import type { IRuoloSpecialeRepository } from '../../domain/repositories/IRuoloSpecialeRepository';
-import { RuoliPerDocenteSpec } from '../../domain/specifications/RuoliPerDocenteSpec';
-import type { Email } from '../../domain/value-objects/Email';
 import { TABLE } from '../../config/schema';
 
 /**
@@ -28,10 +26,5 @@ export class RuoloSpecialeRepository
 
   findAllCached(): RuoloSpeciale[] {
     return this.all().slice();
-  }
-
-  /** Roles held by a teacher — CONTAINS search over the CSV DOCENTE column. */
-  findByDocente(email: Email): RuoloSpeciale[] {
-    return this.find(new RuoliPerDocenteSpec(email));
   }
 }

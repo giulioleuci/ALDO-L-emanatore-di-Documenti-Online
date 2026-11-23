@@ -28,9 +28,4 @@ export class ConfigurazioneImportRepository
   findAttivi(): ConfigurazioneImport[] {
     return this.all().filter((c) => c.isAttivo());
   }
-
-  /** Jobs targeting a given table (ref 06 §10). */
-  findByTarget(target: string): ConfigurazioneImport[] {
-    return this.all().filter((c) => c.target === target);
-  }
 }

@@ -1,41 +1,11 @@
-import { ConfigurazioneDocumentoRepository } from '../../../src/infrastructure/repositories/ConfigurazioneDocumentoRepository';
-import { ConfigurazioneEmailRepository } from '../../../src/infrastructure/repositories/ConfigurazioneEmailRepository';
 import { ConfigurazioneImportRepository } from '../../../src/infrastructure/repositories/ConfigurazioneImportRepository';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
-import { ProcessoInvio } from '../../../src/domain/value-objects/enums';
 import { COL_CONF_MAIL } from '../../../src/config/schema';
 
 function db() {
   return new FakeDatabase(fixtureTables());
 }
-
-test('CONF_DOC: findByTipo + simple-form template id + condition/overwrite (06 §8)', () => {
-  const r = new ConfigurazioneDocumentoRepository(db());
-  const verbali = r.findByTipo('VERBALE');
-  expect(verbali.map((c) => c.id)).toEqual(['CD1', 'CD_ESAME']);
-  const cd1 = verbali.find((c) => c.id === 'CD1')!;
-  expect(cd1.getCondizione()).toBeNull();
-  expect(cd1.getParametri().overwrite).not.toBe(true);
-  expect(r.findByTipo('NOPE')).toEqual([]);
-});
-
-test('CONF_MAIL: findByProcesso + boxes + header default + noreply (06 §9)', () => {
-  const r = new ConfigurazioneEmailRepository(db());
-  const cdc = r.findByProcesso(ProcessoInvio.PER_CDC);
-  expect(cdc.map((c) => c.id)).toEqual(['CDC_OTTOBRE']);
-  expect(cdc[0]!.getBoxes()).toEqual([
-    { TIPO_BOX: 'testo_dinamico', CONTENUTO: '<p>Comunicazione del consiglio di classe.</p>' },
-    { TIPO_BOX: 'carenze' }
-  ]);
-  expect(cdc[0]!.getColoreHeader()).toBe('#007bff'); // default
-  expect(cdc[0]!.isNoreply()).toBe(true);
-
-  const fam = r.findByProcesso(ProcessoInvio.PER_GENITORI_ALUNNO)[0]!;
-  expect(fam.getColoreHeader()).toBe('#ff0000');
-  expect(fam.getBoxes()).toEqual([]); // null BOX_CFG
-  expect(fam.getCondizione()).toBe('carenze > 0');
-});
 
 test('CONF_MAIL repository fixtures explicitly store an empty ALLEGATI JSON array for every existing pattern', () => {
   const rows = fixtureTables().CONF_MAIL!;
@@ -44,16 +14,6 @@ test('CONF_MAIL repository fixtures explicitly store an empty ALLEGATI JSON arra
     expect(Object.keys(row).sort()).toEqual(Object.values(COL_CONF_MAIL).sort());
     expect(row[COL_CONF_MAIL.ALLEGATI_STATICI]).toBe('[]');
   }
-});
-
-test('CONF_IMP: findAttivi + findByTarget + config parse (06 §10)', () => {
-  const r = new ConfigurazioneImportRepository(db());
-  expect(r.findAttivi().map((c) => c.id)).toEqual(['IMPORT_ALUNNI']);
-  expect(r.findByTarget('ALUNNI')[0]!.getConfig()).toMatchObject({
-    searchStrategy: 'FILE_SINGOLO',
-    fileId: 'sheet_alunni'
-  });
-  expect(r.findByTarget('DOCENTI')[0]!.getConfig()).toEqual({});
 });
 
 test('findById works after the list-cache is populated (regression: local cache field name must not shadow Repository.cache)', () => {

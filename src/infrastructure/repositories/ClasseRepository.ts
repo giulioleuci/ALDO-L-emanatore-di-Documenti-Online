@@ -18,12 +18,7 @@ import { IndirizzoId } from '../../domain/value-objects/IndirizzoId';
 import { ArticolazioneConfig } from '../../domain/value-objects/ArticolazioneConfig';
 import { GestioneArticolazione } from '../../domain/value-objects/enums';
 import { AlunniAttiviSpec } from '../../domain/specifications/AlunniAttiviSpec';
-import {
-  ClassiAttiveSpec,
-  ClassiPerAnnoSpec,
-  ClassiPerIndirizzoSpec,
-  ClassiArticolateSpec
-} from '../../domain/specifications/ClasseSpecs';
+import { ClassiAttiveSpec } from '../../domain/specifications/ClasseSpecs';
 import { TABLE, COL_DOCENTI, COL_MATERIE, COL_CLASSI } from '../../config/schema';
 import {
   EntityNotFoundError,
@@ -82,18 +77,6 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
 
   findAttive(): Classe[] {
     return this.find(new ClassiAttiveSpec());
-  }
-
-  findByAnno(anno: number): Classe[] {
-    return this.find(new ClassiPerAnnoSpec(anno));
-  }
-
-  findByIndirizzo(indirizzoId: IndirizzoId): Classe[] {
-    return this.find(new ClassiPerIndirizzoSpec(indirizzoId));
-  }
-
-  findArticolate(): Classe[] {
-    return this.find(new ClassiArticolateSpec());
   }
 
   // --- Cattedra matrix (dynamic columns, ref 06 §3) ---
@@ -191,11 +174,6 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     const ruoli = JSON.parse(raw) as Record<string, unknown>;
     const value = ruoli[nomeRuolo];
     return typeof value === 'string' ? this.loadDocenti(value) : [];
-  }
-
-  /** Shortcut for single-holder roles (e.g. SEGRETARIO); use getDocentiRuolo otherwise. */
-  getRuolo(classe: Classe, nomeRuolo: string): Docente | null {
-    return this.getDocentiRuolo(classe, nomeRuolo)[0] ?? null;
   }
 
   /** Merges a RUOLI-based role across an articulated parent's partner classes; plain getDocentiRuolo otherwise. */
@@ -407,52 +385,6 @@ export class ClasseRepository extends Repository<Classe> implements IClasseRepos
     if (classe === null)
       throw new EntityNotFoundError(`Classe partner/parent ${id.value} non trovata`);
     return classe;
-  }
-
-  // --- Write-back of coordinators / roles (ref 06 §3) ---
-  // CLASSI is a wide dynamic-column table (per-subject cattedra matrix generated
-  // at runtime from MATERIE); Classe.getKnownColumns() opts it into
-  // DomainRepositoryLib's dynamic-column passthrough (ref REPORT_GLF.md B2), so
-  // these column-level edits persist through Repository.save(entity): the
-  // library merges every other captured column back in unmodified.
-
-  setCoordinatori(classe: Classe, coordinatori: Docente[]): void {
-    this.writeColumn(
-      classe,
-      COL_CLASSI.COORD,
-      coordinatori
-        .map((d) => d.id ?? '')
-        .filter((e) => e !== '')
-        .join(',')
-    );
-  }
-
-  /** Sets RUOLI[nomeRuolo] to the CSV of the given teachers, or removes the key when empty. */
-  setDocentiRuolo(classe: Classe, nomeRuolo: string, docenti: Docente[]): void {
-    const row = this.rowOf(classe);
-    const raw = row[COL_CLASSI.RUOLI];
-    const ruoli =
-      typeof raw === 'string' && raw.trim() !== ''
-        ? (JSON.parse(raw) as Record<string, unknown>)
-        : {};
-    const emails = docenti.map((d) => d.id ?? '').filter((e) => e !== '');
-    if (emails.length === 0) delete ruoli[nomeRuolo];
-    else ruoli[nomeRuolo] = emails.join(',');
-    this.writeColumn(classe, COL_CLASSI.RUOLI, JSON.stringify(ruoli));
-  }
-
-  /** Shortcut for single-holder roles (ref 06 §3). */
-  setRuolo(classe: Classe, nomeRuolo: string, docente: Docente): void {
-    this.setDocentiRuolo(classe, nomeRuolo, [docente]);
-  }
-
-  private writeColumn(classe: Classe, colonna: string, valore: string): void {
-    // Refresh the passthrough snapshot from the current row first, so columns
-    // this `classe` instance never hydrated through (or that changed since) are
-    // not lost when save() merges captured dynamic columns back in.
-    classe.captureDynamicColumns(this.rowOf(classe));
-    classe.setDynamicColumn(colonna, valore);
-    this.save(classe);
   }
 
   getConsiglioDiClasse(id: ClasseId): ConsiglioDiClasse {

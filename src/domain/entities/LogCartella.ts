@@ -64,14 +64,6 @@ export class LogCartella extends AldoEntity {
     return csv(this.raw[COL_LOG_FOLD.CLASSI]);
   }
 
-  getUtenti(): string[] {
-    return csv(this.raw[COL_LOG_FOLD.UTENTI]);
-  }
-
-  getMaterie(): string[] {
-    return csv(this.raw[COL_LOG_FOLD.MATERIE]);
-  }
-
   getLink(): string {
     return typeof this.raw[COL_LOG_FOLD.LINK] === 'string'
       ? (this.raw[COL_LOG_FOLD.LINK] as string)

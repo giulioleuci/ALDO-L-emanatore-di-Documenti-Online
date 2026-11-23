@@ -1,6 +1,5 @@
 import { CsvScope } from '../value-objects/CsvScope';
 import type { ClasseId } from '../value-objects/ClasseId';
-import type { MateriaId } from '../value-objects/MateriaId';
 import { COL_VARIAZIONI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
@@ -60,21 +59,6 @@ export class VariazioneCattedra extends AldoEntity {
   /** True if CLASSI = "*" or its CSV contains the class (ref 01 §4). */
   applicaAClasse(classe: ClasseId): boolean {
     return this.classi.applica(classe.value);
-  }
-
-  /** True if MATERIE = "*" or its CSV contains the subject (ref 01 §4). */
-  applicaAMateria(materia: MateriaId): boolean {
-    return this.materie.applica(materia.value);
-  }
-
-  applicaAContesto(classe: ClasseId, materia: MateriaId): boolean {
-    return this.applicaAClasse(classe) && this.applicaAMateria(materia);
-  }
-
-  /** True if the change has taken effect by the given date (DAL ≤ data, ref 01 §4). */
-  isDecorsaA(data: Date): boolean {
-    const dal = this.getDecorrenza();
-    return !Number.isNaN(dal.getTime()) && dal.getTime() <= data.getTime();
   }
 
   getDecorrenza(): Date {

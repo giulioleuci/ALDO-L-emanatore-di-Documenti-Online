@@ -203,52 +203,6 @@ export class ImportService {
     };
   }
 
-  /** Runs every ATTIVO=true CONF_IMP job in sequence; one failure never aborts the others (ref 12 §3). */
-  executeAllActiveImports(): Array<{ configId: string; result: ImportResult }> {
-    const startedAt = Date.now();
-    const results: Array<{ configId: string; result: ImportResult }> = [];
-    const active = this.configs.findAttivi();
-    this.logger.logJobStart('import_all', 'IMPORT_BATCH');
-    this.logger.logBatchStart(active.length);
-    for (let index = 0; index < active.length; index++) {
-      const conf = active[index]!;
-      const configId = conf.id ?? '';
-      this.logger.logItemStart(
-        index + 1,
-        active.length,
-        'Configurazione',
-        PiiRedactor.redact(configId),
-        'IMPORT'
-      );
-      try {
-        results.push({ configId, result: this.executeImportItem(configId) });
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        results.push({
-          configId,
-          result: { inseriti: 0, aggiornati: 0, saltati: 0, ghost: 0, errori: [msg] }
-        });
-      }
-    }
-    const failures = results.filter(({ result }) => result.errori.length > 0).length;
-    this.logger.logJobEnd(
-      'import_all',
-      failures === 0,
-      `${results.length} imports processed, ${failures} failed`
-    );
-    this.logger.logJobReport({
-      jobType: JOB_LABEL_IMPORTAZIONE_DATI,
-      runCount: 1,
-      totalDurationMs: Date.now() - startedAt,
-      totale: results.length,
-      falliti: failures,
-      dettagliFalliti: results
-        .filter(({ result }) => result.errori.length > 0)
-        .map(({ configId, result }) => `${configId}: ${result.errori.join('; ')}`)
-    });
-    return results;
-  }
-
   /**
    * Resumable/chunked run of one CONF_IMP job (GasDataImporter.md
    * "Resumable/chunked imports"): drives `ImportEngine.startImport` /

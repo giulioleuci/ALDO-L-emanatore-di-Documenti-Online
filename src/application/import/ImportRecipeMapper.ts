@@ -157,13 +157,6 @@ export function toLibraryRecipe(conf: ConfigurazioneImport): ImportRecipe {
 }
 
 /**
- * Ghost Record Detection (ref 12 §3): a mapped row is a ghost — ignored,
- * counted separately, neither inserted nor updated — iff every field OTHER
- * than the conflict-key columns, the declared meta/timestamp columns, and the
- * user-reserved `_`-prefixed columns (01 §Colonne riservate all'utente) is
- * null or an empty string. Applied after mapping, before conflict handling.
- */
-/**
  * CARENZE ghost rule (01 §CARENZE): a row is real iff at least one subject
  * column (any column outside COL_CARENZE and `_`-prefixed ones) is populated
  * or ASSENZE is `true`. CLASSE/DATA/PROGRESSIVO/NOTE never rescue a row.
@@ -176,6 +169,13 @@ export function isGhostCarenza(row: Record<string, unknown>): boolean {
     .every(([, value]) => value === null || value === undefined || value === '');
 }
 
+/**
+ * Ghost Record Detection (ref 12 §3): a mapped row is a ghost — ignored,
+ * counted separately, neither inserted nor updated — iff every field OTHER
+ * than the conflict-key columns, the declared meta/timestamp columns, and the
+ * user-reserved `_`-prefixed columns (01 §Colonne riservate all'utente) is
+ * null or an empty string. Applied after mapping, before conflict handling.
+ */
 export function isGhostRecord(
   row: Record<string, unknown>,
   keyColumns: string[],

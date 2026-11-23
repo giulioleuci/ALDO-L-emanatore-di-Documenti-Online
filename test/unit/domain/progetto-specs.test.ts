@@ -1,7 +1,4 @@
-import {
-  ProgettiPerClasseSpec,
-  ProgettiPerTipoSpec
-} from '../../../src/domain/specifications/ProgettoSpecs';
+import { ProgettiPerClasseSpec } from '../../../src/domain/specifications/ProgettoSpecs';
 import { Progetto } from '../../../src/domain/entities/Progetto';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
 import { TipoProgetto } from '../../../src/domain/value-objects/enums';
@@ -33,22 +30,4 @@ describe('ProgettiPerClasseSpec', () => {
   });
 });
 
-describe('ProgettiPerTipoSpec', () => {
-  test('isSatisfiedBy true when TIPO matches', () => {
-    expect(new ProgettiPerTipoSpec(TipoProgetto.ASL).isSatisfiedBy(progetto())).toBe(true);
-  });
-
-  test('isSatisfiedBy false for a different tipo', () => {
-    const spec = new ProgettiPerTipoSpec(TipoProgetto.ORIENTAMENTO);
-    expect(spec.isSatisfiedBy(progetto())).toBe(false);
-    expect(spec.isSatisfiedBy(progetto({ [COL_PROGETTI.TIPO]: TipoProgetto.ORIENTAMENTO }))).toBe(
-      true
-    );
-  });
-
-  test('toQueryObject pushes down TIPO filter', () => {
-    expect(new ProgettiPerTipoSpec(TipoProgetto.ALTRO).toQueryObject()).toEqual({
-      [COL_PROGETTI.TIPO]: TipoProgetto.ALTRO
-    });
-  });
-});
+describe('ProgettiPerTipoSpec', () => {});

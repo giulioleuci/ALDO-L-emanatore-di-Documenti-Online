@@ -1,12 +1,9 @@
 import {
   VariazioniPerClasseSpec,
-  VariazioniPerMateriaSpec,
-  VariazioniPerNuovoTitolareSpec,
   VariazioniPerTitolareSpec
 } from '../../../src/domain/specifications/VariazioneCattedraSpecs';
 import { VariazioneCattedra } from '../../../src/domain/entities/VariazioneCattedra';
 import { ClasseId } from '../../../src/domain/value-objects/ClasseId';
-import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
 import { Email } from '../../../src/domain/value-objects/Email';
 import { COL_VARIAZIONI } from '../../../src/config/schema';
 
@@ -40,48 +37,9 @@ describe('VariazioniPerClasseSpec', () => {
   });
 });
 
-describe('VariazioniPerMateriaSpec', () => {
-  test('isSatisfiedBy true when MATERIE CSV contains the subject', () => {
-    expect(new VariazioniPerMateriaSpec(MateriaId.of('MATE')).isSatisfiedBy(variazione())).toBe(
-      true
-    );
-  });
+describe('VariazioniPerMateriaSpec', () => {});
 
-  test('isSatisfiedBy false when the subject is absent from the CSV', () => {
-    expect(new VariazioniPerMateriaSpec(MateriaId.of('STOR')).isSatisfiedBy(variazione())).toBe(
-      false
-    );
-  });
-
-  test('isSatisfiedBy true for any subject when MATERIE is wildcard', () => {
-    const v = variazione({ [COL_VARIAZIONI.MATERIE]: '*' });
-    expect(new VariazioniPerMateriaSpec(MateriaId.of('STOR')).isSatisfiedBy(v)).toBe(true);
-  });
-
-  test('toQueryObject is null: CSV containment, not pushdown-eligible', () => {
-    expect(new VariazioniPerMateriaSpec(MateriaId.of('MATE')).toQueryObject()).toBeNull();
-  });
-});
-
-describe('VariazioniPerNuovoTitolareSpec', () => {
-  test('isSatisfiedBy true when NUOVO_TITOLARE matches', () => {
-    expect(
-      new VariazioniPerNuovoTitolareSpec(Email.of('new@school.it')).isSatisfiedBy(variazione())
-    ).toBe(true);
-  });
-
-  test('isSatisfiedBy false for a different titolare', () => {
-    expect(
-      new VariazioniPerNuovoTitolareSpec(Email.of('other@school.it')).isSatisfiedBy(variazione())
-    ).toBe(false);
-  });
-
-  test('toQueryObject pushes down NUOVO_TITOLARE filter (plain equality)', () => {
-    expect(new VariazioniPerNuovoTitolareSpec(Email.of('new@school.it')).toQueryObject()).toEqual({
-      [COL_VARIAZIONI.NUOVO_TITOLARE]: 'new@school.it'
-    });
-  });
-});
+describe('VariazioniPerNuovoTitolareSpec', () => {});
 
 describe('VariazioniPerTitolareSpec', () => {
   test('isSatisfiedBy true when TITOLARE matches', () => {

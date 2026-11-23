@@ -107,29 +107,6 @@ export class EmailRetryService {
     return this.priorDurationMs + (Date.now() - this.containerStartedAt);
   }
 
-  retryFailed(): RetryResult {
-    const groups = this.groupFailed();
-    this.logger.logJobStart('retry_email', 'EMAIL_RETRY');
-    this.logger.logBatchStart(groups.length);
-    let result: RetryResult = { retried: 0, permanent: 0 };
-    try {
-      for (let index = 0; index < groups.length; index++) {
-        const [key, group] = groups[index]!;
-        const safeKey = PiiRedactor.redact(key);
-        this.logger.logItemStart(index + 1, groups.length, 'Gruppo', safeKey, 'RETRY');
-        result = this.mergeResult(result, this.processGroup(group));
-      }
-      const details = `${result.retried} retried, ${result.permanent} permanent`;
-      this.logger.logJobEnd('retry_email', result.permanent === 0, details);
-      return result;
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error);
-      const safeReason = PiiRedactor.redact(reason);
-      this.logger.logJobEnd('retry_email', false, safeReason);
-      throw error;
-    }
-  }
-
   /**
    * JobRunnerLib handler (11 §16, 15 §5): one checkpoint per failed-group
    * batch, so a pattern with many failed/grouped emails gets execution-window

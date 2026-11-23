@@ -3,7 +3,6 @@ import { MovimentoAlunno } from '../../../src/domain/entities/MovimentoAlunno';
 import { Alunno } from '../../../src/domain/entities/Alunno';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
-import { TipoMovimento } from '../../../src/domain/value-objects/enums';
 
 function repo(): MovimentoAlunnoRepository {
   return new MovimentoAlunnoRepository(new FakeDatabase(fixtureTables()));
@@ -34,12 +33,4 @@ test('findEntro includes every student through the inclusive date, newest first'
       .findEntro('2026-01-10')
       .map((m) => `${m.studente}:${m.tipo}`)
   ).toEqual(['a2@school.it:CAMBIO', 'a2@school.it:IN']);
-});
-
-test('findByTipo filters by movement type', () => {
-  expect(
-    repo()
-      .findByTipo(TipoMovimento.OUT)
-      .map((m) => m.studente)
-  ).toEqual(['a3@school.it']);
 });

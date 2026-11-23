@@ -15,8 +15,4 @@ export class MateriaSpecificaId extends stringId('MateriaSpecificaId', MATERIA_S
   materia(): MateriaId {
     return MateriaId.of(this.value.split('.')[0]!);
   }
-
-  specifica(): string {
-    return this.value.split('.')[1]!;
-  }
 }

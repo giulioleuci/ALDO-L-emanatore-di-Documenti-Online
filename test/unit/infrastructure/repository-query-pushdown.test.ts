@@ -1,5 +1,4 @@
 import { CarenzaRepository } from '../../../src/infrastructure/repositories/CarenzaRepository';
-import { DocenteRepository } from '../../../src/infrastructure/repositories/DocenteRepository';
 import { SupplenzaRepository } from '../../../src/infrastructure/repositories/SupplenzaRepository';
 import { LogEmailRepository } from '../../../src/infrastructure/repositories/LogEmailRepository';
 import { Alunno } from '../../../src/domain/entities/Alunno';
@@ -28,17 +27,6 @@ test('CarenzaRepository.findByAlunno pushes the STUDENTE filter down through sel
     { studente: 'a1@school.it', progressivo: 1, classe: '5A', data: '2026-02-15' },
     { studente: 'a1@school.it', progressivo: 2, classe: '5A', data: '2026-05-20' }
   ]);
-});
-
-test('DocenteRepository.findITP pushes the ITP=true filter down through select()', () => {
-  const db = new FakeDatabase(fixtureTables());
-  const selectSpy = jest.spyOn(db, 'select');
-  const repo = new DocenteRepository(db);
-
-  const result = repo.findITP();
-
-  expect(selectSpy).toHaveBeenCalled();
-  expect(result.every((d) => d.isITP())).toBe(true);
 });
 
 test('CarenzaRepository.findNonNotificate (toQueryObject() null) falls back to in-memory filtering', () => {

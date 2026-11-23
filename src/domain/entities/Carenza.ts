@@ -1,5 +1,3 @@
-import type { MateriaId } from '../value-objects/MateriaId';
-import type { ValoreCarenza } from '../value-objects/ValoreCarenza';
 import { COL_CARENZE } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
@@ -67,12 +65,6 @@ export class Carenza extends AldoEntity {
     return this.notificato.length > 0;
   }
 
-  getNotificato(): Date | null {
-    if (!this.isNotificato()) return null;
-    const d = new Date(this.notificato);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }
-
   hasAssenzeElevate(): boolean {
     return this.assenze;
   }
@@ -82,25 +74,6 @@ export class Carenza extends AldoEntity {
     return typeof this.raw[COL_CARENZE.NOTE] === 'string'
       ? (this.raw[COL_CARENZE.NOTE] as string)
       : '';
-  }
-
-  /** Number of subjects with a shortfall in the map supplied by the repository (ref 04 §11). */
-  getNumeroCarenze(carenzePerMateria: Map<MateriaId, ValoreCarenza>): number {
-    return carenzePerMateria.size;
-  }
-
-  hasCarenzaMateria(materia: MateriaId, carenzePerMateria: Map<MateriaId, ValoreCarenza>): boolean {
-    for (const m of carenzePerMateria.keys()) {
-      if (m.equals(materia)) return true;
-    }
-    return false;
-  }
-
-  /** Stamps NOTIFICATO with the current timestamp and marks the entity dirty (ref 04 §11). */
-  notifica(): void {
-    this.notificato = new Date().toISOString();
-    this.raw[COL_CARENZE.NOTIFICATO] = this.notificato;
-    this.markDirty(COL_CARENZE.NOTIFICATO);
   }
 
   override toData(): EntityData {

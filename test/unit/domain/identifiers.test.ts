@@ -22,13 +22,6 @@ test('MateriaId: uppercase only, length 2-10 (03)', () => {
   expect(() => MateriaId.of('ABCDEFGHIJK')).toThrow(ValidationError);
 });
 
-test('MateriaSpecificaId: parses MATERIA.SPECIFICA, exposes materia/specifica/value', () => {
-  const id = MateriaSpecificaId.of('INTERPRET.CHITARRA');
-  expect(id.value).toBe('INTERPRET.CHITARRA');
-  expect(id.materia()).toEqual(MateriaId.of('INTERPRET'));
-  expect(id.specifica()).toBe('CHITARRA');
-});
-
 test('MateriaSpecificaId: rejects missing dot, invalid materia part, invalid specifica part', () => {
   expect(() => MateriaSpecificaId.of('INTERPRET')).toThrow(ValidationError);
   expect(() => MateriaSpecificaId.of('interpret.chitarra')).toThrow(ValidationError);

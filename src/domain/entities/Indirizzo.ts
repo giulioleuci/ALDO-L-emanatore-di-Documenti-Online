@@ -1,4 +1,3 @@
-import { IndirizzoId } from '../value-objects/IndirizzoId';
 import { COL_INDIRIZZI } from '../../config/schema';
 import { AldoEntity } from './AldoEntity';
 
@@ -21,10 +20,6 @@ export class Indirizzo extends AldoEntity {
     this.nome = data[COL_INDIRIZZI.NOME] ?? '';
     this.nomeSintetico = data[COL_INDIRIZZI.NOME_SINTETICO] ?? '';
     this.tipo = data[COL_INDIRIZZI.TIPO] ?? '';
-  }
-
-  get indirizzoId(): IndirizzoId {
-    return IndirizzoId.of(this.id ?? '');
   }
 
   override toData(): EntityData {

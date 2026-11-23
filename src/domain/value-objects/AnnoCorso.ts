@@ -14,9 +14,6 @@ export class AnnoCorso {
   isPrimoBiennio(): boolean {
     return this.value === 1 || this.value === 2;
   }
-  isSecondoBiennio(): boolean {
-    return this.value === 3 || this.value === 4;
-  }
   isTerminale(): boolean {
     return this.value === 5;
   }

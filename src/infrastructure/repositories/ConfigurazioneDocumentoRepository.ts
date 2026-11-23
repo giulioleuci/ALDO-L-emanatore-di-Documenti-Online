@@ -11,7 +11,7 @@ interface ModelloCondizionale {
 
 /**
  * CONF_DOC repository on the DomainRepositoryLib Repository base (PK = ID,
- * ref 06 §8). Small, stable config table, cached for the session. Conditional
+ * ref 06 §8). Conditional
  * generation and conditional template selection are evaluated through
  * GasExpressionEngineLib (via IExpressionEngine), never in-house.
  */
@@ -19,23 +19,8 @@ export class ConfigurazioneDocumentoRepository
   extends Repository<ConfigurazioneDocumento>
   implements IConfigurazioneDocumentoRepository
 {
-  // Named listCache (not `cache`): DomainRepositoryLib's base Repository
-  // already owns a `this.cache` field (a CacheService slot used by findById);
-  // reusing that name silently breaks findById after this local cache populates.
-  private listCache: ConfigurazioneDocumento[] | null = null;
-
   constructor(database: RepositoryDatabase) {
     super(database, TABLE.CONF_DOC, ConfigurazioneDocumento);
-  }
-
-  private all(): ConfigurazioneDocumento[] {
-    if (this.listCache === null) this.listCache = this.findAll();
-    return this.listCache;
-  }
-
-  /** Configs of a document macro-category (ref 06 §8). */
-  findByTipo(tipo: string): ConfigurazioneDocumento[] {
-    return this.all().filter((c) => c.tipo === tipo);
   }
 
   /**

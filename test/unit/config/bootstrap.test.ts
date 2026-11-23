@@ -22,7 +22,6 @@ import {
   JOB_TYPE_RETRY_EMAIL
 } from '../../../src/application/services/EmailRetryService';
 import { RisolutoreRuoliService } from '../../../src/application/services/RisolutoreRuoliService';
-import { ReportService } from '../../../src/application/services/ReportService';
 import { AggregatoreDati } from '../../../src/application/services/AggregatoreDati';
 import { AlberoCartelle } from '../../../src/infrastructure/services/AlberoCartelle';
 import { ConfigurationError } from '../../../src/domain/errors/DomainError';
@@ -124,7 +123,6 @@ test('container resolves every application service as a lazy singleton (08 §2, 
   const teachingAssignments = c.get('teachingAssignmentResolver');
   expect(teachingAssignments).toBeInstanceOf(AldoTeachingAssignmentResolver);
   expect(c.get('teachingAssignmentResolver')).toBe(teachingAssignments);
-  expect(c.get('reportService')).toBeInstanceOf(ReportService);
   expect(c.get('aggregatoreDati')).toBeInstanceOf(AggregatoreDati);
   expect(c.get('alberoCartelle')).toBeInstanceOf(AlberoCartelle);
   const factory = c.get<DocumentStrategyFactory>('strategyFactory');

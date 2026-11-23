@@ -33,10 +33,6 @@ export class CsvScope {
     return new CsvScope(typeof raw === 'string' ? raw : '');
   }
 
-  isWildcard(): boolean {
-    return this.wildcard;
-  }
-
   /** True if `*` or the id is in the CSV. */
   applica(id: string): boolean {
     return this.wildcard || this.values.has(id);

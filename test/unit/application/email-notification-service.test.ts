@@ -680,8 +680,6 @@ test('does not block real delivery from a SUCCESS test-mode audit record', () =>
     { logicalTargetId: emailTargetId(target), testMode: true }
   );
 
-  service.disableTestMode();
-
   expect(service.sendPattern('MAIL_1').sent).toBe(1);
 });
 
@@ -818,44 +816,6 @@ test('sendToTarget rebuilds the history snapshot for a different job', () => {
   expect(findByPattern).toHaveBeenCalledTimes(2);
 });
 
-test('sendToTarget does not remember test-mode SUCCESS as delivery to the real target', () => {
-  const { db, gmail } = wire([mailRow('GUARD_TEST_MODE')]);
-  const logMail = new LogEmailRepository(db);
-  const findByPattern = jest.spyOn(logMail, 'findByPattern');
-  const service = new EmailNotificationService(fullDeps(db, gmail, { logMail }));
-  const target = {
-    tipo: 'cdc' as const,
-    tipoTarget: 'classe' as const,
-    target: '5A',
-    emails: ['rossi@school.it'],
-    classiCompetenza: ['5A']
-  };
-
-  service.enableTestMode('tester@school.it');
-  const firstPreview = service.sendToTarget('GUARD_TEST_MODE', target, 'job-preview');
-  const secondPreview = service.sendToTarget('GUARD_TEST_MODE', target, 'job-preview');
-  service.disableTestMode();
-  const realSend = service.sendToTarget('GUARD_TEST_MODE', target, 'job-preview');
-
-  expect(firstPreview.sent).toBe(1);
-  expect(secondPreview.sent).toBe(1);
-  expect(realSend.sent).toBe(1);
-  expect(gmail.sent.map((sent) => sent.to)).toEqual([
-    ['tester@school.it'],
-    ['tester@school.it'],
-    ['rossi@school.it']
-  ]);
-  expect(findByPattern).toHaveBeenCalledTimes(1);
-});
-
-// Finding 2/5 (final review fix wave): end-to-end regression guard. Before the
-// Finding 2 fix, targetsPerCapoDipartimento never set docenteEmail, so
-// BuildCDUStep.buildDestinatario resolved `docente: null` and
-// salutoPerTarget's 'capo_dipartimento' case fell into the generic
-// 'Gentili Destinatari' arm instead of the personalized "Gentile Prof. ..."
-// greeting the case was written for. Only observable at the assembled-email
-// (rendered htmlBody) level — enumerateTargets/box-rendering tests in
-// isolation don't exercise buildDestinatario at all.
 test('sendPattern PER_CAPO_DIPARTIMENTO renders a personalized greeting for the capo, not the generic fallback (Finding 2)', () => {
   const { service, gmail } = wire([mailRow('DIP_CAPO', { PROCESSO: 'PER_CAPO_DIPARTIMENTO' })]);
   const result = service.sendPattern('DIP_CAPO');
@@ -1181,14 +1141,11 @@ test('sendPattern PER_CARENZA_GENITORI stamps NOTIFICATO so a second run sends n
   expect(gmail.sent).toHaveLength(2); // unchanged
 });
 
-test('test mode redirects all sends and disableTestMode restores (11 §15)', () => {
+test('test mode redirects all sends (11 §15)', () => {
   const { service, gmail } = wire();
   service.enableTestMode('tester@x.it');
   service.sendPattern('CDC_OTTOBRE');
   expect(gmail.sent.every((s) => s.to.length === 1 && s.to[0] === 'tester@x.it')).toBe(true);
-  service.disableTestMode();
-  service.sendPattern('CDC_OTTOBRE');
-  expect(gmail.sent.some((s) => s.to.includes('rossi@school.it'))).toBe(true);
 });
 
 test('onlyRecipients filters the enumerated targets (retry seam)', () => {

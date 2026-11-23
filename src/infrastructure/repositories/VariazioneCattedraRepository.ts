@@ -1,13 +1,10 @@
 import { VariazioneCattedra } from '../../domain/entities/VariazioneCattedra';
 import type { IVariazioneCattedraRepository } from '../../domain/repositories/IVariazioneCattedraRepository';
 import type { ClasseId } from '../../domain/value-objects/ClasseId';
-import type { MateriaId } from '../../domain/value-objects/MateriaId';
 import type { Email } from '../../domain/value-objects/Email';
 import type { DocenteRepository } from './DocenteRepository';
 import {
   VariazioniPerClasseSpec,
-  VariazioniPerMateriaSpec,
-  VariazioniPerNuovoTitolareSpec,
   VariazioniPerTitolareSpec
 } from '../../domain/specifications/VariazioneCattedraSpecs';
 import { TABLE, COL_VARIAZIONI } from '../../config/schema';
@@ -39,14 +36,6 @@ export class VariazioneCattedraRepository
 
   findByClasse(classeId: ClasseId): VariazioneCattedra[] {
     return this.find(new VariazioniPerClasseSpec(classeId));
-  }
-
-  findByMateria(materiaId: MateriaId): VariazioneCattedra[] {
-    return this.find(new VariazioniPerMateriaSpec(materiaId));
-  }
-
-  findByNuovoTitolare(email: Email): VariazioneCattedra[] {
-    return this.find(new VariazioniPerNuovoTitolareSpec(email));
   }
 
   findByTitolare(email: Email): VariazioneCattedra[] {

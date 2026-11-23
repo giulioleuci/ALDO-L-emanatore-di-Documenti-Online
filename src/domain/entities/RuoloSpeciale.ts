@@ -30,10 +30,6 @@ export class RuoloSpeciale extends AldoEntity {
     return splitCsvValues(this.docenteRaw).map((s) => Email.of(s));
   }
 
-  hasDocente(email: Email): boolean {
-    return this.getEmails().some((e) => e.equals(email));
-  }
-
   override toData(): EntityData {
     return {
       [COL_RUOLI.ID]: this.id,

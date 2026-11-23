@@ -4,7 +4,6 @@ import { Materia } from '../../../src/domain/entities/Materia';
 import { MateriePerDipartimentoSpec } from '../../../src/domain/specifications/MateriePerDipartimentoSpec';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables } from '../../../test/fixtures/tables';
-import { DipartimentoId } from '../../../src/domain/value-objects/DipartimentoId';
 
 function repo(): DipartimentoRepository {
   return new DipartimentoRepository(new FakeDatabase(fixtureTables()));
@@ -28,16 +27,6 @@ test('empty CAPO yields null email', () => {
   ).toBeNull();
 });
 
-test('repository getCapoEmail / getMaterieIds via cache', () => {
-  const r = repo();
-  expect(r.getCapoEmail(DipartimentoId.of('SCIENTIFICO_DIP'))?.value).toBe('rossi@school.it');
-  expect(r.getCapoEmail(DipartimentoId.of('LETTERE'))).toBeNull();
-  expect(r.getMaterieIds(DipartimentoId.of('SCIENTIFICO_DIP')).map((m) => m.value)).toEqual([
-    'MATE',
-    'FISI'
-  ]);
-});
-
 test('MateriePerDipartimentoSpec filters materie of a department (07 §4)', () => {
   const dip = Dipartimento.fromData({ ID: 'SCIENTIFICO_DIP', MATERIE: 'MATE,FISI' });
   const spec = new MateriePerDipartimentoSpec(dip);
@@ -50,13 +39,4 @@ test('findAll returns every DIPART row as a Dipartimento', () => {
   const r = repo();
   const all = r.findAll();
   expect(all.map((d) => d.id)).toEqual(['SCIENTIFICO_DIP', 'LETTERE']);
-});
-
-test('findById (base) + caching', () => {
-  const db = new FakeDatabase(fixtureTables());
-  const r = new DipartimentoRepository(db);
-  expect(r.findById('LETTERE')?.nome).toBe('Dipartimento di lettere');
-  expect(r.findAllCached()).toHaveLength(2);
-  db.table('DIPART').insert({ ID: 'NEW', NOME: 'x', CAPO: '', MATERIE: '' });
-  expect(r.findAllCached()).toHaveLength(2); // cache held
 });

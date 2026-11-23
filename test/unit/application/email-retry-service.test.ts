@@ -78,9 +78,17 @@ function wire(
   return { db, gmail, retry };
 }
 
+/** Runs the retry job generator to completion, as JobRunnerLib would. */
+function drain(retry: EmailRetryService) {
+  const gen = retry.retryHandler({ jobId: 'retry_email', resumeState: null });
+  let step = gen.next();
+  while (!step.done) step = gen.next();
+  return step.value;
+}
+
 test('retries a failed send below maxTentativi and marks the original record SUCCESS (11 §16)', () => {
   const { db, gmail, retry } = wire([failedRow('2026-06-30T10:00:00.000Z')]);
-  const result = retry.retryFailed();
+  const result = drain(retry);
   expect(result.retried).toBe(1);
   expect(result.permanent).toBe(0);
   // The resend went to the family of the carenza matching genitore1.
@@ -90,19 +98,6 @@ test('retries a failed send below maxTentativi and marks the original record SUC
     (r) => r['DATA'] === '2026-06-30T10:00:00.000Z'
   )!;
   expect(original['STATO']).toBe('SUCCESS');
-});
-
-test('retryFailed emits synchronous lifecycle and structured retry items', () => {
-  const lines: string[] = [];
-  jest.spyOn(Logger, 'log').mockImplementation((line) => lines.push(String(line)));
-  const { retry } = wire([failedRow('2026-06-30T10:00:00.000Z')], new LoggerService());
-
-  expect(retry.retryFailed()).toEqual({ retried: 1, permanent: 0 });
-
-  const output = lines.join('\n');
-  expect(output).toContain('🚀 [INIT] AVVIO JOB: retry_email (Tipo: EMAIL_RETRY)');
-  expect(output).toContain('🔁 [RETRY 1/1]');
-  expect(output).toContain("🏁 [COMPLETED] Job 'retry_email' completed successfully");
 });
 
 test('retryHandler emits batch/items without duplicating JobRunner lifecycle', () => {
@@ -128,7 +123,7 @@ test('after maxTentativi failures the error is permanent and the admin is notifi
     failedRow('2026-06-30T10:00:00.000Z')
   ];
   const { db, gmail, retry } = wire(rows);
-  const result = retry.retryFailed();
+  const result = drain(retry);
   expect(result.retried).toBe(0);
   expect(result.permanent).toBe(1);
   // Admin notification to the supervisore, no resend to the recipient.
@@ -147,7 +142,7 @@ test('retry policy uses the configured attempt limit before sending again', () =
     2
   );
 
-  expect(retry.retryFailed()).toEqual({ retried: 0, permanent: 1 });
+  expect(drain(retry)).toEqual({ retried: 0, permanent: 1 });
   expect(gmail.sent[0]!.to).toEqual(['super@school.it']);
   expect(
     db.tables['LOG_MAIL']!.getAllRows().filter((row) => row['STATO'] === 'ERROR')
@@ -163,7 +158,7 @@ test('a retry that can no longer send anything counts as a failed attempt', () =
   };
   const { db, gmail, retry } = wire([row]);
 
-  expect(retry.retryFailed()).toEqual({ retried: 0, permanent: 0 });
+  expect(drain(retry)).toEqual({ retried: 0, permanent: 0 });
   expect(gmail.sent).toHaveLength(0);
   expect(db.tables['LOG_MAIL']!.getAllRows().filter((r) => r['STATO'] === 'ERROR')).toHaveLength(2);
 });
@@ -179,12 +174,12 @@ test('successful records are ignored', () => {
       ERRORE: ''
     }
   ]);
-  const result = retry.retryFailed();
+  const result = drain(retry);
   expect(result).toEqual({ retried: 0, permanent: 0 });
   expect(gmail.sent).toHaveLength(0);
 });
 
-test('retryFailed redacts the recipient email in the warn log on a failed re-send', () => {
+test('retryHandler redacts the recipient email in the warn log on a failed re-send', () => {
   const warnMock = jest.fn();
   const logger = {
     warn: warnMock,
@@ -192,12 +187,13 @@ test('retryFailed redacts the recipient email in the warn log on a failed re-sen
     logJobStart: jest.fn(),
     logBatchStart: jest.fn(),
     logItemStart: jest.fn(),
-    logJobEnd: jest.fn()
+    logJobEnd: jest.fn(),
+    logJobReport: jest.fn()
   } as unknown as LoggerService;
   const { gmail, retry } = wire([failedRow('2026-06-30T10:00:00.000Z')], logger);
   // Force the resend itself to fail so the retry falls into the warn branch.
   gmail.failFor.add('genitore1@x.it');
-  retry.retryFailed();
+  drain(retry);
   expect(warnMock).toHaveBeenCalledWith(expect.stringContaining('[EMAIL_REDACTED]'));
   const warnCalls = warnMock.mock.calls.map((args: unknown[]) => args[0] as string);
   expect(warnCalls.some((msg) => msg.includes('@'))).toBe(false);
@@ -211,7 +207,8 @@ test('registraPermanente redacts the recipient email in the error log on permane
     logJobStart: jest.fn(),
     logBatchStart: jest.fn(),
     logItemStart: jest.fn(),
-    logJobEnd: jest.fn()
+    logJobEnd: jest.fn(),
+    logJobReport: jest.fn()
   } as unknown as LoggerService;
   const rows = [
     failedRow('2026-06-28T10:00:00.000Z'),
@@ -219,7 +216,7 @@ test('registraPermanente redacts the recipient email in the error log on permane
     failedRow('2026-06-30T10:00:00.000Z')
   ];
   const { retry } = wire(rows, logger);
-  retry.retryFailed();
+  drain(retry);
   expect(errorMock).toHaveBeenCalledWith(expect.stringContaining('[EMAIL_REDACTED]'));
   const errorCalls = errorMock.mock.calls.map((args: unknown[]) => args[0] as string);
   expect(errorCalls.some((msg) => msg.includes('@'))).toBe(false);
@@ -290,7 +287,7 @@ test('retry uses the logged logical PER_DOCENTE target when a substitute also ow
     new MasterSheetRepository(db)
   );
 
-  const result = retry.retryFailed();
+  const result = drain(retry);
 
   expect(result).toEqual({ retried: 1, permanent: 0 });
   expect(gmail.sent).toHaveLength(1);

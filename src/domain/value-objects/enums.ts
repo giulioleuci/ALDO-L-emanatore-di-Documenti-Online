@@ -12,11 +12,6 @@ export enum Genere {
   M = 'M',
   F = 'F'
 }
-export enum PermessoACL {
-  SCRITTURA = 'SCRITTURA',
-  LETTURA = 'LETTURA',
-  COMMENTO = 'COMMENTO'
-}
 export enum GestioneArticolazione {
   ARTICOLATA = 'ARTICOLATA',
   COMPLETA = 'COMPLETA'

@@ -61,12 +61,6 @@ function matchesLogDocsCriterion(doc: LogDocumento, column: string, value: strin
 export class StoricoDocumentiService {
   constructor(private readonly provider: StoricoDatabaseProvider) {}
 
-  perAlunno(alunnoEmail: string, tipo: string, profondita = 1): DocumentoStorico[] {
-    return this.tutti(alunnoEmail, profondita)
-      .filter((d) => d.idGen === tipo)
-      .map(({ anno, nome, link }) => ({ anno, nome, link }));
-  }
-
   /** Every prior-year document, with family, subtype and generator id kept separate. */
   perAlunnoConTipo(alunnoEmail: string, profondita = 1): DocumentoStoricoConTipo[] {
     return this.tutti(alunnoEmail, profondita);

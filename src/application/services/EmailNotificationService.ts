@@ -135,10 +135,6 @@ export class EmailNotificationService {
     this.testEmail = email;
   }
 
-  disableTestMode(): void {
-    this.testEmail = null;
-  }
-
   /** Runs the NotificaPipeline for every enumerated target of the pattern. */
   sendPattern(patternId: string, options: SendPatternOptions = {}): SendPatternResult {
     const row = this.deps.db.table(TABLE.CONF_MAIL).find((r) => r[COL_CONF_MAIL.ID] === patternId);

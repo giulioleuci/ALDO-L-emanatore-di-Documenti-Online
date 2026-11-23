@@ -1,5 +1,4 @@
 import { PeriodoSupplenza } from '../../../src/domain/value-objects/PeriodoSupplenza';
-import { CsvScope } from '../../../src/domain/value-objects/CsvScope';
 import { ValidationError } from '../../../src/domain/errors/DomainError';
 
 test('PeriodoSupplenza: contiene (03)', () => {
@@ -43,12 +42,4 @@ test('PeriodoSupplenza: a non-ordering DateRange construction failure surfaces i
   } finally {
     globalWithDateRange.DateRange = RealDateRange;
   }
-});
-
-test('CsvScope: wildcard and order-insensitive containment (04 §14)', () => {
-  expect(CsvScope.of('*').applica('5A')).toBe(true);
-  const scope = CsvScope.of('5A, 4B');
-  expect(scope.applica('4B')).toBe(true);
-  expect(scope.applica('3C')).toBe(false);
-  expect(scope.isWildcard()).toBe(false);
 });

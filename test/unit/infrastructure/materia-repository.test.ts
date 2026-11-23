@@ -1,17 +1,9 @@
 import { MateriaRepository } from '../../../src/infrastructure/repositories/MateriaRepository';
 import { Materia } from '../../../src/domain/entities/Materia';
-import {
-  MaterieEsamePrimaSpec,
-  MaterieEsameSecondaSpec
-} from '../../../src/domain/specifications/MaterieEsameSpec';
 import { FakeDatabase } from '../../../test/fakes/FakeDatabase';
 import { fixtureTables, teachingSlotFixtureTables } from '../../../test/fixtures/tables';
 import { MateriaId } from '../../../src/domain/value-objects/MateriaId';
 import { IndirizzoId } from '../../../src/domain/value-objects/IndirizzoId';
-
-function repo(): MateriaRepository {
-  return new MateriaRepository(new FakeDatabase(fixtureTables()));
-}
 
 test('Materia hydrates and parses ESAME_CFG lazily', () => {
   const m = Materia.fromData({
@@ -47,25 +39,6 @@ test('Materia with null ESAME_CFG has no esameConfig', () => {
 test('Materia parses IS_RELIGIONE_ALT, defaulting to false when absent', () => {
   expect(Materia.fromData({ ID: 'MATE' }).isReligioneAlt).toBe(false);
   expect(Materia.fromData({ ID: 'IRC', IS_RELIGIONE_ALT: true }).isReligioneAlt).toBe(true);
-});
-
-test('findEsamePrima / findEsameSeconda filter via specs', () => {
-  expect(
-    repo()
-      .findEsamePrima(IndirizzoId.of('SCIENTIFICO'))
-      .map((m) => m.id)
-  ).toEqual(['MATE']);
-  expect(
-    repo()
-      .findEsameSeconda(IndirizzoId.of('LSSA'))
-      .map((m) => m.id)
-  ).toEqual(['MATE']);
-  expect(repo().findEsamePrima(IndirizzoId.of('LSSA'))).toEqual([]);
-});
-
-test('exam specs report toQueryObject null (in-memory only, 07 §4)', () => {
-  expect(new MaterieEsamePrimaSpec(IndirizzoId.of('SCIENTIFICO')).toQueryObject()).toBeNull();
-  expect(new MaterieEsameSecondaSpec(IndirizzoId.of('LSSA')).toQueryObject()).toBeNull();
 });
 
 test('findSpecifiche returns MATERIE rows whose ID is MATERIA.<anything>', () => {

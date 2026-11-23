@@ -20,14 +20,9 @@ class FakeDocumentService {
   builders: Record<string, FakeDocumentBuilder> = {};
   standardDocs: Record<string, { saveAndClose?: () => void }> = {};
   scanResult: DocumentScanResult = { tables: [], textMatches: [] };
-  tableCalls: Array<[string, string | number]> = [];
-  getTableData(id: string, index: number) {
-    this.tableCalls.push([id, index]);
-    return { data: [['a', 1, null]] };
-  }
-  getTableDataByLabel(id: string, label: string) {
-    this.tableCalls.push([id, label]);
-    return { data: [['b']] };
+  copyCalls: unknown[][] = [];
+  copyTableToMarker(...args: unknown[]): void {
+    this.copyCalls.push(args);
   }
   insertTableAtMarkerCalls: Array<{
     documentId: string;
@@ -149,7 +144,7 @@ describe('DocumentTableFacade (10 §9)', () => {
     expect(() => facade.removeText('doc1', '{{TABELLA:x}}')).toThrow(/boom/);
   });
 
-  test('findDocTablePlaceholders extracts refs; readDocTable routes digits to index, text to label', () => {
+  test('findDocTablePlaceholders extracts refs; copyDocTableToMarker routes digits to a 1-based index, text to label', () => {
     const docs = new FakeDocumentService();
     docs.scanResult = {
       tables: [],
@@ -161,11 +156,12 @@ describe('DocumentTableFacade (10 §9)', () => {
       { marker: '{{TABELLA_DOC:2}}', ref: '2' },
       { marker: '{{TABELLA_DOC: Programma svolto }}', ref: 'Programma svolto' }
     ]);
-    expect(facade.readDocTable('src', '2')).toEqual([['a', '1', '']]);
-    expect(facade.readDocTable('src', 'Programma svolto')).toEqual([['b']]);
-    expect(docs.tableCalls).toEqual([
-      ['src', 2],
-      ['src', 'Programma svolto']
+    facade.copyDocTableToMarker('d', '{{M1}}', 'src', '2');
+    facade.copyDocTableToMarker('d', '{{M2}}', 'src', 'Programma svolto');
+    expect(() => facade.copyDocTableToMarker('d', '{{M}}', 'src', '0')).toThrow('parte da 1');
+    expect(docs.copyCalls).toEqual([
+      ['d', '{{M1}}', 'src', { tableIndex: 1 }],
+      ['d', '{{M2}}', 'src', { label: 'Programma svolto' }]
     ]);
   });
 });

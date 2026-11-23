@@ -13559,26 +13559,51 @@ class DocumentTableManager {
   getTableDataByLabel(documentId, label) {
     try {
       const body = this.facade.openStandard(documentId).getBody();
-      const wanted = label.trim().toLowerCase();
-      let lastText = '';
-      let tableIndex = 0;
-      for (let i = 0; i < body.getNumChildren(); i++) {
-        const child = body.getChild(i);
-        const type = child.getType().toString();
-        if (type === 'PARAGRAPH') {
-          const text = child.asParagraph().getText().trim();
-          if (text !== '') lastText = text.toLowerCase();
-        } else if (type === 'TABLE') {
-          if (lastText === wanted) return this._readTable(child.asTable(), tableIndex);
-          tableIndex++;
-          lastText = '';
-        }
-      }
-      throw new Error(`No table labelled "${label}" in document ${documentId}`);
+      const {
+        table,
+        tableIndex
+      } = this._findTable(body, {
+        label
+      }, documentId);
+      return this._readTable(table, tableIndex);
     } catch (error) {
       this._logger.error(`Failed to get table data by label: ${error.message}`);
       throw error;
     }
+  }
+
+
+  _findTable(body, source, documentId) {
+    if (source.label === undefined) {
+      const tables = body.getTables();
+      const index = source.tableIndex ?? 0;
+      if (index < 0 || index >= tables.length) {
+        throw new Error(`Table index ${index} out of bounds (found ${tables.length} tables)`);
+      }
+      return {
+        table: tables[index],
+        tableIndex: index
+      };
+    }
+    const wanted = source.label.trim().toLowerCase();
+    let lastText = '';
+    let tableIndex = 0;
+    for (let i = 0; i < body.getNumChildren(); i++) {
+      const child = body.getChild(i);
+      const type = child.getType().toString();
+      if (type === 'PARAGRAPH') {
+        const text = child.asParagraph().getText().trim();
+        if (text !== '') lastText = text.toLowerCase();
+      } else if (type === 'TABLE') {
+        if (lastText === wanted) return {
+          table: child.asTable(),
+          tableIndex
+        };
+        tableIndex++;
+        lastText = '';
+      }
+    }
+    throw new Error(`No table labelled "${source.label}" in document ${documentId}`);
   }
 
 
@@ -14690,30 +14715,7 @@ class DocumentTableManager {
     try {
       const doc = this.facade.openStandard(documentId);
       const body = doc.getBody();
-      const rangeElement = body.findText(markerText);
-      if (!rangeElement) {
-        throw new Error(`Marker text "${markerText}" not found in document ${documentId}`);
-      }
-
-
-
-
-
-
-
-
-
-
-
-      let element = rangeElement.getElement();
-      while (typeof element.getParent === 'function') {
-        const parent = element.getParent();
-        if (!parent || parent.getType().toString() === 'BODY_SECTION') {
-          break;
-        }
-        element = parent;
-      }
-      const childIndex = body.getChildIndex(element);
+      const childIndex = this._markerChildIndex(body, markerText, documentId);
       const table = body.insertTable(childIndex + 1, data);
       this._applyTableStyling(table, data, options);
       this._logger.debug(`Inserted table with ${data.length} rows at marker "${markerText}" in document ${documentId}`);
@@ -14725,6 +14727,65 @@ class DocumentTableManager {
       };
     } catch (error) {
       this._logger.error(`Failed to insert table at marker: ${error.message}`);
+      throw error;
+    }
+  }
+
+
+  _markerChildIndex(body, markerText, documentId) {
+    const rangeElement = body.findText(markerText);
+    if (!rangeElement) {
+      throw new Error(`Marker text "${markerText}" not found in document ${documentId}`);
+    }
+
+
+
+
+
+
+
+
+
+
+
+    let element = rangeElement.getElement();
+    while (typeof element.getParent === 'function') {
+      const parent = element.getParent();
+      if (!parent || parent.getType().toString() === 'BODY_SECTION') {
+        break;
+      }
+      element = parent;
+    }
+    return body.getChildIndex(element);
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+  copyTableToMarker(targetDocumentId, markerText, sourceDocumentId, source) {
+    try {
+      const {
+        table
+      } = this._findTable(this.facade.openStandard(sourceDocumentId).getBody(), source, sourceDocumentId);
+      const body = this.facade.openStandard(targetDocumentId).getBody();
+      const childIndex = this._markerChildIndex(body, markerText, targetDocumentId);
+      body.insertTable(childIndex + 1, table.copy());
+      return {
+        success: true,
+        rows: table.getNumRows(),
+        columns: table.getNumRows() > 0 ? table.getRow(0).getNumCells() : 0,
+        foundElementIndex: childIndex
+      };
+    } catch (error) {
+      this._logger.error(`Failed to copy table to marker: ${error.message}`);
       throw error;
     }
   }
@@ -15461,7 +15522,7 @@ class DocumentService extends GoogleService {
 
     Delegation.delegateMethods(this, [{
       manager: this._tableManager,
-      methods: ['getDocumentTables', 'getTableStructure', 'getTableData', 'getTableDataByLabel', 'getTableRow', 'getTableColumn', 'insertTableRow', 'appendTableRow', 'deleteTableRow', 'updateTableCell', 'updateTableRow', 'updateTableColumn', 'copyTableRow', 'copyTableColumn', 'setCellRunStyles', 'deleteTableColumn', 'insertTableColumn', 'appendTableColumn', 'setColumnWidth', 'getColumnWidth', 'setRowBackgroundColor', 'setRowMinimumHeight', 'getRowMinimumHeight', 'clearTableRow', 'setCellBackgroundColor', 'getCellBackgroundColor', 'setCellPadding', 'getCellPadding', 'setCellVerticalAlignment', 'getCellVerticalAlignment', 'getCellDetails', 'getTableMetadata', 'setRowTextAlignment', 'setRowBold', '_createTableWithStandardAPI', 'insertTableAtMarker']
+      methods: ['getDocumentTables', 'getTableStructure', 'getTableData', 'getTableDataByLabel', 'getTableRow', 'getTableColumn', 'insertTableRow', 'appendTableRow', 'deleteTableRow', 'updateTableCell', 'updateTableRow', 'updateTableColumn', 'copyTableRow', 'copyTableColumn', 'setCellRunStyles', 'deleteTableColumn', 'insertTableColumn', 'appendTableColumn', 'setColumnWidth', 'getColumnWidth', 'setRowBackgroundColor', 'setRowMinimumHeight', 'getRowMinimumHeight', 'clearTableRow', 'setCellBackgroundColor', 'getCellBackgroundColor', 'setCellPadding', 'getCellPadding', 'setCellVerticalAlignment', 'getCellVerticalAlignment', 'getCellDetails', 'getTableMetadata', 'setRowTextAlignment', 'setRowBold', '_createTableWithStandardAPI', 'insertTableAtMarker', 'copyTableToMarker']
     }, {
       manager: this._contentExtractor,
       methods: ['getRawDocumentStructure', 'getDocumentBody', 'scanDocumentStructure']

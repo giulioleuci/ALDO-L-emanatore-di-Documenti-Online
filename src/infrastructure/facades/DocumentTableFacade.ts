@@ -7,15 +7,18 @@ export interface TablePlaceholder {
 export interface DocTablePlaceholder {
   /** The literal `{{TABELLA_DOC:<indice|etichetta>}}` text. */
   marker: string;
-  /** Zero-based table index (digits) or the label of the paragraph introducing the table. */
+  /** 1-based table position (digits) or the label of the paragraph introducing the table. */
   ref: string;
 }
 
 export interface IDocumentTableFacade {
   /** Scans the doc for `{{TABELLA_DOC:<indice|etichetta>}}` markers (tables copied from another Doc). */
   findDocTablePlaceholders(fileId: string): DocTablePlaceholder[];
-  /** Reads one table of `sourceDocId`: by zero-based index when `ref` is all digits, else by label. */
-  readDocTable(sourceDocId: string, ref: string): string[][];
+  /**
+   * Copies a table of `sourceDocId` with its original formatting right after the paragraph holding
+   * `marker`: by 1-based position when `ref` is all digits, else by label. Does not remove the marker.
+   */
+  copyDocTableToMarker(fileId: string, marker: string, sourceDocId: string, ref: string): void;
   /** Scans the doc for `{{TABELLA:<sheetFileId>}}` markers (10 §9). */
   findTablePlaceholders(fileId: string): TablePlaceholder[];
   /** Strips the literal marker text before generic `{{...}}` substitution runs, so it isn't mistaken for a CDU path. */
@@ -75,11 +78,17 @@ export class DocumentTableFacade implements IDocumentTableFacade {
     return out;
   }
 
-  readDocTable(sourceDocId: string, ref: string): string[][] {
-    const result = /^\d+$/.test(ref)
-      ? this.documents.getTableData(sourceDocId, Number(ref))
-      : this.documents.getTableDataByLabel(sourceDocId, ref);
-    return result.data.map((row) => row.map((cell) => String((cell ?? '') as string | number)));
+  copyDocTableToMarker(fileId: string, marker: string, sourceDocId: string, ref: string): void {
+    const isIndex = /^\d+$/.test(ref);
+    if (isIndex && Number(ref) < 1) {
+      throw new Error(`TABELLA_DOC: l'indice parte da 1 (ricevuto "${ref}")`);
+    }
+    this.documents.copyTableToMarker(
+      fileId,
+      marker,
+      sourceDocId,
+      isIndex ? { tableIndex: Number(ref) - 1 } : { label: ref }
+    );
   }
 
   removeText(fileId: string, marker: string): void {

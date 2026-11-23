@@ -63,6 +63,14 @@ export declare class DocumentTableManager {
         numColumns: number;
         data: string[][];
     };
+    /** @private Finds a top-level table by zero-based index or by label (see `getTableDataByLabel`). */
+    _findTable(body: GoogleAppsScript.Document.Body, source: {
+        tableIndex?: number;
+        label?: string;
+    }, documentId: string): {
+        table: GoogleAppsScript.Document.Table;
+        tableIndex: number;
+    };
     /** @private Reads every cell's text of a native Table. */
     _readTable(table: GoogleAppsScript.Document.Table, tableIndex: number): {
         tableIndex: number;
@@ -360,6 +368,28 @@ export declare class DocumentTableManager {
      * @throws {Error} If `markerText` is not found in the document (no silent fallback to append).
      */
     insertTableAtMarker(documentId: string, markerText: string, data: unknown[][], options?: TableOptions): {
+        success: boolean;
+        rows: number;
+        columns: number;
+        foundElementIndex: number;
+    };
+    /** @private Top-level body child index of the paragraph containing `markerText`. Throws if absent. */
+    _markerChildIndex(body: GoogleAppsScript.Document.Body, markerText: string, documentId: string): number;
+    /**
+     * @description Copies a table of another document, with its original formatting (styles,
+     * backgrounds, merged cells, widths), immediately after the paragraph containing `markerText`.
+     * Does NOT remove the marker text itself. The target document model stays open: flush it
+     * (`saveAndClose`) before any Docs-API write on the same file.
+     * @param {string} targetDocumentId Document receiving the table.
+     * @param {string} markerText Literal text locating the insertion point.
+     * @param {string} sourceDocumentId Document holding the table.
+     * @param {{tableIndex?: number, label?: string}} source Zero-based table index, or label (see `getTableDataByLabel`).
+     * @returns {Object} {success, rows, columns, foundElementIndex}.
+     */
+    copyTableToMarker(targetDocumentId: string, markerText: string, sourceDocumentId: string, source: {
+        tableIndex?: number;
+        label?: string;
+    }): {
         success: boolean;
         rows: number;
         columns: number;

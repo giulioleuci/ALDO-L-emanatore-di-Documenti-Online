@@ -28,9 +28,11 @@ class FakeDocumentTableFacade implements IDocumentTableFacade {
   findDocTablePlaceholders(): DocTablePlaceholder[] {
     return this.docPlaceholders;
   }
-  readDocTable(sourceDocId: string, ref: string): string[][] {
-    return [['H'], [`${sourceDocId}:${ref}`]];
+  copyDocTableToMarker(fileId: string, marker: string, sourceDocId: string, ref: string): void {
+    this.copied.push(`${sourceDocId}:${ref}`);
+    this.callOrder.push(`insert:${marker}`);
   }
+  copied: string[] = [];
   findTablePlaceholders(): TablePlaceholder[] {
     return this.placeholders;
   }
@@ -312,10 +314,8 @@ describe('DocumentoConTabelleImportateGeneratorStrategy (10 §9)', () => {
 
       strategy.render('doc1', cduWithClasse(), config);
 
-      expect(tables.insertedAtMarker.map((i) => i.data[1])).toEqual([
-        ['new:2'],
-        ['new:Programma svolto']
-      ]);
+      expect(tables.copied).toEqual(['new:2', 'new:Programma svolto']);
+      expect(tables.insertedAtMarker).toEqual([]);
       expect(tables.callOrder).toEqual([
         'insert:{{TABELLA_DOC:2}}',
         'insert:{{TABELLA_DOC:Programma svolto}}',

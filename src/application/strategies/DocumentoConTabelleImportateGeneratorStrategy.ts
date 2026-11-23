@@ -47,9 +47,7 @@ export class DocumentoConTabelleImportateGeneratorStrategy extends DocumentoGene
     const sourceDocId = this.findSourceDocId(cdu, config);
     for (const { marker, ref } of docPlaceholders) {
       if (sourceDocId === null) continue;
-      this.tables.insertTableAtMarker(fileId, marker, this.tables.readDocTable(sourceDocId, ref), {
-        headerRow: true
-      });
+      this.tables.copyDocTableToMarker(fileId, marker, sourceDocId, ref);
       inserted.push(marker);
     }
     for (const placeholder of placeholders) {

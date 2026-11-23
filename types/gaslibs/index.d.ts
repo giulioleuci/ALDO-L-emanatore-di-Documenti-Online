@@ -1447,16 +1447,16 @@ declare global {
       data: string[][],
       options?: DocumentCreateTableOptions
     ): DocumentInsertTableAtMarkerResult;
-    /** Cell text of the `tableIndex`-th (zero-based) table of a Doc. Throws if out of bounds. */
-    getTableData(
-      documentId: string,
-      tableIndex?: number
-    ): { tableIndex: number; data: unknown[][] };
-    /** Cell text of the first table whose preceding non-empty paragraph equals `label` (trimmed, case-insensitive). Throws if none. */
-    getTableDataByLabel(
-      documentId: string,
-      label: string
-    ): { tableIndex: number; data: unknown[][] };
+    /**
+     * Copies a table of another Doc, keeping its original formatting, right after the paragraph
+     * containing `markerText`. `source`: zero-based `tableIndex`, or `label` of the preceding paragraph.
+     */
+    copyTableToMarker(
+      targetDocumentId: string,
+      markerText: string,
+      sourceDocumentId: string,
+      source: { tableIndex?: number; label?: string }
+    ): { success: boolean; rows: number; columns: number; foundElementIndex: number };
     /** Native DocumentApp Document object (e.g. for `.getBody().getText()`, DriveServiceFacade.getFileText). */
     openStandard(documentId: string): { getBody(): { getText(): string } };
   }
